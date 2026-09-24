@@ -9,6 +9,7 @@ import {
   IMPORT_MAX_BYTES,
   parseAnnotationCommand,
   parseCaptureCommand,
+  parseAnswerQuestionCommand,
   parseGoalCommand,
   parseImportCommand,
   parseResolveIdentityCommand,
@@ -246,6 +247,20 @@ export async function startManweServer(options: ServerOptions) {
           response,
           201,
           store.annotate(parseAnnotationCommand(await readJson(request))),
+        );
+        return;
+      }
+      const answerRoute = pathname.match(/^\/api\/questions\/([^/]+)\/answer$/);
+      if (answerRoute && request.method === "POST") {
+        json(
+          response,
+          201,
+          store.answerQuestion(
+            parseAnswerQuestionCommand(
+              await readJson(request),
+              decodeURIComponent(answerRoute[1]),
+            ),
+          ),
         );
         return;
       }

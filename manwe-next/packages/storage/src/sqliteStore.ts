@@ -7,6 +7,7 @@ import {
   MEMORY_SCHEMA_VERSION,
   DomainError,
   type AnnotationCommand,
+  type AnswerQuestionCommand,
   type CaptureCommand,
   type Claim,
   type CommandResult,
@@ -761,6 +762,116 @@ export class SqliteMemoryStore {
         commandHash,
         result,
         timestamp,
+      );
+      return result;
+    });
+  }
+
+  /**
+   * Réponse de l'utilisateur à une question ouverte (T5). Une réponse libre
+   * devient une source capturée et remet les hypothèses ciblées à réexaminer ;
+   * « je ne sais pas » et « ne plus poser » ne changent que la question.
+   */
+  answerQuestion(command: AnswerQuestionCommand): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "question.answer",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    return this.transaction(() => {
+      const replay = this.receipt(
+        "question.answer",
+        command.idempotencyKey,
+        commandHash,
+      );
+      if (replay) return replay;
+      const question = this.hypotheses.question(command.questionId);
+      if (question.status !== "open")
+        throw new DomainError(
+          "question_closed",
+          `Cette question est déjà ${question.status}.`,
+          409,
+        );
+      const createdAt = nowIso();
+      const nextRevision = this.revision + 1;
+      const created: EntityRef[] = [];
+      const changed: EntityRef[] = [{ kind: "question", id: question.id }];
+      let answerSourceId: string | null = null;
+      if (command.choice === "text") {
+        const text = command.text ?? "";
+        answerSourceId = randomUUID();
+        const eventId = randomUUID();
+        this.database
+          .prepare(
+            "INSERT INTO sources(id, workspace_id, kind, content, content_hash, recorded_at, narrated_at, sensitivity, created_at) VALUES (?, ?, 'user_entry', ?, ?, ?, ?, 'personal', ?)",
+          )
+          .run(
+            answerSourceId,
+            this.workspaceId,
+            text,
+            sha256(text),
+            command.recordedAt ?? createdAt,
+            command.recordedAt ?? createdAt,
+            createdAt,
+          );
+        this.database
+          .prepare(
+            "INSERT INTO events(id, workspace_id, title, text, category, source_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, 'unclassified_note', ?, NULL, NULL, 'unknown', ?, 1, ?, ?)",
+          )
+          .run(
+            eventId,
+            this.workspaceId,
+            `Réponse : ${question.question}`.slice(0, 160),
+            text,
+            answerSourceId,
+            "Réponse à une question",
+            createdAt,
+            createdAt,
+          );
+        created.push(
+          { kind: "source", id: answerSourceId },
+          { kind: "event", id: eventId },
+        );
+        changed.push(
+          ...this.hypotheses.markForReview(
+            question.targets
+              .filter((target) => target.kind === "hypothesis")
+              .map((target) => target.id),
+            "answer",
+            nextRevision,
+            createdAt,
+          ),
+        );
+      }
+      this.hypotheses.closeQuestion(
+        question.id,
+        command.choice === "text"
+          ? "answered"
+          : command.choice === "unknown"
+            ? "unknown"
+            : "dismissed",
+        answerSourceId,
+        createdAt,
+      );
+      const revision = this.advanceRevision(
+        "question.answer",
+        [...created, ...changed],
+        createdAt,
+      );
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created,
+      };
+      this.saveReceipt(
+        "question.answer",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        createdAt,
       );
       return result;
     });

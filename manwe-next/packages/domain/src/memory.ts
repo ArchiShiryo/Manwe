@@ -309,6 +309,15 @@ export type AnnotationCommand = {
   createdAt?: string;
 };
 
+export type AnswerQuestionCommand = {
+  idempotencyKey: string;
+  questionId: string;
+  /** Réponse libre, « je ne sais pas » ou « ne plus poser ». */
+  choice: "text" | "unknown" | "dismiss";
+  text?: string;
+  recordedAt?: string;
+};
+
 export type GoalCommand = {
   idempotencyKey: string;
   goalId?: string;
@@ -773,6 +782,33 @@ export function parseAnnotationCommand(value: unknown): AnnotationCommand {
     text: requireText(input.text, "text", 4_000),
     annotationType: input.annotationType as AnnotationType,
     createdAt: optionalDate(input.createdAt, "createdAt") ?? undefined,
+  };
+}
+
+export function parseAnswerQuestionCommand(
+  value: unknown,
+  questionId: string,
+): AnswerQuestionCommand {
+  const input = requireObject(value);
+  const choices = ["text", "unknown", "dismiss"] as const;
+  if (!choices.includes(input.choice as (typeof choices)[number]))
+    throw new DomainError(
+      "invalid_answer",
+      "choice vaut text, unknown ou dismiss.",
+    );
+  const choice = input.choice as AnswerQuestionCommand["choice"];
+  if (choice !== "text" && input.text !== undefined)
+    throw new DomainError(
+      "invalid_answer",
+      "Seule une réponse libre porte un texte.",
+    );
+  return {
+    idempotencyKey: requireIdempotencyKey(input.idempotencyKey),
+    questionId,
+    choice,
+    text:
+      choice === "text" ? requireText(input.text, "text", 12_000) : undefined,
+    recordedAt: optionalDate(input.recordedAt, "recordedAt") ?? undefined,
   };
 }
 
