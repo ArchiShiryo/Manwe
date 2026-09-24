@@ -1,6 +1,6 @@
 # R2 — Fondation du transport Sol assisté
 
-Date : 14 septembre 2026. Statut au 24 septembre 2026 : **validé avec limite — mode assisté** (lot à l'aveugle B01, voir [RAPPORT-001](../pilotage/rapports/RAPPORT-001.md)). Limite : contre-preuves et hypothèses du paquet (R2.4) reportées à R3. IA-A non validé.
+Date : 14 septembre 2026. Statut au 24 septembre 2026 : **validé — mode assisté** (lot à l'aveugle B01, voir [RAPPORT-001](../pilotage/rapports/RAPPORT-001.md)) ; R2.4 complété par le moteur de révision ([RAPPORT-002](../pilotage/rapports/RAPPORT-002.md)). IA-A non validé.
 
 ## Ce qui est implémenté
 
