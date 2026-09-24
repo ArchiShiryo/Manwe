@@ -157,21 +157,21 @@ Les sources sont préservées lors des corrections ordinaires ; une demande expl
 
 La charge ci-dessous indique l'ampleur relative, pas une durée promise. Moyenne correspond à un module avec son parcours de validation ; importante à plusieurs modules dépendants. Les durées seront réévaluées après R0 et le premier jalon livré. Les dates de sortie seront fondées sur les mesures et les validations, notamment les essais utilisateur et les appels API.
 
-| Jalon | Résultat démontrable                                        | Dépendance                  | Charge            | État                                                                         |
-| ----- | ----------------------------------------------------------- | --------------------------- | ----------------- | ---------------------------------------------------------------------------- |
-| R0    | Nouveau socle et faisabilité Windows documentés             | Roadmap                     | Moyenne           | En cours : shell empaqueté et reprise Git manquants                          |
-| R1    | Mémoire locale qui survit au redémarrage                    | R0                          | Importante        | Validé                                                                       |
-| R2    | Ingestion et premier tour cognitif réel avec Sol assisté    | R1                          | Importante        | En cours : import/identités/métriques prêts ; couverture cognitive à élargir |
-| R3    | Hypothèses sourcées et corrections durables                 | R2                          | Importante        | À faire                                                                      |
-| R4    | Texte, graphe et inspecteur synchronisés                    | R3                          | Importante        | À faire                                                                      |
-| R5    | PoC cognitif assisté avec question, problème et objectif    | R4                          | Moyenne           | À faire                                                                      |
-| IA-A  | Fournisseur automatique et harnais éprouvés, DeepSeek prévu | R2 ; corpus enrichi à R3/R5 | Importante        | Différé jusqu'au raccordement                                                |
-| R6    | Alpha Windows installable et récupérable                    | R5 + IA-A                   | Importante        | À faire                                                                      |
-| R7    | Bilan d'usage personnel sur plusieurs jours                 | R6                          | Dépend de l'usage | À faire                                                                      |
-| R8    | Modèles temporels, mémoire enrichie et Knowledge Space      | R7                          | Importante        | À cadrer après R7                                                            |
-| R9    | Perception choisie et recherche contextuelle                | R8                          | Importante        | À cadrer après R7                                                            |
-| R10   | Assistance et planification évaluées                        | R8 ; R9 si nécessaire       | Importante        | À cadrer après R7                                                            |
-| R11   | Extensions avancées et axes de recherche                    | R8 à R10 selon l'axe        | Exploratoire      | Hors alpha                                                                   |
+| Jalon | Résultat démontrable                                        | Dépendance                  | Charge            | État                                                                               |
+| ----- | ----------------------------------------------------------- | --------------------------- | ----------------- | ---------------------------------------------------------------------------------- |
+| R0    | Nouveau socle et faisabilité Windows documentés             | Roadmap                     | Moyenne           | En cours : shell empaqueté et reprise Git manquants                                |
+| R1    | Mémoire locale qui survit au redémarrage                    | R0                          | Importante        | Validé                                                                             |
+| R2    | Ingestion et premier tour cognitif réel avec Sol assisté    | R1                          | Importante        | Validé avec limite — mode assisté : contre-preuves du paquet (R2.4) reportées à R3 |
+| R3    | Hypothèses sourcées et corrections durables                 | R2                          | Importante        | À faire                                                                            |
+| R4    | Texte, graphe et inspecteur synchronisés                    | R3                          | Importante        | À faire                                                                            |
+| R5    | PoC cognitif assisté avec question, problème et objectif    | R4                          | Moyenne           | À faire                                                                            |
+| IA-A  | Fournisseur automatique et harnais éprouvés, DeepSeek prévu | R2 ; corpus enrichi à R3/R5 | Importante        | Différé jusqu'au raccordement                                                      |
+| R6    | Alpha Windows installable et récupérable                    | R5 + IA-A                   | Importante        | À faire                                                                            |
+| R7    | Bilan d'usage personnel sur plusieurs jours                 | R6                          | Dépend de l'usage | À faire                                                                            |
+| R8    | Modèles temporels, mémoire enrichie et Knowledge Space      | R7                          | Importante        | À cadrer après R7                                                                  |
+| R9    | Perception choisie et recherche contextuelle                | R8                          | Importante        | À cadrer après R7                                                                  |
+| R10   | Assistance et planification évaluées                        | R8 ; R9 si nécessaire       | Importante        | À cadrer après R7                                                                  |
+| R11   | Extensions avancées et axes de recherche                    | R8 à R10 selon l'axe        | Exploratoire      | Hors alpha                                                                         |
 
 Chemin du PoC assisté : R0 → R1 → R2 → R3 → R4 → R5. IA-A peut avancer après R2 et doit repasser le corpus enrichi avant R6. L'alpha exige R5 **et** IA-A : un import manuel réussi ne démontre pas une application autonome. Les contrats permettent de préparer le rendu UI et les corpus en avance, mais un jalon n'est pas validé avant ses dépendances. Aucun de ces jalons n'est validé par la seule mise à jour de ce document.
 
@@ -208,7 +208,7 @@ Passage : vingt événements survivent à un arrêt complet ; leur réimportatio
 Objectif : produire une extraction réellement analysée par Sol à partir des sources enregistrées, puis démontrer sa validation et son application par le backend. Le transport assisté est un premier fournisseur, pas une règle déterministe remplaçant l'analyse.
 
 - [x] R2.1 Accepter la saisie libre, le collage de texte et un import JSON/CSV documenté. Les autres formats viennent plus tard.
-- [ ] R2.2 Extraire des candidats événementiels en distinguant déclaration, comportement rapporté, impression et intention future.
+- [x] R2.2 Extraire des candidats événementiels en distinguant déclaration, comportement rapporté, impression et intention future. (Preuve : lot à l'aveugle B01, 3 essais sur les cas sensibles, [RAPPORT-001](./manwe-next/docs/pilotage/rapports/RAPPORT-001.md).)
 - [x] R2.3 Relier chaque extraction à un extrait source vérifiable. Gérer les noms ambigus par des candidats et une clarification ciblée.
 - [ ] R2.4 Construire `ContextPacket` : focus, sources et extraits exacts, personnes concernées, épisodes, corrections, contre-preuves, empreinte et révision de départ. L'export utilise `memory.get_context`, une commande métier du backend, pas une lecture libre de la base par le modèle. (Sous-ensemble sources/événements/annotations/goals opérationnel.)
 - [x] R2.5 Implémenter l'adaptateur `sol-assisted` : préparer une demande, exporter le JSON sélectionné, recevoir une proposition JSON et présenter un aperçu de ses changements. Appliquer uniquement via le validateur et la transaction métier ; aucune écriture directe par Sol.
