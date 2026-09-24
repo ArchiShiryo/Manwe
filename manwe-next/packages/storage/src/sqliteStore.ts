@@ -64,6 +64,15 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
+const ANALYST_PROMPT_VERSION = "analyst-v2";
+const ANALYST_PROMPT_HASH = sha256(
+  readFileSync(
+    fileURLToPath(
+      new URL("../../cognition/prompts/analyst-v2.md", import.meta.url),
+    ),
+    "utf8",
+  ),
+);
 
 function parseResult(value: unknown): CommandResult {
   return JSON.parse(String(value)) as CommandResult;
@@ -106,6 +115,15 @@ export class SqliteMemoryStore {
         new URL("./migrations/003_imports_and_metrics.sql", import.meta.url),
       );
       this.database.exec(readFileSync(importMigrationPath, "utf8"));
+    }
+    const modalityMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 4")
+      .get();
+    if (!modalityMigration) {
+      const modalityMigrationPath = fileURLToPath(
+        new URL("./migrations/004_claim_modality.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(modalityMigrationPath, "utf8"));
     }
     const timestamp = nowIso();
     this.database
@@ -880,6 +898,7 @@ export class SqliteMemoryStore {
         workspaceId: String(row.workspace_id),
         text: String(row.text),
         category: String(row.category) as Claim["category"],
+        modality: String(row.modality) as Claim["modality"],
         knowledgeStatus: String(
           row.knowledge_status,
         ) as Claim["knowledgeStatus"],
@@ -1185,11 +1204,11 @@ export class SqliteMemoryStore {
     if (
       !Number.isFinite(Date.parse(expiresAt)) ||
       Date.parse(expiresAt) <= Date.parse(createdAt) ||
-      Date.parse(expiresAt) > Date.parse(createdAt) + 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.parse(createdAt) + 7 * 24 * 60 * 60 * 1000
     )
       throw new DomainError(
         "invalid_expiration",
-        "L’expiration doit être future et limitée à 24 heures.",
+        "L’expiration doit être future et limitée à 7 jours.",
       );
     const requestId = randomUUID();
     const focused = new Set(focus.map((ref) => `${ref.kind}:${ref.id}`));
@@ -1211,7 +1230,7 @@ export class SqliteMemoryStore {
       mode,
       providerId,
       task: command.task,
-      promptVersion: "sol-assisted-v1",
+      promptVersion: ANALYST_PROMPT_VERSION,
       focus,
       sources: selectedSources.map((source) => ({
         sourceId: source.id,
@@ -1261,7 +1280,7 @@ export class SqliteMemoryStore {
     };
     this.database
       .prepare(
-        "INSERT INTO analysis_requests(id, workspace_id, base_revision, created_at, expires_at, mode, provider_id, task, prompt_version, context_hash, context_json, allowed_operations_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_response')",
+        "INSERT INTO analysis_requests(id, workspace_id, base_revision, created_at, expires_at, mode, provider_id, task, prompt_version, prompt_hash, context_hash, context_json, allowed_operations_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_response')",
       )
       .run(
         requestId,
@@ -1273,6 +1292,7 @@ export class SqliteMemoryStore {
         providerId,
         command.task,
         packet.promptVersion,
+        ANALYST_PROMPT_HASH,
         packet.contextHash,
         JSON.stringify(packet),
         JSON.stringify(packet.allowedOperations),
@@ -1480,13 +1500,14 @@ export class SqliteMemoryStore {
             const id = randomUUID();
             this.database
               .prepare(
-                "INSERT INTO claims(id, workspace_id, text, category, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
+                "INSERT INTO claims(id, workspace_id, text, category, modality, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
               )
               .run(
                 id,
                 this.workspaceId,
                 operation.payload.text,
                 operation.payload.category,
+                operation.payload.modality,
                 operation.payload.validFrom,
                 operation.payload.validTo,
                 timestamp,
@@ -1595,6 +1616,9 @@ export class SqliteMemoryStore {
     return {
       requestId,
       status: String(request.status),
+      promptVersion: String(request.prompt_version),
+      promptHash:
+        request.prompt_hash === null ? null : String(request.prompt_hash),
       packet: JSON.parse(String(request.context_json)) as ContextPacket,
       validatorVersion: COGNITION_VALIDATOR_VERSION,
       responses: responses.map((row) => this.mapAnalysisPreview(row, false)),
