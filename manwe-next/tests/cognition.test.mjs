@@ -38,7 +38,7 @@ function capturedStore(store, suffix = "base") {
 function proposal(packet, overrides = {}) {
   const source = packet.sources[0];
   return {
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     requestId: packet.requestId,
     workspaceId: packet.workspaceId,
     baseRevision: packet.baseRevision,
@@ -56,6 +56,7 @@ function proposal(packet, overrides = {}) {
         payload: {
           text: "Selon Léa, Marc l’a invitée.",
           category: "reported_observation",
+          modality: "actual",
           validFrom: "2026-09-13T12:00:00-03:00",
           validTo: null,
           citations: [
@@ -118,6 +119,7 @@ test("une proposition sourcée s’applique une fois et survit au redémarrage",
     assert.equal(result.resultRevision, 2);
     assert.equal(result.createdIds[0].kind, "claim");
     assert.equal(store.snapshot().claims[0].category, "reported_observation");
+    assert.equal(store.snapshot().claims[0].modality, "actual");
     assert.equal(store.applyAnalysis(preview.responseId).replayed, true);
     assert.equal(
       store.receiveAnalysis(response).applicationResult.resultRevision,
@@ -130,6 +132,82 @@ test("une proposition sourcée s’applique une fois et survit au redémarrage",
     assert.equal(reopened.snapshot().claims.length, 1);
     assert.equal(reopened.getAnalysis(packet.requestId).status, "applied");
     reopened.close();
+  }));
+
+test("un claim intended est persisté et relu après redémarrage", () =>
+  withStore((store, path) => {
+    capturedStore(store, "intended");
+    const packet = store.prepareAnalysis({ task: "extract" });
+    const intended = proposal(packet);
+    intended.operations[0].payload.modality = "intended";
+    const preview = store.receiveAnalysis(intended);
+    store.applyAnalysis(preview.responseId);
+    store.close();
+
+    const reopened = new SqliteMemoryStore(path);
+    assert.equal(reopened.snapshot().claims[0].modality, "intended");
+    reopened.close();
+  }));
+
+test("le schéma 1.1 exige la modalité uniquement sur propose_claim", () =>
+  withStore((store) => {
+    capturedStore(store, "modality-validation");
+    const packet = store.prepareAnalysis({ task: "extract" });
+
+    const missing = proposal(packet);
+    delete missing.operations[0].payload.modality;
+    assert.throws(
+      () => store.receiveAnalysis(missing),
+      (error) => error.code === "invalid_modality",
+    );
+
+    const unknown = proposal(packet);
+    unknown.operations[0].payload.modality = "possible";
+    assert.throws(
+      () => store.receiveAnalysis(unknown),
+      (error) => error.code === "invalid_modality",
+    );
+
+    const source = packet.sources[0];
+    const eventWithModality = proposal(packet, {
+      operations: [
+        {
+          key: "event-with-modality",
+          kind: "propose_event",
+          payload: {
+            title: "Invitation",
+            text: source.text,
+            category: "reported_observation",
+            modality: "actual",
+            occurredStart: null,
+            occurredEnd: null,
+            temporalPrecision: "unknown",
+            context: null,
+            citations: [
+              {
+                sourceId: source.sourceId,
+                contentHash: source.contentHash,
+                spanStart: source.spanStart,
+                spanEnd: source.spanEnd,
+                quote: source.text,
+              },
+            ],
+          },
+          rationale: "La modalité est volontairement interdite ici.",
+        },
+      ],
+    });
+    assert.throws(
+      () => store.receiveAnalysis(eventWithModality),
+      (error) => error.code === "unknown_field",
+    );
+
+    assert.throws(
+      () =>
+        store.receiveAnalysis({ ...proposal(packet), schemaVersion: "1.0" }),
+      (error) => error.code === "unsupported_schema_version",
+    );
+    store.close();
   }));
 
 test("une citation altérée est conservée comme rejet sans mutation", () =>

@@ -10,6 +10,8 @@ export type InformationCategory =
   | "inference"
   | "unclassified_note";
 
+export type ClaimModality = "actual" | "intended" | "hypothetical";
+
 export type AnnotationType =
   | "factual_correction"
   | "context"
@@ -133,6 +135,7 @@ export type Claim = {
   workspaceId: string;
   text: string;
   category: Exclude<InformationCategory, "unclassified_note">;
+  modality: ClaimModality;
   knowledgeStatus: "unresolved" | "supported" | "contradicted" | "superseded";
   validFrom: string | null;
   validTo: string | null;

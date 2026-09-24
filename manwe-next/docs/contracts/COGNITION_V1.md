@@ -1,6 +1,6 @@
 # Contrat cognitif v1
 
-Date : 14 septembre 2026. Version du contrat : `1.0`.
+Date : 14 septembre 2026. Version du contrat : `1.1`.
 
 Ce document fixe la frontière entre la mémoire et le LLM. Le sous-ensemble R2
 `propose_event` / `propose_claim` est maintenant exécutable : types, validation
@@ -14,6 +14,12 @@ elles sont assistées et non aveugles. R2 reste « en cours » pendant l'extensi
 de la couverture des catégories et jusqu'au contexte hypothèse/contre-preuve de
 R3. L'ingestion, les ambiguïtés d'identité et la métrologie assistée sont
 désormais implémentées.
+
+> **Changements 1.1 — modalité des claims.** La provenance (`category`) et la
+> modalité (`actual`, `intended`, `hypothetical`) sont maintenant deux axes
+> indépendants. `propose_claim` exige la modalité. Un événement reste toujours
+> un fait accompli et n'en porte pas. Les archives `1.0` restent lisibles comme
+> documents, mais une proposition `1.0` n'est plus réimportable.
 
 ## 1. Responsabilités
 
@@ -49,7 +55,7 @@ Identifiants opaques alloués par le backend ; horodatages ISO 8601 avec fuseau.
 | `Person`             | nom déclaré, alias sourcés, état de résolution de l'identité                                                                                                     |
 | `Episode`            | intervalle temporel et précision, contexte ; regroupement justifié des événements                                                                                |
 | `Event`              | participants résolus ou candidats, `episodeId`, `occurredAt`/intervalle/précision, références source ; aucun événement accompli extrait d'un simple conditionnel |
-| `Claim`              | texte, catégorie de provenance, sujets, contexte, période, références source, statut de connaissance                                                             |
+| `Claim`              | texte, catégorie de provenance, modalité, sujets, contexte, période, références source, statut de connaissance                                                   |
 | `Hypothesis`         | énoncé, claims/épisodes favorables et contraires, alternatives, limites, conditions de révision, statut                                                          |
 | `HumanAnnotation`    | cible typée, texte, type `factual_correction` / `context` / `disagreement` / `agreement`, auteur utilisateur                                                     |
 | `OpenQuestion`       | question, hypothèses concernées, intérêt de la réponse, statut ; une absence de réponse ne confirme rien                                                         |
@@ -60,6 +66,14 @@ Catégories `Claim` : `explicit_statement`, `sourced_observation`,
 séparé : `unresolved`, `supported`, `contradicted`, `superseded`. Le statut ne
 transforme jamais une inférence ou une impression en observation.
 
+Modalités `Claim`, orthogonales à la provenance : `actual` décrit un fait ou un
+état présent, y compris une absence ou une négation ; `intended` décrit une
+intention ou un projet futur, y compris une intention négative ;
+`hypothetical` décrit un conditionnel ou une supposition. Une déclaration
+explicite peut donc être `actual`, `intended` ou `hypothetical` sans changer de
+catégorie de provenance. `Event` ne porte pas de modalité : il représente
+uniquement un fait accompli.
+
 Les formes détaillées des entités seront matérialisées en types et schémas avant
 les migrations. Les références sont typées (`kind`, `id`) ; une référence à une
 autre workspace est toujours invalide. Pas de propriété générique permettant
@@ -69,7 +83,7 @@ au modèle d'envoyer du SQL, un JSON Patch arbitraire ou une mutation de source.
 
 Champs obligatoires :
 
-- `schemaVersion`: `"1.0"`.
+- `schemaVersion`: `"1.1"`.
 - `requestId`, `workspaceId`, `baseRevision`, `createdAt`, `expiresAt`.
 - `mode`: `"assisted"` pour Sol ; `providerId`: `"sol-assisted"`.
 - `task`: `"extract"`, `"interpret"`, `"revise"` ou `"explore"`.
@@ -118,8 +132,8 @@ Opérations autorisables selon la tâche :
 
 | `kind`               | `payload` minimal                                                                                   | Restriction                                                                  |
 | -------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `propose_event`      | participants ou candidats, temps/précision, contexte, épisode existant ou candidat, extraits source | Déduplication par source et épisode ; aucune fusion silencieuse d'identité   |
-| `propose_claim`      | texte, catégorie, sujets, période, références source                                                | Une extraction reste sourcée ; une inférence est explicitement typée         |
+| `propose_event`      | participants ou candidats, temps/précision, contexte, épisode existant ou candidat, extraits source | Fait accompli uniquement ; aucune modalité ni fusion silencieuse d'identité  |
+| `propose_claim`      | texte, catégorie, modalité, sujets, période, références source                                      | Une extraction reste sourcée ; provenance et modalité restent indépendantes  |
 | `propose_hypothesis` | énoncé, preuves favorables/contraires, alternatives, limites, conditions de révision                | Au plus deux hypothèses pour le focus du PoC ; zéro est un résultat valide   |
 | `revise_hypothesis`  | cible existante, version attendue, nouvelle lecture/statut, références et motif                     | Historique préservé ; aucune modification des sources ni des annotations     |
 | `propose_question`   | question, cibles, information discriminante, raison de la poser                                     | Au plus une question active pertinente au focus ; ne pas forcer une question |

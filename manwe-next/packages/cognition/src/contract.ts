@@ -1,13 +1,14 @@
 import { createHash } from "node:crypto";
 import {
   DomainError,
+  type ClaimModality,
   type EntityRef,
   type InformationCategory,
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.0" as const;
-export const COGNITION_VALIDATOR_VERSION = "1.0.0" as const;
+export const COGNITION_SCHEMA_VERSION = "1.1" as const;
+export const COGNITION_VALIDATOR_VERSION = "1.1.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;
 
@@ -37,6 +38,7 @@ export type SourceCitation = {
 type ClaimPayload = {
   text: string;
   category: Exclude<InformationCategory, "unclassified_note">;
+  modality: ClaimModality;
   validFrom: string | null;
   validTo: string | null;
   citations: SourceCitation[];
@@ -283,6 +285,7 @@ const categories: Array<Exclude<InformationCategory, "unclassified_note">> = [
   "user_impression",
   "inference",
 ];
+const claimModalities: ClaimModality[] = ["actual", "intended", "hypothetical"];
 const precisions: TemporalPrecision[] = [
   "exact",
   "day",
@@ -300,11 +303,13 @@ function operation(value: unknown): CognitiveOperation {
   if (input.kind === "propose_claim") {
     exactKeys(
       payload,
-      ["text", "category", "validFrom", "validTo", "citations"],
+      ["text", "category", "modality", "validFrom", "validTo", "citations"],
       "propose_claim.payload",
     );
     if (!categories.includes(payload.category as (typeof categories)[number]))
       throw new DomainError("invalid_category", "Catégorie de claim inconnue.");
+    if (!claimModalities.includes(payload.modality as ClaimModality))
+      throw new DomainError("invalid_modality", "Modalité de claim inconnue.");
     return {
       key,
       kind: input.kind,
@@ -312,6 +317,7 @@ function operation(value: unknown): CognitiveOperation {
       payload: {
         text: text(payload.text, "claim.text", 2_000),
         category: payload.category as ClaimPayload["category"],
+        modality: payload.modality as ClaimModality,
         validFrom: dateOrNull(payload.validFrom, "claim.validFrom"),
         validTo: dateOrNull(payload.validTo, "claim.validTo"),
         citations: citations(payload.citations),
@@ -403,7 +409,7 @@ export function parseCognitiveProposal(value: unknown): CognitiveProposal {
   );
   if (input.schemaVersion !== COGNITION_SCHEMA_VERSION)
     throw new DomainError(
-      "unsupported_schema",
+      "unsupported_schema_version",
       "Version cognitive non prise en charge.",
     );
   if (!Number.isInteger(input.baseRevision) || Number(input.baseRevision) < 0)

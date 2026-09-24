@@ -1,4 +1,8 @@
 import type { Person } from "../../../packages/domain/src/demo.ts";
+import type {
+  ClaimModality,
+  InformationCategory,
+} from "../../../packages/domain/src/memory.ts";
 
 export function Sigil({ small = false }: { small?: boolean }) {
   return (
@@ -41,4 +45,21 @@ export const categoryLabels = {
   reported: "Fait rapporté",
   impression: "Impression",
   note: "Note non analysée",
+};
+
+export const informationCategoryLabels: Record<
+  Exclude<InformationCategory, "unclassified_note">,
+  string
+> = {
+  explicit_statement: "déclaration explicite",
+  sourced_observation: "observation directe",
+  reported_observation: "observation rapportée",
+  user_impression: "impression utilisateur",
+  inference: "inférence",
+};
+
+export const claimModalityLabels: Record<ClaimModality, string> = {
+  actual: "fait",
+  intended: "intention",
+  hypothetical: "hypothèse",
 };

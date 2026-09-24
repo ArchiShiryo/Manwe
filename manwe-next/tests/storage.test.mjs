@@ -44,6 +44,61 @@ test("un espace personnel neuf ne contient pas le scénario de démonstration", 
     store.close();
   }));
 
+test("la migration 004 convertit les claims du schéma 003 en actual", () =>
+  withDatabase((path) => {
+    let database = new DatabaseSync(path);
+    for (const migration of [
+      "001_initial.sql",
+      "002_cognition.sql",
+      "003_imports_and_metrics.sql",
+    ])
+      database.exec(
+        readFileSync(
+          new URL(
+            `../packages/storage/src/migrations/${migration}`,
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+    const timestamp = "2026-09-24T12:00:00.000Z";
+    database
+      .prepare(
+        "INSERT INTO workspaces(id, name, revision, created_at, updated_at) VALUES (?, ?, 0, ?, ?)",
+      )
+      .run("personal", "Migration 003", timestamp, timestamp);
+    database
+      .prepare(
+        "INSERT INTO claims(id, workspace_id, text, category, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, 'unresolved', NULL, NULL, 1, ?, ?)",
+      )
+      .run(
+        "claim-before-modality",
+        "personal",
+        "Une information antérieure.",
+        "explicit_statement",
+        timestamp,
+        timestamp,
+      );
+    database.close();
+
+    const migrated = new SqliteMemoryStore(path);
+    assert.equal(migrated.snapshot().claims[0].modality, "actual");
+    migrated.close();
+
+    const replayed = new SqliteMemoryStore(path);
+    replayed.close();
+    database = new DatabaseSync(path);
+    assert.equal(
+      database
+        .prepare(
+          "SELECT COUNT(*) AS count FROM schema_migrations WHERE version = 4",
+        )
+        .get().count,
+      1,
+    );
+    database.close();
+  }));
+
 test("la capture conserve le texte littéral sans extraction sémantique", () =>
   withDatabase((path) => {
     const store = new SqliteMemoryStore(path);

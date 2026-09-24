@@ -211,7 +211,7 @@ test("l’API prépare, prévisualise et applique explicitement une proposition 
     const packet = await preparedResponse.json();
     const source = packet.sources[0];
     const proposal = {
-      schemaVersion: "1.0",
+      schemaVersion: "1.1",
       requestId: packet.requestId,
       workspaceId: packet.workspaceId,
       baseRevision: packet.baseRevision,
@@ -229,6 +229,7 @@ test("l’API prépare, prévisualise et applique explicitement une proposition 
           payload: {
             text: "Claire préfère rester seule ce week-end.",
             category: "explicit_statement",
+            modality: "actual",
             validFrom: null,
             validTo: null,
             citations: [

@@ -27,7 +27,11 @@ import type {
   ContextPacket,
 } from "../../../packages/cognition/src/contract.ts";
 import { MemoryApiError, memoryApi } from "./memoryApi.ts";
-import { dateLabel } from "./ui.tsx";
+import {
+  claimModalityLabels,
+  dateLabel,
+  informationCategoryLabels,
+} from "./ui.tsx";
 
 export function PersonalUnavailable({
   message,
@@ -395,6 +399,7 @@ export function PersonalMemory({
           })}
         </div>
       )}
+      <PersonalClaimInspector snapshot={snapshot} />
       <AssistedAnalysisPanel
         disabled={snapshot.events.length === 0}
         onReload={onReload}
@@ -404,6 +409,33 @@ export function PersonalMemory({
         La mémoire personnelle vient du service local. Le texte source n’est
         jamais réécrit par une correction.
       </p>
+    </section>
+  );
+}
+
+function PersonalClaimInspector({ snapshot }: { snapshot: WorkspaceSnapshot }) {
+  if (snapshot.claims.length === 0) return null;
+  return (
+    <section
+      className="personal-claim-inspector"
+      aria-label="Inspecteur des propositions appliquées"
+    >
+      <div className="eyebrow">PROPOSITIONS APPLIQUÉES</div>
+      <h2>Ce que l'analyse a distingué</h2>
+      <div className="personal-claim-list">
+        {snapshot.claims.map((claim) => (
+          <article className="personal-claim" key={claim.id}>
+            <div className="personal-event-meta">
+              <span>
+                {informationCategoryLabels[claim.category]} ·{" "}
+                {claimModalityLabels[claim.modality]}
+              </span>
+              <time>{dateLabel(claim.createdAt, true)}</time>
+            </div>
+            <p>{claim.text}</p>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
@@ -734,7 +766,7 @@ function AssistedAnalysisPanel({
                 value={proposalText}
                 onChange={(event) => setProposalText(event.target.value)}
                 rows={8}
-                placeholder='{"schemaVersion":"1.0", …}'
+                placeholder='{"schemaVersion":"1.1", …}'
                 aria-label="Proposition JSON de Sol"
               />
               <button
@@ -765,6 +797,12 @@ function AssistedAnalysisPanel({
               {preview.operations.map((operation) => (
                 <article key={operation.key}>
                   <strong>{operation.kind.replace("propose_", "")}</strong>
+                  <span className="analysis-operation-classification">
+                    {informationCategoryLabels[operation.payload.category]} ·{" "}
+                    {operation.kind === "propose_claim"
+                      ? claimModalityLabels[operation.payload.modality]
+                      : claimModalityLabels.actual}
+                  </span>
                   <p>{operation.payload.text}</p>
                   <small>{operation.rationale}</small>
                 </article>

@@ -107,6 +107,15 @@ export class SqliteMemoryStore {
       );
       this.database.exec(readFileSync(importMigrationPath, "utf8"));
     }
+    const modalityMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 4")
+      .get();
+    if (!modalityMigration) {
+      const modalityMigrationPath = fileURLToPath(
+        new URL("./migrations/004_claim_modality.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(modalityMigrationPath, "utf8"));
+    }
     const timestamp = nowIso();
     this.database
       .prepare(
@@ -880,6 +889,7 @@ export class SqliteMemoryStore {
         workspaceId: String(row.workspace_id),
         text: String(row.text),
         category: String(row.category) as Claim["category"],
+        modality: String(row.modality) as Claim["modality"],
         knowledgeStatus: String(
           row.knowledge_status,
         ) as Claim["knowledgeStatus"],
@@ -1480,13 +1490,14 @@ export class SqliteMemoryStore {
             const id = randomUUID();
             this.database
               .prepare(
-                "INSERT INTO claims(id, workspace_id, text, category, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
+                "INSERT INTO claims(id, workspace_id, text, category, modality, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
               )
               .run(
                 id,
                 this.workspaceId,
                 operation.payload.text,
                 operation.payload.category,
+                operation.payload.modality,
                 operation.payload.validFrom,
                 operation.payload.validTo,
                 timestamp,
