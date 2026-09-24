@@ -1,6 +1,6 @@
 # MANWË Roadmap de reconstruction
 
-Version 1.2 du 23 septembre 2026. Cadrage initial et adaptation : Astra. Reprise de la réalisation et rôle de LLM provisoire : Sol, conformément à la décision utilisateur du 14 septembre. Validation de l'utilité et des choix d'expérience : utilisateur.
+Version 1.3 du 24 septembre 2026 : mode développement à capacité maximale et nouveau pilotage (voir [PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md), décisions D-006 et D-010). Version 1.2 du 23 septembre 2026. Cadrage initial et adaptation : Astra. Reprise de la réalisation et rôle de LLM provisoire : Sol, conformément à la décision utilisateur du 14 septembre. Validation de l'utilité et des choix d'expérience : utilisateur.
 
 Nous reconstruisons le socle fonctionnel de MANWË à côté du prototype existant. Le premier résultat attendu est une application personnelle capable de conserver une situation sociale, de proposer une interprétation sourcée, de recevoir une correction et de représenter durablement cette révision dans le texte, le graphe et l'inspecteur.
 
@@ -26,7 +26,7 @@ Documents de reprise : [handoff pour Sol](./manwe-next/docs/HANDOFF_SOL.md), [d�
 
 La question de validation est : « MANWË m'aide-t-il à comprendre une situation, à distinguer ce qui est établi de ce qui est supposé, et à corriger une représentation qui continue de tenir compte de mes corrections demain ? »
 
-Le premier périmètre fonctionnel comprend l'utilisateur, trois personnes, un groupe, dix à trente événements, une relation centrale, un problème, un objectif, deux hypothèses concurrentes au maximum et une question ouverte pertinente. Les données de démonstration restent identifiées comme telles ; un espace personnel démarre vide.
+Le premier périmètre fonctionnel comprend l'utilisateur, trois personnes, un groupe, dix à trente événements, une relation centrale, un problème, un objectif, des hypothèses concurrentes à toutes les profondeurs (dont deux mises en avant dans la vue) et au moins une question ouverte pertinente. Les données de démonstration restent identifiées comme telles ; un espace personnel démarre vide.
 
 Le scénario de référence suit cette séquence :
 
@@ -357,14 +357,14 @@ Passage : les options sont explicables à partir de données actuelles ; les ré
 
 Ces axes restent dans la vision. Ils disposent de prérequis et d'une validation propre ; ils ne bloquent pas une première version utile.
 
-| Axe                                     | Prérequis                                                                       | Preuve à obtenir avant extension                                                      |
-| --------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Needs, Values, Motives et mentalisation | Modèles relationnels sourcés, alternatives et historique suffisant              | Gain de compréhension ou de discrimination face à une explication contextuelle simple |
-| Formulations psychodynamiques D4        | Récurrence, épisodes indépendants, critique, falsifiabilité, suivi longitudinal | Gain démontré et possibilité de réfutation ; la sophistication du récit ne suffit pas |
-| Social Field et niches relationnelles   | Identités fiables, groupes et relations suivis dans le temps                    | Fonctions ou dépendances observables, alternatives et comparaisons présence/absence   |
-| Simulation de transformations du groupe | Modèles temporels et prévisions évaluées                                        | Scénarios conditionnels confrontables aux événements suivants                         |
-| Mobile et autres terminaux              | Backend stable, authentification, politique de partage et synchronisation       | Même mémoire et mêmes corrections sur les terminaux, conflits gérés                   |
-| Inférence locale                        | Adaptateur fournisseur stable et matériel évalué                                | Qualité, coût opérationnel et latence suffisants sur le même corpus                   |
+| Axe                                     | Prérequis                                                                                                 | Preuve à obtenir avant extension                                                                             |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Needs, Values, Motives et mentalisation | Modèles relationnels sourcés, alternatives et historique suffisant                                        | Gain de compréhension ou de discrimination face à une explication contextuelle simple                        |
+| Formulations psychodynamiques D4        | Produites dès R3 (D-006) ; promotion exigeant récurrence, épisodes indépendants, critique, falsifiabilité | Gain démontré et possibilité de réfutation ; la sophistication du récit ne suffit pas à passer « plausible » |
+| Social Field et niches relationnelles   | Identités fiables, groupes et relations suivis dans le temps                                              | Fonctions ou dépendances observables, alternatives et comparaisons présence/absence                          |
+| Simulation de transformations du groupe | Modèles temporels et prévisions évaluées                                                                  | Scénarios conditionnels confrontables aux événements suivants                                                |
+| Mobile et autres terminaux              | Backend stable, authentification, politique de partage et synchronisation                                 | Même mémoire et mêmes corrections sur les terminaux, conflits gérés                                          |
+| Inférence locale                        | Adaptateur fournisseur stable et matériel évalué                                                          | Qualité, coût opérationnel et latence suffisants sur le même corpus                                          |
 
 Le seuil de trois épisodes pour D4 vient de la spécification V3.0 : c'est une règle produit envisagée, pas une validation scientifique automatique. L'implémentation des cadres psychologiques exigera une revue critique de leurs usages et des évaluations adaptées. La numérotation D5 du document maître regroupe aussi groupe et planification ; elle n'oblige pas à construire D4 avant de proposer un objectif simple à R5.
 
@@ -437,15 +437,15 @@ Statuts utilisés : à faire, en cours, à valider, validé, bloqué, différé.
 
 ## 20 Ce qui est explicitement différé
 
-L'alpha ne comprend pas la collecte automatique généralisée, les connecteurs sociaux multiples, la synchronisation multi-appareils, les wearables, les formulations psychodynamiques profondes, le Social Field, les niches relationnelles ou les simulations avancées. La recherche vectorielle et l'automatisation Obsidian attendent un besoin constaté.
+L'alpha ne comprend pas encore la collecte automatique généralisée, les connecteurs sociaux multiples, la synchronisation multi-appareils, les wearables, le Social Field, les niches relationnelles ou les simulations avancées. La recherche vectorielle et l'automatisation Obsidian attendent un besoin constaté.
 
-Les mécanismes de conseil de l'alpha produisent des options pour l'utilisateur ; ils n'envoient pas de messages et n'agissent pas sur ses relations. La roadmap ne crée ni surveillance permanente ni traitement nocturne. Ces comportements futurs demandent une fonction produit explicite avec son périmètre et ses commandes.
+Les formulations psychodynamiques, d'attachement et de personnalité ne sont plus différées : elles sont produites dès R3, avec une exigence de preuve croissante (D-006, D-010). Les mécanismes de conseil de l'alpha produisent des options pour l'utilisateur ; l'envoi de messages, l'action sur les relations, la veille permanente et les traitements de fond ne sont pas encore construits. Ce sont des fonctions futures, à ajouter avec leur périmètre et leurs commandes, notamment lorsque le système aura accès à d'autres sources que le témoignage de l'utilisateur.
 
 Le branchement automatique d'une session Codex, d'une API ou d'un harnais ne fait pas partie du mode Sol assisté. Il exige un lot de raccordement explicite, ses accès et ses vérifications IA-A. Aucun abonnement, clé ou permission n'est supposé disponible par cette roadmap.
 
 ## 21 Pilotage opérationnel
 
-Astra a fixé le cadrage initial et cette adaptation. À la reprise, Sol construit les lots, maintient le suivi et les décisions, fournit les preuves de validation et joue le rôle du LLM provisoire dans des échanges assistés identifiés. Le passage au rôle d'analyste ne lui donne pas de droit d'écriture directe sur la mémoire métier. Une revue ponctuelle par Astra peut être demandée ; elle n'est pas un service permanent ni un prérequis à chaque changement réversible. L'utilisateur évalue l'utilité, choisit les données personnelles utilisées et précise les accès ou contraintes externes nécessaires.
+Depuis le 24 septembre 2026, le pilotage est assuré par Claude et l'exécution par ChatGPT, qui tient le rôle nommé Sol ci-dessous ; le fonctionnement est décrit dans [PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md) et prévaut sur ce paragraphe en cas de conflit. Astra a fixé le cadrage initial et cette adaptation. À la reprise, Sol construit les lots, maintient le suivi et les décisions, fournit les preuves de validation et joue le rôle du LLM provisoire dans des échanges assistés identifiés. Le passage au rôle d'analyste ne lui donne pas de droit d'écriture directe sur la mémoire métier. Une revue ponctuelle par Astra peut être demandée ; elle n'est pas un service permanent ni un prérequis à chaque changement réversible. L'utilisateur évalue l'utilité, choisit les données personnelles utilisées et précise les accès ou contraintes externes nécessaires.
 
 Chaque lot de travail se termine par un bilan court : résultat utilisable, éléments vérifiés, limite éventuelle et prochaine tâche. Les décisions sur la priorité sont prises à partir du chemin critique et du bilan d'usage. Une nouvelle idée rejoint le backlog sans interrompre automatiquement le jalon engagé.
 
@@ -474,7 +474,7 @@ Le lot suivant ferme le parcours R2 : exporter un contexte de cette mémoire, re
 | 2026-09-13 | Un tour métier du harnais avant validation du PoC — remplacé pour le PoC assisté le 14 septembre | L'installation et le handshake ne démontrent pas l'orchestration ; l'obligation est conservée à IA-A avant R6 |
 | 2026-09-13 | Évaluation dès le premier lot                                                                    | La négation, la provenance et la révision font partie de la valeur du produit                                 |
 | 2026-09-13 | PostgreSQL et Tauri maintenus comme cibles à éprouver à R0                                       | Respect des documents existants avec contrôle précoce de la distribution Windows                              |
-| 2026-09-13 | Profondeur psychologique différée                                                                | Le document maître exige des ancrages et une valeur supplémentaire démontrée                                  |
+| 2026-09-13 | Profondeur psychologique différée — **levée le 24 septembre (D-006, D-010)**                     | Le document maître exige des ancrages et une valeur supplémentaire démontrée                                  |
 | 2026-09-14 | Sol assure la réalisation et le rôle de LLM assisté provisoire                                   | Décision utilisateur ; construire le parcours sans attendre le raccordement automatique                       |
 | 2026-09-14 | Contrat fournisseur commun, import JSON et validation transactionnelle                           | Changer de fournisseur sans réécrire le domaine ni permettre un contournement de la mémoire                   |
 | 2026-09-14 | R2 à R5 évaluables en mode assisté, IA-A obligatoire avant R6                                    | Distinguer analyse réelle assistée, simulation et automatisation sans perdre les exigences d'intégration      |

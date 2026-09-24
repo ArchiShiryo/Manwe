@@ -88,7 +88,9 @@ Mets à jour le parseur strict, le validateur, l'application transactionnelle, `
   - Aucune preuve n'est retirée, aucune annotation n'est touchée.
 - **`propose_question`** (tâches `interpret`, `revise`, `explore`)
   - Payload : `question`, `targets` (au moins 1 hypothèse), `discriminatingInfo`, `whyNow`.
-  - Règles : au plus 1 question `open` par ensemble de sujets. Un doublon est rejeté (`duplicate_question`).
+  - Règles : aucune limite de nombre côté backend (D-010). Un doublon est rejeté (`duplicate_question`).
+
+Dans `COGNITION_V1.md`, remplace les plafonds de la colonne « Restriction » (« au plus deux hypothèses », « au plus une question active », « au plus deux pistes ») par la mention « plafond d'affichage décidé par la vue, pas de refus backend (D-010) ». Pour `propose_direction`, remplace aussi « au plus deux pistes » par « au moins deux pistes, jamais une réponse unique ».
 
 `ContextPacket` inclut désormais, pour le focus : les hypothèses avec leurs preuves, leurs comptages (unités, ancrages), `needs_review` et son motif, les annotations, ainsi que les questions ouvertes **et** récemment closes, pour éviter les relances identiques.
 
