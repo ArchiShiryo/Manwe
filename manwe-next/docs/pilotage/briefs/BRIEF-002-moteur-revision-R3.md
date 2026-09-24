@@ -53,11 +53,11 @@ Fonctions sans effet de bord, chacune avec ses tests unitaires :
 - `independentUnits(evidence, lookup)` : les unités d'indépendance favorables et contraires (D-007).
 - `directAnchorCount(...)` : le nombre d'unités favorables portées par au moins un claim non `inference` et non contesté.
 - `allowedStatus(hypothesis, evidence)` : les statuts autorisés.
-  - `plausible` exige au moins 1 unité ancrée pour `D1`, 2 pour `D2` et `D3`, et 3 pour `D4` et `D5`. Pour `D4`, ces unités doivent aussi porter au moins 2 dates distinctes (répartition dans le temps).
+  - `plausible` exige au moins 1 unité ancrée pour `D1`, 2 pour `D2` et `D3`, et 3 pour `D4` et `D5`. Pour `D4`, ces unités doivent aussi s'étendre sur **au moins 30 jours** entre la première et la dernière (spécification §4.4 : le pattern doit survivre au-delà d'un état transitoire). Ce seuil est une constante nommée, modifiable.
   - `D3` et plus : `plausible` exige aussi qu'une alternative active existe.
   - `plausible` est interdit s'il existe une preuve contraire ajoutée après la dernière révision de l'hypothèse et non encore examinée.
   - `contradicted` exige au moins une preuve contraire ancrée.
-- `maxConfidence(hypothesis, evidence)` : `low` toujours autorisé ; `moderate` à partir de 2 unités ancrées ; `high` à partir de 3 unités ancrées, sur au moins 2 dates, sans preuve contraire non examinée. Une confiance déclarée au-dessus du plafond est rejetée (`confidence_not_supported`).
+- `maxConfidence(hypothesis, evidence)` : `low` toujours autorisé ; `moderate` à partir de 2 unités ancrées ; `high` à partir de 3 unités ancrées, sur au moins 30 jours, sans preuve contraire non examinée. Une confiance déclarée au-dessus du plafond est rejetée (`confidence_not_supported`).
 - `dependentHypotheses(changedRef, graph)` : les hypothèses dont une preuve dépend d'un claim, d'une source ou d'un événement modifié ou annoté.
 - `isDuplicateQuestion(candidate, existing)` : compare le texte normalisé (casse, accents, ponctuation, espaces) et le même ensemble de cibles. Une question `dismissed`, `unknown` ou `answered` ne peut pas être reposée à l'identique.
 
@@ -123,7 +123,7 @@ Pour une question : les trois boutons de T5. Tout doit rester accessible au clav
 4. Une réponse arrivée tardivement (révision de base antérieure à la correction) est rejetée et ne restaure pas la conclusion invalidée.
 5. Trois claims tirés d'un même épisode, ou deux copies d'un même message, comptent pour 1 unité.
 6. Une hypothèse appuyée seulement sur des inférences ne peut pas devenir `plausible`.
-7. Une hypothèse `D4` (par exemple « fonctionnement borderline ») est **acceptée** en `draft` avec 1 épisode, mais `plausible` lui est refusé tant qu'elle n'a pas 3 épisodes indépendants sur 2 dates. Une hypothèse `D3` ou `D4` sans alternative est rejetée. Une confiance `high` avec 1 seul épisode est rejetée.
+7. Une hypothèse `D4` (par exemple « fonctionnement borderline ») est **acceptée** en `draft` avec 1 épisode, mais `plausible` lui est refusé tant qu'elle n'a pas 3 épisodes indépendants étalés sur au moins 30 jours (4 épisodes en 12 jours : refusé). Une hypothèse `D3` ou `D4` sans alternative est rejetée. Une confiance `high` avec 1 seul épisode est rejetée.
 8. Une question identique à une question `dismissed` est rejetée. « Je ne sais pas » ne change rien d'autre.
 9. `revise_hypothesis` qui tente d'ignorer un désaccord est rejeté.
 10. Une erreur au milieu de l'application ne laisse aucune mutation partielle, que ce soit pour une hypothèse, ses preuves ou son drapeau de révision.
