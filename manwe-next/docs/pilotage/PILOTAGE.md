@@ -46,8 +46,8 @@ L'exécutant construit le produit et joue l'analyste. Son jugement ne peut donc 
 
 ## Suivi
 
-| Brief                                                 | Objet                                                                                                                               | Statut                                    |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| [BRIEF-001](./briefs/BRIEF-001-cloture-R2.md)         | Hygiène, contrat 1.1 `modality`, harnais d'évaluation, lot à l'aveugle B01                                                          | Émis le 2026-09-24                        |
-| [BRIEF-002](./briefs/BRIEF-002-moteur-revision-R3.md) | R3 partie 1 : hypothèses, preuves, annotations, questions, contrat 1.2                                                              | Prêt ; à émettre après la revue REVUE-001 |
-| Corpus R3-S01                                         | 10 scénarios à l'aveugle pour le moteur de révision (entrées : `packages/evaluation/fixtures/r3-blind-s01.json`, attentes scellées) | Prêt ; utilisé par le BRIEF-003           |
+| Brief                                                 | Objet                                                                                                                               | Statut                                                                                   |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [BRIEF-001](./briefs/BRIEF-001-cloture-R2.md)         | Hygiène, contrat 1.1 `modality`, harnais d'évaluation, lot à l'aveugle B01                                                          | [REVUE-001](./revues/REVUE-001.md) : accepté avec réserves (lockfile, prompt à corriger) |
+| [BRIEF-002](./briefs/BRIEF-002-moteur-revision-R3.md) | R3 partie 1 : hypothèses, preuves, annotations, questions, contrat 1.2                                                              | Prêt ; à émettre après la revue REVUE-001                                                |
+| Corpus R3-S01                                         | 10 scénarios à l'aveugle pour le moteur de révision (entrées : `packages/evaluation/fixtures/r3-blind-s01.json`, attentes scellées) | Prêt ; utilisé par le BRIEF-003                                                          |
