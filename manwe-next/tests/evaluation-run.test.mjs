@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { randomUUID } from "node:crypto";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -130,6 +136,12 @@ test("le harnais prépare, applique, rejoue et résume mécaniquement un lot", (
       "réponse non JSON conservée telle quelle",
       "utf8",
     );
+
+    // Simule une application sur une autre machine : seules les copies
+    // versionnées dans le dossier du run subsistent.
+    assert.ok(existsSync(join(runDir, "T01", "prepared.sqlite3")));
+    assert.ok(existsSync(join(runDir, "T02", "prepared.sqlite3")));
+    rmSync(qaDir, { recursive: true, force: true });
 
     execute("apply", runDir);
     const applied = JSON.parse(

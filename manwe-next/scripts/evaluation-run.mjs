@@ -1,4 +1,5 @@
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -19,6 +20,9 @@ const PROMPT_PATH = new URL(
 const PROMPT_TEXT = readFileSync(PROMPT_PATH, "utf8");
 const QA_ROOT = resolve(process.cwd(), ".qa");
 const PACKET_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
+// Copie versionnée de la base fictive telle qu'à l'export : permet d'appliquer
+// les réponses sur une autre machine que celle qui a préparé le lot.
+const PREPARED_SNAPSHOT = "prepared.sqlite3";
 
 function usage() {
   console.error(
@@ -123,6 +127,7 @@ function prepare(fixturePath, runDirArgument) {
         expiresAt: new Date(Date.now() + PACKET_LIFETIME_MS).toISOString(),
       });
       writeJson(join(caseDir, "context.json"), packet);
+      store.backup(join(caseDir, PREPARED_SNAPSHOT));
       writeFileSync(
         join(caseDir, "PROMPT.txt"),
         `${PROMPT_TEXT.trimEnd()}\n\n${JSON.stringify(packet, null, 2)}\n`,
@@ -155,6 +160,15 @@ function apply(runDirArgument) {
     if (!existsSync(proposalPath)) continue;
     const context = readJson(join(caseDir, "context.json"));
     const databasePath = join(databaseDir, `${caseId}.sqlite3`);
+    if (!existsSync(databasePath)) {
+      const snapshotPath = join(caseDir, PREPARED_SNAPSHOT);
+      if (!existsSync(snapshotPath))
+        throw new Error(
+          `Base introuvable pour ${caseId} : ni ${databasePath} ni ${snapshotPath}.`,
+        );
+      mkdirSync(databaseDir, { recursive: true });
+      copyFileSync(snapshotPath, databasePath);
+    }
     const raw = readFileSync(proposalPath, "utf8");
     const errors = [];
     let proposal = null;
