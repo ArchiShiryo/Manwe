@@ -148,6 +148,49 @@ function prepare(fixturePath, runDirArgument) {
   console.log(JSON.stringify({ runId, prepared }, null, 2));
 }
 
+const RAW_PROPOSAL = "proposal.raw.json";
+const RETRY_PROPOSAL = "proposal.retry.raw.json";
+
+function attempt(store, proposalPath) {
+  const raw = readFileSync(proposalPath, "utf8");
+  const errors = [];
+  let proposal = null;
+  let preview = null;
+  let applicationResult = null;
+  let replay = null;
+  try {
+    proposal = JSON.parse(raw);
+  } catch (error) {
+    errors.push(normalizeError(error));
+  }
+  if (proposal !== null) {
+    try {
+      preview = store.receiveAnalysis(proposal);
+      errors.push(...preview.errors);
+      if (preview.status === "ready_for_review")
+        applicationResult = store.applyAnalysis(preview.responseId);
+    } catch (error) {
+      errors.push(normalizeError(error));
+    }
+    try {
+      replay = store.receiveAnalysis(proposal);
+    } catch (error) {
+      replay = { replayed: false, error: normalizeError(error) };
+    }
+  }
+  return {
+    file: basename(proposalPath),
+    status:
+      applicationResult?.status ??
+      preview?.status ??
+      (errors.length ? "rejected" : "received"),
+    preview,
+    applicationResult,
+    replay,
+    errors: uniqueErrors(errors),
+  };
+}
+
 function apply(runDirArgument) {
   const runDir = resolve(runDirArgument);
   const runId = runIdentity(runDir);
@@ -156,7 +199,7 @@ function apply(runDirArgument) {
 
   for (const caseId of caseDirectories(runDir)) {
     const caseDir = join(runDir, caseId);
-    const proposalPath = join(caseDir, "proposal.raw.json");
+    const proposalPath = join(caseDir, RAW_PROPOSAL);
     if (!existsSync(proposalPath)) continue;
     const context = readJson(join(caseDir, "context.json"));
     const databasePath = join(databaseDir, `${caseId}.sqlite3`);
@@ -169,42 +212,22 @@ function apply(runDirArgument) {
       mkdirSync(databaseDir, { recursive: true });
       copyFileSync(snapshotPath, databasePath);
     }
-    const raw = readFileSync(proposalPath, "utf8");
-    const errors = [];
-    let proposal = null;
-    let preview = null;
-    let applicationResult = null;
-    let replay = null;
-
-    try {
-      proposal = JSON.parse(raw);
-    } catch (error) {
-      errors.push(normalizeError(error));
-    }
-
     const store = new SqliteMemoryStore(
       databasePath,
       `evaluation-${runId}-${caseId}`,
     );
+    const attempts = [];
     try {
-      if (proposal !== null) {
-        try {
-          preview = store.receiveAnalysis(proposal);
-          errors.push(...preview.errors);
-          if (preview.status === "ready_for_review")
-            applicationResult = store.applyAnalysis(preview.responseId);
-        } catch (error) {
-          errors.push(normalizeError(error));
-        }
-        try {
-          replay = store.receiveAnalysis(proposal);
-        } catch (error) {
-          replay = { replayed: false, error: normalizeError(error) };
-        }
-      }
+      attempts.push(attempt(store, proposalPath));
+      // Une seule nouvelle tentative autorisée par le brief, dans une autre
+      // conversation neuve ; elle n'est jouée que si la première est rejetée.
+      const retryPath = join(caseDir, RETRY_PROPOSAL);
+      if (attempts[0].status === "rejected" && existsSync(retryPath))
+        attempts.push(attempt(store, retryPath));
     } finally {
       store.close();
     }
+    const { preview, applicationResult, replay, errors } = attempts.at(-1);
 
     const reopened = new SqliteMemoryStore(
       databasePath,
@@ -223,10 +246,13 @@ function apply(runDirArgument) {
       caseId,
       requestId: context.requestId,
       responseId: preview?.responseId ?? null,
-      status:
-        applicationResult?.status ??
-        preview?.status ??
-        (errors.length ? "rejected" : persistedAnalysis.status),
+      status: attempts.at(-1).status,
+      proposalFile: attempts.at(-1).file,
+      attempts: attempts.map(({ file, status, errors }) => ({
+        file,
+        status,
+        errorCodes: [...new Set(errors.map((error) => error.code))],
+      })),
       preview,
       applicationResult,
       exactReplay: replay,
@@ -288,10 +314,14 @@ function summary(runDirArgument) {
     const caseDir = join(runDir, caseId);
     const receiptPath = join(caseDir, "receipt.json");
     const receipt = existsSync(receiptPath) ? readJson(receiptPath) : null;
-    const proposal = rawProposalFacts(join(caseDir, "proposal.raw.json"));
+    const proposal = rawProposalFacts(
+      join(caseDir, receipt?.proposalFile ?? RAW_PROPOSAL),
+    );
     return {
       caseId,
       status: receipt?.status ?? "awaiting_response",
+      proposalFile: receipt?.proposalFile ?? null,
+      attempts: receipt?.attempts?.length ?? 0,
       operationCount: proposal.operationCount,
       categories: proposal.categories,
       modalities: proposal.modalities,
@@ -313,15 +343,15 @@ function summary(runDirArgument) {
   writeJson(join(runDir, "results.json"), results);
   const rows = cases.map(
     (entry) =>
-      `| ${entry.caseId} | ${entry.status} | ${entry.operationCount} | ${markdownCell(entry.categories)} | ${markdownCell(entry.modalities)} | ${markdownCell(entry.errorCodes)} |`,
+      `| ${entry.caseId} | ${entry.status} | ${entry.attempts} | ${entry.operationCount} | ${markdownCell(entry.categories)} | ${markdownCell(entry.modalities)} | ${markdownCell(entry.errorCodes)} |`,
   );
   const markdown = [
     `# Résumé mécanique — ${runId}`,
     "",
     "Ce tableau décrit uniquement les sorties et validations enregistrées. Il ne note pas leur justesse.",
     "",
-    "| Cas | Statut | Opérations | Catégories | Modalités | Codes d'erreur |",
-    "| --- | --- | ---: | --- | --- | --- |",
+    "| Cas | Statut | Tentatives | Opérations | Catégories | Modalités | Codes d'erreur |",
+    "| --- | --- | ---: | ---: | --- | --- | --- |",
     ...rows,
     "",
   ].join("\n");

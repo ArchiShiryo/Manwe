@@ -64,6 +64,15 @@ test("le harnais prépare, applique, rejoue et résume mécaniquement un lot", (
             text: "Une réponse volontairement invalide sera associée à ce cas.",
           },
         },
+        {
+          id: "T03",
+          command: {
+            ...baseCommand,
+            idempotencyKey: "evaluation:test:capture:T03",
+            title: "Cas T03",
+            text: "Je vais écrire à Nora ce soir.",
+          },
+        },
       ],
     }),
     "utf8",
@@ -137,6 +146,43 @@ test("le harnais prépare, applique, rejoue et résume mécaniquement un lot", (
       "utf8",
     );
 
+    // T03 : première réponse abîmée par le transport, nouvelle tentative
+    // valide dans une autre conversation.
+    writeFileSync(
+      join(runDir, "T03", "proposal.raw.json"),
+      '{"summary":"coupé :chatgpt-content-reference{index="0"}"}',
+      "utf8",
+    );
+    const retryPacket = JSON.parse(
+      readFileSync(join(runDir, "T03", "context.json"), "utf8"),
+    );
+    const retry = JSON.parse(
+      readFileSync(join(runDir, "T01", "proposal.raw.json"), "utf8"),
+    );
+    for (const field of [
+      "requestId",
+      "workspaceId",
+      "baseRevision",
+      "contextHash",
+    ])
+      retry[field] = retryPacket[field];
+    const retrySource = retryPacket.sources[0];
+    retry.operations[0].payload.text = "L'utilisateur prévoit d'écrire à Nora.";
+    retry.operations[0].payload.citations = [
+      {
+        sourceId: retrySource.sourceId,
+        contentHash: retrySource.contentHash,
+        spanStart: retrySource.spanStart,
+        spanEnd: retrySource.spanEnd,
+        quote: retrySource.text,
+      },
+    ];
+    writeFileSync(
+      join(runDir, "T03", "proposal.retry.raw.json"),
+      JSON.stringify(retry),
+      "utf8",
+    );
+
     // Simule une application sur une autre machine : seules les copies
     // versionnées dans le dossier du run subsistent.
     assert.ok(existsSync(join(runDir, "T01", "prepared.sqlite3")));
@@ -154,6 +200,20 @@ test("le harnais prépare, applique, rejoue et résume mécaniquement un lot", (
     assert.equal(applied.exactReplay.replayed, true);
     assert.equal(applied.persisted.claimCount, 1);
     assert.equal(rejected.status, "rejected");
+    assert.equal(rejected.attempts.length, 1);
+    const retried = JSON.parse(
+      readFileSync(join(runDir, "T03", "receipt.json"), "utf8"),
+    );
+    assert.equal(retried.status, "applied");
+    assert.equal(retried.proposalFile, "proposal.retry.raw.json");
+    assert.deepEqual(
+      retried.attempts.map((entry) => [entry.status, entry.errorCodes]),
+      [
+        ["rejected", ["invalid_json"]],
+        ["applied", []],
+      ],
+    );
+    assert.equal(retried.persisted.claimCount, 1);
     assert.deepEqual(
       rejected.errors.map((error) => error.code),
       ["invalid_json"],
@@ -167,13 +227,15 @@ test("le harnais prépare, applique, rejoue et résume mécaniquement un lot", (
       results.cases.map((entry) => [
         entry.caseId,
         entry.status,
+        entry.attempts,
         entry.operationCount,
         entry.modalities,
         entry.errorCodes,
       ]),
       [
-        ["T01", "applied", 1, ["intended"], []],
-        ["T02", "rejected", 0, [], ["invalid_json"]],
+        ["T01", "applied", 1, 1, ["intended"], []],
+        ["T02", "rejected", 1, 0, [], ["invalid_json"]],
+        ["T03", "applied", 2, 1, ["intended"], []],
       ],
     );
     assert.match(
