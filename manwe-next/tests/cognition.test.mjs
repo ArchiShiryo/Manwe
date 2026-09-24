@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -98,6 +99,29 @@ test("un ContextPacket est figé, sourcé et son empreinte exclut uniquement con
       store.getAnalysis(packet.requestId).status,
       "awaiting_response",
     );
+    store.close();
+  }));
+
+test("chaque demande enregistre l’empreinte du prompt analyst-v2 versionné", () =>
+  withStore((store) => {
+    capturedStore(store, "prompt-hash");
+    const prompt = readFileSync(
+      new URL("../packages/cognition/prompts/analyst-v2.md", import.meta.url),
+      "utf8",
+    );
+    const expectedHash = createHash("sha256")
+      .update(prompt, "utf8")
+      .digest("hex");
+    const requests = [
+      store.prepareAnalysis({ task: "extract" }),
+      store.prepareAnalysis({ task: "extract" }),
+    ];
+    for (const packet of requests) {
+      const journal = store.getAnalysis(packet.requestId);
+      assert.equal(packet.promptVersion, "analyst-v2");
+      assert.equal(journal.promptVersion, "analyst-v2");
+      assert.equal(journal.promptHash, expectedHash);
+    }
     store.close();
   }));
 

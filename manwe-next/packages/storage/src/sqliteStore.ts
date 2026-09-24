@@ -64,6 +64,15 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
+const ANALYST_PROMPT_VERSION = "analyst-v2";
+const ANALYST_PROMPT_HASH = sha256(
+  readFileSync(
+    fileURLToPath(
+      new URL("../../cognition/prompts/analyst-v2.md", import.meta.url),
+    ),
+    "utf8",
+  ),
+);
 
 function parseResult(value: unknown): CommandResult {
   return JSON.parse(String(value)) as CommandResult;
@@ -1221,7 +1230,7 @@ export class SqliteMemoryStore {
       mode,
       providerId,
       task: command.task,
-      promptVersion: "sol-assisted-v1",
+      promptVersion: ANALYST_PROMPT_VERSION,
       focus,
       sources: selectedSources.map((source) => ({
         sourceId: source.id,
@@ -1271,7 +1280,7 @@ export class SqliteMemoryStore {
     };
     this.database
       .prepare(
-        "INSERT INTO analysis_requests(id, workspace_id, base_revision, created_at, expires_at, mode, provider_id, task, prompt_version, context_hash, context_json, allowed_operations_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_response')",
+        "INSERT INTO analysis_requests(id, workspace_id, base_revision, created_at, expires_at, mode, provider_id, task, prompt_version, prompt_hash, context_hash, context_json, allowed_operations_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_response')",
       )
       .run(
         requestId,
@@ -1283,6 +1292,7 @@ export class SqliteMemoryStore {
         providerId,
         command.task,
         packet.promptVersion,
+        ANALYST_PROMPT_HASH,
         packet.contextHash,
         JSON.stringify(packet),
         JSON.stringify(packet.allowedOperations),
@@ -1606,6 +1616,9 @@ export class SqliteMemoryStore {
     return {
       requestId,
       status: String(request.status),
+      promptVersion: String(request.prompt_version),
+      promptHash:
+        request.prompt_hash === null ? null : String(request.prompt_hash),
       packet: JSON.parse(String(request.context_json)) as ContextPacket,
       validatorVersion: COGNITION_VALIDATOR_VERSION,
       responses: responses.map((row) => this.mapAnalysisPreview(row, false)),
