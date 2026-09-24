@@ -1049,6 +1049,18 @@ export class SqliteMemoryStore {
           row.contested_revision == null
             ? null
             : Number(row.contested_revision),
+        citations: (
+          this.database
+            .prepare(
+              "SELECT source_id, span_start, span_end, quote FROM claim_sources WHERE claim_id = ? ORDER BY source_id, span_start",
+            )
+            .all(String(row.id)) as SqlRow[]
+        ).map((citation) => ({
+          sourceId: String(citation.source_id),
+          spanStart: Number(citation.span_start),
+          spanEnd: Number(citation.span_end),
+          quote: String(citation.quote),
+        })),
         revision: Number(row.row_version),
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),

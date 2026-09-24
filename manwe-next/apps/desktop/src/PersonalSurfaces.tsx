@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
   AlertTriangle,
@@ -19,6 +19,8 @@ import {
 import type {
   AnnotationCommand,
   AnnotationType,
+  EntityRef,
+  Hypothesis,
   WorkspaceSnapshot,
 } from "../../../packages/domain/src/memory.ts";
 import type {
@@ -27,12 +29,25 @@ import type {
   ContextPacket,
 } from "../../../packages/cognition/src/contract.ts";
 import { MemoryApiError, memoryApi } from "./memoryApi.ts";
+import analystPrompt from "../../../packages/cognition/prompts/analyst-v3.md?raw";
 import {
   claimModalityLabels,
+  confidenceLabels,
   dateLabel,
+  depthLabels,
   describeOperation,
+  hypothesisStatusLabels,
   informationCategoryLabels,
+  reviewReasonLabels,
 } from "./ui.tsx";
+
+/** Demande d'analyse déclenchée depuis l'inspecteur (réanalyse ciblée). */
+type AnalysisRequest = {
+  task: "extract" | "interpret" | "revise";
+  focus: EntityRef[];
+  label: string;
+  nonce: number;
+};
 
 export function PersonalUnavailable({
   message,
@@ -274,6 +289,8 @@ export function PersonalMemory({
   const [text, setText] = useState("");
   const [annotationType, setAnnotationType] =
     useState<AnnotationType>("context");
+  const [analysisRequest, setAnalysisRequest] =
+    useState<AnalysisRequest | null>(null);
   const close = () => {
     setTarget(null);
     setText("");
@@ -401,7 +418,22 @@ export function PersonalMemory({
         </div>
       )}
       <PersonalClaimInspector snapshot={snapshot} />
+      <PersonalHypothesisInspector
+        snapshot={snapshot}
+        onAnnotate={onAnnotate}
+        onReload={onReload}
+        onNotify={onNotify}
+        onReview={(hypothesis) =>
+          setAnalysisRequest({
+            task: "revise",
+            focus: [{ kind: "hypothesis", id: hypothesis.id }],
+            label: `Réanalyse ciblée : ${hypothesis.statement}`,
+            nonce: Date.now(),
+          })
+        }
+      />
       <AssistedAnalysisPanel
+        request={analysisRequest}
         disabled={snapshot.events.length === 0}
         onReload={onReload}
         onNotify={onNotify}
@@ -436,6 +468,349 @@ function PersonalClaimInspector({ snapshot }: { snapshot: WorkspaceSnapshot }) {
             <p>{claim.text}</p>
           </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function subjectLabel(snapshot: WorkspaceSnapshot, hypothesis: Hypothesis) {
+  return hypothesis.subjects
+    .map((subject) =>
+      subject.kind === "self"
+        ? "toi"
+        : (snapshot.persons.find((person) => person.id === subject.personId)
+            ?.displayName ?? "personne inconnue"),
+    )
+    .join(", ");
+}
+
+function PersonalHypothesisInspector({
+  snapshot,
+  onAnnotate,
+  onReload,
+  onNotify,
+  onReview,
+}: {
+  snapshot: WorkspaceSnapshot;
+  onAnnotate: MemoryProps["onAnnotate"];
+  onReload: () => Promise<void>;
+  onNotify: (message: string) => void;
+  onReview: (hypothesis: Hypothesis) => void;
+}) {
+  const [annotating, setAnnotating] = useState<string | null>(null);
+  const [annotationType, setAnnotationType] =
+    useState<AnnotationType>("disagreement");
+  const [annotationText, setAnnotationText] = useState("");
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const openQuestions = snapshot.questions.filter(
+    (question) => question.status === "open",
+  );
+  if (snapshot.hypotheses.length === 0 && openQuestions.length === 0)
+    return null;
+  const claim = (id: string) => snapshot.claims.find((item) => item.id === id);
+  const source = (id: string) =>
+    snapshot.sources.find((item) => item.id === id);
+  const history = (id: string) =>
+    snapshot.revisions.filter((revision) =>
+      revision.changedRefs.some(
+        (ref) => ref.kind === "hypothesis" && ref.id === id,
+      ),
+    );
+  const commandTypeLabels: Record<string, string> = {
+    "analysis.apply": "analyse appliquée",
+    annotate: "annotation de l’utilisateur",
+    "question.answer": "réponse à une question",
+  };
+
+  const answer = async (
+    questionId: string,
+    choice: "text" | "unknown" | "dismiss",
+  ) => {
+    setBusy(true);
+    setError("");
+    try {
+      await memoryApi.answerQuestion({
+        idempotencyKey: `answer:${questionId}:${Date.now()}`,
+        questionId,
+        choice,
+        text: choice === "text" ? answers[questionId] : undefined,
+      });
+      await onReload();
+      onNotify(
+        choice === "text"
+          ? "Réponse conservée · hypothèses ciblées à réexaminer"
+          : choice === "unknown"
+            ? "« Je ne sais pas » conservé · rien d’autre ne change"
+            : "Question écartée · elle ne sera plus posée",
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "La réponse a échoué.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const annotate = async (hypothesis: Hypothesis) => {
+    if (!annotationText.trim()) return;
+    setBusy(true);
+    setError("");
+    try {
+      await onAnnotate(
+        { kind: "hypothesis", id: hypothesis.id },
+        annotationText.trim(),
+        annotationType,
+      );
+      setAnnotating(null);
+      setAnnotationText("");
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "L’annotation a échoué.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section
+      className="personal-claim-inspector personal-hypothesis-inspector"
+      aria-label="Inspecteur des hypothèses"
+    >
+      <div className="eyebrow">HYPOTHÈSES · QUESTIONS</div>
+      <h2>Ce que MANWË suppose, et pourquoi</h2>
+      {error && <div className="analysis-error">{error}</div>}
+      {openQuestions.map((question) => (
+        <article className="personal-question" key={question.id}>
+          <div className="personal-event-meta">
+            <span>? Question ouverte</span>
+            <time>{dateLabel(question.createdAt, true)}</time>
+          </div>
+          <p>{question.question}</p>
+          {question.discriminatingInfo && (
+            <small>Départage : {question.discriminatingInfo}</small>
+          )}
+          <textarea
+            rows={2}
+            value={answers[question.id] ?? ""}
+            onChange={(event) =>
+              setAnswers({ ...answers, [question.id]: event.target.value })
+            }
+            aria-label={`Réponse à : ${question.question}`}
+            placeholder="Ta réponse, avec tes mots"
+          />
+          <div className="personal-question-actions">
+            <button
+              className="primary-button"
+              disabled={busy || !(answers[question.id] ?? "").trim()}
+              onClick={() => void answer(question.id, "text")}
+            >
+              Répondre
+            </button>
+            <button
+              className="text-button"
+              disabled={busy}
+              onClick={() => void answer(question.id, "unknown")}
+            >
+              Je ne sais pas
+            </button>
+            <button
+              className="text-button"
+              disabled={busy}
+              onClick={() => void answer(question.id, "dismiss")}
+            >
+              Ne plus poser
+            </button>
+          </div>
+        </article>
+      ))}
+      <div className="personal-claim-list">
+        {snapshot.hypotheses.map((hypothesis) => {
+          const alternative = snapshot.hypotheses.find(
+            (item) =>
+              item.id !== hypothesis.id &&
+              (item.id === hypothesis.alternativeTo ||
+                item.alternativeTo === hypothesis.id),
+          );
+          const supports = hypothesis.evidence.filter(
+            (item) => item.stance === "supports",
+          );
+          const contradicts = hypothesis.evidence.filter(
+            (item) => item.stance === "contradicts",
+          );
+          const exploratory =
+            hypothesis.status === "draft" &&
+            (hypothesis.depth === "D4" || hypothesis.depth === "D5");
+          const evidenceList = (items: typeof supports) =>
+            items.map((item) => {
+              const found = claim(item.claimId);
+              if (!found) return null;
+              return (
+                <li key={item.claimId}>
+                  <span className="personal-evidence-meta">
+                    {informationCategoryLabels[found.category]} ·{" "}
+                    {claimModalityLabels[found.modality]}
+                    {found.contestedRevision !== null && " · contesté par toi"}
+                  </span>
+                  <details>
+                    <summary>{found.text}</summary>
+                    {found.citations.map((citation) => (
+                      <blockquote
+                        key={`${citation.sourceId}:${citation.spanStart}`}
+                      >
+                        « {citation.quote} »
+                        <small>
+                          {" "}
+                          — source du{" "}
+                          {dateLabel(
+                            source(citation.sourceId)?.recordedAt ??
+                              found.createdAt,
+                            true,
+                          )}
+                        </small>
+                      </blockquote>
+                    ))}
+                  </details>
+                </li>
+              );
+            });
+          return (
+            <article
+              className="personal-claim personal-hypothesis"
+              key={hypothesis.id}
+            >
+              <div className="personal-event-meta">
+                <span>
+                  {hypothesis.depth} {depthLabels[hypothesis.depth]} ·{" "}
+                  {hypothesisStatusLabels[hypothesis.status]} ·{" "}
+                  {confidenceLabels[hypothesis.confidence]}
+                </span>
+                <span>Sujet : {subjectLabel(snapshot, hypothesis)}</span>
+              </div>
+              <div className="personal-hypothesis-badges">
+                {exploratory && <span className="badge">Exploratoire</span>}
+                {hypothesis.needsReview && (
+                  <span className="badge badge-review">
+                    À réexaminer
+                    {hypothesis.reviewReason &&
+                      ` · ${reviewReasonLabels[hypothesis.reviewReason]}`}
+                  </span>
+                )}
+              </div>
+              <p className="personal-hypothesis-statement">
+                {hypothesis.statement}
+              </p>
+              {(hypothesis.framework || hypothesis.construct) && (
+                <small>
+                  {[hypothesis.construct, hypothesis.framework]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </small>
+              )}
+              <p className="personal-hypothesis-counts">
+                {hypothesis.counts.anchoredSupports} épisode
+                {hypothesis.counts.anchoredSupports > 1 ? "s" : ""} indépendant
+                {hypothesis.counts.anchoredSupports > 1 ? "s" : ""} ancré
+                {hypothesis.counts.anchoredSupports > 1 ? "s" : ""} pour ·{" "}
+                {hypothesis.counts.anchoredContradicts} contre · étendue{" "}
+                {hypothesis.counts.supportSpanDays} jour
+                {hypothesis.counts.supportSpanDays > 1 ? "s" : ""}
+              </p>
+              <div className="personal-evidence">
+                <strong>Pour</strong>
+                <ul>{evidenceList(supports)}</ul>
+                {contradicts.length > 0 && (
+                  <>
+                    <strong>Contre</strong>
+                    <ul>{evidenceList(contradicts)}</ul>
+                  </>
+                )}
+              </div>
+              {alternative && (
+                <p className="personal-hypothesis-alternative">
+                  Alternative : {alternative.statement}
+                </p>
+              )}
+              {hypothesis.limits && (
+                <small>Limites : {hypothesis.limits}</small>
+              )}
+              {hypothesis.revisionConditions && (
+                <small>Ferait réviser : {hypothesis.revisionConditions}</small>
+              )}
+              <details className="personal-hypothesis-history">
+                <summary>Historique</summary>
+                <ul>
+                  {history(hypothesis.id).map((revision) => (
+                    <li key={revision.revision}>
+                      Révision {revision.revision} ·{" "}
+                      {commandTypeLabels[revision.commandType] ??
+                        revision.commandType}{" "}
+                      · {dateLabel(revision.createdAt, true)}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+              <div className="personal-question-actions">
+                {hypothesis.needsReview && (
+                  <button
+                    className="primary-button"
+                    disabled={busy}
+                    onClick={() => onReview(hypothesis)}
+                  >
+                    Préparer la réanalyse
+                  </button>
+                )}
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() =>
+                    setAnnotating(
+                      annotating === hypothesis.id ? null : hypothesis.id,
+                    )
+                  }
+                >
+                  <MessageSquarePlus size={13} /> Réagir
+                </button>
+              </div>
+              {annotating === hypothesis.id && (
+                <div className="personal-hypothesis-annotation">
+                  <select
+                    value={annotationType}
+                    onChange={(event) =>
+                      setAnnotationType(event.target.value as AnnotationType)
+                    }
+                    aria-label="Type de réaction"
+                  >
+                    <option value="disagreement">
+                      Je ne suis pas d’accord
+                    </option>
+                    <option value="context">J’ajoute du contexte</option>
+                    <option value="agreement">
+                      Je suis d’accord (sans valeur de preuve)
+                    </option>
+                    <option value="factual_correction">
+                      Correction factuelle
+                    </option>
+                  </select>
+                  <textarea
+                    rows={2}
+                    value={annotationText}
+                    onChange={(event) => setAnnotationText(event.target.value)}
+                    aria-label="Texte de la réaction"
+                  />
+                  <button
+                    className="primary-button"
+                    disabled={busy || !annotationText.trim()}
+                    onClick={() => void annotate(hypothesis)}
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              )}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
@@ -586,15 +961,19 @@ function PersonalImportPanel({
 }
 
 function AssistedAnalysisPanel({
+  request,
   disabled,
   onReload,
   onNotify,
 }: {
+  request: AnalysisRequest | null;
   disabled: boolean;
   onReload: () => Promise<void>;
   onNotify: (message: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [task, setTask] = useState<"extract" | "interpret">("extract");
+  const [targetLabel, setTargetLabel] = useState("");
   const [busy, setBusy] = useState(false);
   const [packet, setPacket] = useState<ContextPacket | null>(null);
   const [proposalText, setProposalText] = useState("");
@@ -607,14 +986,16 @@ function AssistedAnalysisPanel({
         ? cause.message
         : "L’opération d’analyse a échoué.";
 
-  const prepare = async () => {
+  const prepare = async (targeted?: AnalysisRequest) => {
     setBusy(true);
     setError("");
     try {
       const next = await memoryApi.prepareAnalysis({
-        task: "extract",
+        task: targeted?.task ?? task,
+        focus: targeted?.focus,
         mode: "assisted",
       });
+      setTargetLabel(targeted?.label ?? "");
       setPacket(next);
       setPreview(null);
       setProposalText("");
@@ -626,6 +1007,12 @@ function AssistedAnalysisPanel({
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (request) void prepare(request);
+    // Une nouvelle demande ciblée (nonce) prépare un nouveau paquet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request?.nonce]);
 
   const receive = async () => {
     if (!packet || !proposalText.trim()) return;
@@ -713,13 +1100,29 @@ function AssistedAnalysisPanel({
           </p>
         </div>
         {!open && (
-          <button
-            className="primary-button"
-            disabled={disabled || busy}
-            onClick={() => void prepare()}
-          >
-            Préparer le paquet
-          </button>
+          <div className="analysis-start">
+            <label>
+              <span>Tâche</span>
+              <select
+                value={task}
+                onChange={(event) =>
+                  setTask(event.target.value as "extract" | "interpret")
+                }
+              >
+                <option value="extract">Extraire les faits</option>
+                <option value="interpret">
+                  Interpréter (hypothèses, questions)
+                </option>
+              </select>
+            </label>
+            <button
+              className="primary-button"
+              disabled={disabled || busy}
+              onClick={() => void prepare()}
+            >
+              Préparer le paquet
+            </button>
+          </div>
         )}
       </div>
       {disabled && (
@@ -733,7 +1136,14 @@ function AssistedAnalysisPanel({
             <div>
               <strong>Copier le ContextPacket</strong>
               <p>
-                Révision {packet.baseRevision} · {packet.sources.length} source
+                {targetLabel && (
+                  <>
+                    {targetLabel}
+                    <br />
+                  </>
+                )}
+                Tâche {packet.task} · révision {packet.baseRevision} ·{" "}
+                {packet.sources.length} source
                 {packet.sources.length === 1 ? "" : "s"} · expire le{" "}
                 {dateLabel(packet.expiresAt, true)}
               </p>
@@ -754,6 +1164,23 @@ function AssistedAnalysisPanel({
               >
                 <Copy size={13} /> Copier le JSON
               </button>
+              <button
+                className="text-button"
+                onClick={() => {
+                  void navigator.clipboard
+                    .writeText(
+                      `${analystPrompt.trimEnd()}\n\n${JSON.stringify(packet, null, 2)}\n`,
+                    )
+                    .then(() =>
+                      onNotify(
+                        "Prompt complet copié · à coller comme texte dans une conversation neuve",
+                      ),
+                    )
+                    .catch(() => setError("La copie presse-papiers a échoué."));
+                }}
+              >
+                <Copy size={13} /> Copier le prompt complet
+              </button>
             </div>
           </div>
           <div className="analysis-step">
@@ -767,7 +1194,7 @@ function AssistedAnalysisPanel({
                 value={proposalText}
                 onChange={(event) => setProposalText(event.target.value)}
                 rows={8}
-                placeholder='{"schemaVersion":"1.1", …}'
+                placeholder='{"schemaVersion":"1.2", …}'
                 aria-label="Proposition JSON de Sol"
               />
               <button

@@ -1,5 +1,6 @@
 import type {
   AnnotationCommand,
+  AnswerQuestionCommand,
   CaptureCommand,
   CommandResult,
   GoalCommand,
@@ -150,6 +151,14 @@ class MemoryApi {
       method: "POST",
       body: JSON.stringify(command),
     });
+    return this.snapshot();
+  }
+
+  async answerQuestion(command: AnswerQuestionCommand) {
+    await this.request<CommandResult>(
+      `/api/questions/${encodeURIComponent(command.questionId)}/answer`,
+      { method: "POST", body: JSON.stringify(command) },
+    );
     return this.snapshot();
   }
 

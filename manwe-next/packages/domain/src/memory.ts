@@ -177,6 +177,13 @@ export type Claim = {
   knowledgeStatus: "unresolved" | "supported" | "contradicted" | "superseded";
   /** Révision de la correction factuelle de l'utilisateur ; le claim ne compte plus. */
   contestedRevision: number | null;
+  /** Extraits exacts qui fondent le claim. */
+  citations: Array<{
+    sourceId: string;
+    spanStart: number;
+    spanEnd: number;
+    quote: string;
+  }>;
   validFrom: string | null;
   validTo: string | null;
   revision: number;
