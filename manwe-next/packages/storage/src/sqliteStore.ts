@@ -1204,11 +1204,11 @@ export class SqliteMemoryStore {
     if (
       !Number.isFinite(Date.parse(expiresAt)) ||
       Date.parse(expiresAt) <= Date.parse(createdAt) ||
-      Date.parse(expiresAt) > Date.parse(createdAt) + 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.parse(createdAt) + 7 * 24 * 60 * 60 * 1000
     )
       throw new DomainError(
         "invalid_expiration",
-        "L’expiration doit être future et limitée à 24 heures.",
+        "L’expiration doit être future et limitée à 7 jours.",
       );
     const requestId = randomUUID();
     const focused = new Set(focus.map((ref) => `${ref.kind}:${ref.id}`));
