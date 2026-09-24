@@ -6,18 +6,21 @@
 
 ## Pourquoi ce lot compte
 
-Jusqu'ici, MANWË se souvient. Avec R3, il commence à **interpréter**. C'est l'endroit le plus risqué du produit : une hypothèse sur une personne, affichée avec assurance, peut abîmer une relation réelle. Les futurs utilisateurs, notamment neuroatypiques, auront tendance à s'y fier. Ce lot construit donc d'abord les garde-fous, avant la finesse. Une hypothèse doit toujours :
+Jusqu'ici, MANWË se souvient. Avec R3, il commence à **interpréter**, et cela à toutes les profondeurs : de la surface jusqu'aux formulations psychodynamiques, d'attachement ou de trouble de la personnalité (borderline, narcissique, codépendance…). Nous sommes en développement : le système déduit tout ce qu'il peut déduire. On émondera plus tard, pas maintenant. Sa force tient à ce que chaque déduction reste vérifiable. Une hypothèse doit toujours :
 
 - montrer ce qui l'appuie et ce qui la contredit, jusqu'aux extraits source ;
 - compter ses preuves honnêtement (un même épisode ne vaut qu'une fois) ;
-- rester à sa place : surface ou relation observable, jamais un diagnostic psychologique ;
+- déclarer sa profondeur (D1 à D5) et, le cas échéant, le cadre clinique ou théorique mobilisé ;
+- être confrontée à une explication concurrente dès qu'elle touche aux motifs, à l'attachement ou à la personnalité ;
 - céder devant une correction de l'utilisateur, sans que son simple accord en fasse un fait.
 
 ## Décisions du pilote qui cadrent ce lot
 
 Elles sont inscrites dans [PILOTAGE.md](../PILOTAGE.md), décisions D-006 à D-009. Résumé :
 
-- **D-006 — Profondeur bornée.** Pour tout l'alpha, une hypothèse est de profondeur `D1` (surface : état, contexte, préférence directement soutenue) ou `D2` (schéma relationnel observable : initiative, réciprocité, boucle d'interaction). Les profondeurs `D3` et plus sont rejetées (`depth_not_allowed`). Il n'y a ni psychodynamique, ni attachement, ni trait de personnalité.
+- **D-006 (révisée) — Toutes les profondeurs, avec une exigence de preuve croissante.** Profondeurs de la spécification (§19.0) : `D1` surface, `D2` schéma relationnel, `D3` motifs, besoins, valeurs, attachement, `D4` formulation psychodynamique ou de personnalité (y compris les constructs cliniques : trouble borderline, narcissique, codépendance…), `D5` groupe, champ, planification. **Aucune profondeur n'est refusée.** L'exigence de preuve augmente avec la profondeur (spécification §4.4 à 4.5) :
+  - `D3` et plus : une alternative incompatible est obligatoire (divergence forcée) ;
+  - `D4` : le statut `plausible` exige au moins 3 épisodes indépendants ancrés et répartis dans le temps. En dessous, l'hypothèse existe, est affichée et utilisée comme **exploratoire** (`draft`), mais ne pilote pas encore le conseil.
 - **D-007 — Preuves et indépendance.** Une hypothèse relie des claims existants avec une position `supports` ou `contradicts`. Elle ne cite jamais une autre hypothèse, ce qui empêche les cascades d'inférences par construction. L'unité d'indépendance est l'épisode de l'événement lié à la source du claim. Sans épisode, c'est le `contentHash` de la source : deux copies du même texte comptent une seule fois. Un claim `inference` peut figurer comme preuve, mais ne compte jamais comme **ancrage direct**.
 - **D-008 — Effets des annotations humaines.** Ils sont déterministes et appliqués par le backend, pas par le LLM (voir T3).
 - **D-009 — Organisation du code.** Les règles de révision sont des **fonctions pures** dans `packages/cognition/src/revision.ts`, testables sans SQLite. `sqliteStore.ts` (environ 1 800 lignes) ne doit pas grossir de plus d'environ 200 lignes : les nouveaux accès SQL vont dans un module séparé `packages/storage/src/hypothesisStore.ts` (ou un nom équivalent), composé par le store.
@@ -27,7 +30,9 @@ Elles sont inscrites dans [PILOTAGE.md](../PILOTAGE.md), décisions D-006 à D-0
 ### T1 — Schéma (migration 005)
 
 1. Reconstruis `hypotheses` : SQLite ne permet pas de modifier une contrainte `CHECK`, il faut donc une table neuve, une copie des données et une bascule dans une seule transaction. Colonnes ajoutées :
-   - `depth` (`D1` | `D2`) ;
+   - `depth` (`D1` à `D5`) ;
+   - `framework` (texte nullable : cadre mobilisé, par exemple « psychodynamique », « attachement », « DSM-5 / CIM-11 ») et `construct` (texte nullable : par exemple « fonctionnement borderline », « codépendance ») ;
+   - `confidence` (`low` | `moderate` | `high`), qualitative et plafonnée par le backend selon les preuves (T2) ;
    - `status` (`draft` | `plausible` | `contradicted` | `superseded`) ;
    - `needs_review` (0/1), `review_reason`, `review_since_revision` ;
    - `limits`, `revision_conditions`, `valid_from`, `valid_to` ;
@@ -48,9 +53,11 @@ Fonctions sans effet de bord, chacune avec ses tests unitaires :
 - `independentUnits(evidence, lookup)` : les unités d'indépendance favorables et contraires (D-007).
 - `directAnchorCount(...)` : le nombre d'unités favorables portées par au moins un claim non `inference` et non contesté.
 - `allowedStatus(hypothesis, evidence)` : les statuts autorisés.
-  - `plausible` exige au moins 1 ancrage direct pour `D1`, et au moins 2 unités indépendantes ancrées pour `D2`.
+  - `plausible` exige au moins 1 unité ancrée pour `D1`, 2 pour `D2` et `D3`, et 3 pour `D4` et `D5`. Pour `D4`, ces unités doivent aussi porter au moins 2 dates distinctes (répartition dans le temps).
+  - `D3` et plus : `plausible` exige aussi qu'une alternative active existe.
   - `plausible` est interdit s'il existe une preuve contraire ajoutée après la dernière révision de l'hypothèse et non encore examinée.
   - `contradicted` exige au moins une preuve contraire ancrée.
+- `maxConfidence(hypothesis, evidence)` : `low` toujours autorisé ; `moderate` à partir de 2 unités ancrées ; `high` à partir de 3 unités ancrées, sur au moins 2 dates, sans preuve contraire non examinée. Une confiance déclarée au-dessus du plafond est rejetée (`confidence_not_supported`).
 - `dependentHypotheses(changedRef, graph)` : les hypothèses dont une preuve dépend d'un claim, d'une source ou d'un événement modifié ou annoté.
 - `isDuplicateQuestion(candidate, existing)` : compare le texte normalisé (casse, accents, ponctuation, espaces) et le même ensemble de cibles. Une question `dismissed`, `unknown` ou `answered` ne peut pas être reposée à l'identique.
 
@@ -72,8 +79,8 @@ Le LLM ne peut jamais lever une contestation posée par l'utilisateur. Il peut s
 Mets à jour le parseur strict, le validateur, l'application transactionnelle, `COGNITION_V1.md` (encadré « Changements 1.2 ») et le prompt analyste. Le prompt analyste devient `analyst-v3.md`, qui ajoute les règles R3. Le pilote relira le texte de ce prompt avant le premier usage. `analyst-v2.md` reste inchangé.
 
 - **`propose_hypothesis`** (tâches `interpret` et `revise`)
-  - Payload : `statement`, `depth`, `subjects` (références de personnes), `evidence` (`[{ claim: ref, stance }]`, au moins 1 `supports`), `limits`, `revisionConditions`, `alternativeTo` (référence existante, `proposalKey` ou `null`), `validFrom`/`validTo`.
-  - Règles : au plus 2 hypothèses actives (non `superseded`) par ensemble de sujets, en comptant celles de la proposition. Pour `D2`, une alternative est **obligatoire** (dans la même proposition ou déjà existante), sinon `alternative_required`. Le statut initial est toujours `draft`.
+  - Payload : `statement`, `depth`, `framework`, `construct`, `confidence`, `subjects` (références de personnes), `evidence` (`[{ claim: ref, stance }]`, au moins 1 `supports`), `limits`, `revisionConditions`, `alternativeTo` (référence existante, `proposalKey` ou `null`), `validFrom`/`validTo`.
+  - Règles : aucune limite de nombre côté backend (la vue choisira quoi afficher, R4). À partir de `D3`, une alternative incompatible est **obligatoire** (dans la même proposition ou déjà existante), sinon `alternative_required`. `framework` et `construct` sont obligatoires pour `D4` (`framework_required`). Le statut initial est toujours `draft`, la confiance initiale au plus celle permise par `maxConfidence`.
 - **`revise_hypothesis`** (tâche `revise`)
   - Payload : `target`, `expectedRowVersion`, `status`, `addEvidence`, `rationale`.
   - Le backend vérifie `allowedStatus`, sinon `status_not_allowed`. Une version obsolète donne `stale_object`.
@@ -97,7 +104,7 @@ Mets à jour le parseur strict, le validateur, l'application transactionnelle, `
 
 Dans l'espace personnel, l'inspecteur d'une hypothèse affiche :
 
-- l'énoncé, la profondeur (en clair : « surface » ou « schéma relationnel ») et le statut ;
+- l'énoncé, la profondeur en clair (« surface », « schéma relationnel », « motifs / attachement », « personnalité / psychodynamique », « groupe / champ »), le cadre et le construct éventuels, la confiance et le statut ; une hypothèse `draft` de profondeur D4 est marquée **« Exploratoire »** ;
 - le badge **« À réexaminer »** avec son motif ;
 - les preuves **pour** et **contre**, chacune avec son extrait source cliquable et sa catégorie ou modalité ;
 - le nombre d'épisodes indépendants et d'ancrages directs ;
@@ -114,7 +121,7 @@ Pour une question : les trois boutons de T5. Tout doit rester accessible au clav
 4. Une réponse arrivée tardivement (révision de base antérieure à la correction) est rejetée et ne restaure pas la conclusion invalidée.
 5. Trois claims tirés d'un même épisode, ou deux copies d'un même message, comptent pour 1 unité.
 6. Une hypothèse appuyée seulement sur des inférences ne peut pas devenir `plausible`.
-7. `D3` est rejeté. Une hypothèse `D2` sans alternative est rejetée. Une troisième hypothèse active est rejetée.
+7. Une hypothèse `D4` (par exemple « fonctionnement borderline ») est **acceptée** en `draft` avec 1 épisode, mais `plausible` lui est refusé tant qu'elle n'a pas 3 épisodes indépendants sur 2 dates. Une hypothèse `D3` ou `D4` sans alternative est rejetée. Une confiance `high` avec 1 seul épisode est rejetée.
 8. Une question identique à une question `dismissed` est rejetée. « Je ne sais pas » ne change rien d'autre.
 9. `revise_hypothesis` qui tente d'ignorer un désaccord est rejeté.
 10. Une erreur au milieu de l'application ne laisse aucune mutation partielle, que ce soit pour une hypothèse, ses preuves ou son drapeau de révision.
@@ -123,7 +130,7 @@ Pour une question : les trois boutons de T5. Tout doit rester accessible au clav
 
 - La passe critique ciblée (R3.4) et l'évaluation à l'aveugle de R3 : ce sera le BRIEF-003, et le pilote prépare le corpus.
 - Le graphe (R4), les objectifs et directions (R5), Tauri, le fournisseur automatique.
-- Toute profondeur au-delà de D2 et tout score de confiance chiffré. La spécification l'interdit : un score « décoratif » ne doit pas exister.
+- Le modèle d'intervention du conseiller (Counselor) et son seuil d'action : c'est un lot ultérieur. Ce lot produit les hypothèses, il n'agit pas.
 
 ## Contraintes
 
