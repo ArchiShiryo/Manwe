@@ -30,6 +30,7 @@ import { MemoryApiError, memoryApi } from "./memoryApi.ts";
 import {
   claimModalityLabels,
   dateLabel,
+  describeOperation,
   informationCategoryLabels,
 } from "./ui.tsx";
 
@@ -794,19 +795,19 @@ function AssistedAnalysisPanel({
                 <span>Inférence : indisponible</span>
                 <span>Usage / coût : indisponibles</span>
               </div>
-              {preview.operations.map((operation) => (
-                <article key={operation.key}>
-                  <strong>{operation.kind.replace("propose_", "")}</strong>
-                  <span className="analysis-operation-classification">
-                    {informationCategoryLabels[operation.payload.category]} ·{" "}
-                    {operation.kind === "propose_claim"
-                      ? claimModalityLabels[operation.payload.modality]
-                      : claimModalityLabels.actual}
-                  </span>
-                  <p>{operation.payload.text}</p>
-                  <small>{operation.rationale}</small>
-                </article>
-              ))}
+              {preview.operations.map((operation) => {
+                const described = describeOperation(operation);
+                return (
+                  <article key={operation.key}>
+                    <strong>{described.label}</strong>
+                    <span className="analysis-operation-classification">
+                      {described.classification}
+                    </span>
+                    <p>{described.text}</p>
+                    <small>{operation.rationale}</small>
+                  </article>
+                );
+              })}
               {preview.errors.map((item) => (
                 <div className="analysis-error" key={item.code}>
                   {item.code} · {item.message}

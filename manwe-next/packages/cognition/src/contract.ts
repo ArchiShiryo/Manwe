@@ -7,8 +7,8 @@ import {
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.1" as const;
-export const COGNITION_VALIDATOR_VERSION = "1.1.0" as const;
+export const COGNITION_SCHEMA_VERSION = "1.2" as const;
+export const COGNITION_VALIDATOR_VERSION = "1.2.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;
 
@@ -25,7 +25,85 @@ export type AnalysisStatus =
   | "cancelled"
   | "expired";
 
-export type CognitiveOperationKind = "propose_event" | "propose_claim";
+export type CognitiveOperationKind =
+  | "propose_event"
+  | "propose_claim"
+  | "propose_hypothesis"
+  | "revise_hypothesis"
+  | "propose_question";
+
+export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
+  "propose_event",
+  "propose_claim",
+  "propose_hypothesis",
+  "revise_hypothesis",
+  "propose_question",
+];
+
+/** Opérations proposées par défaut selon la tâche (contrat 1.2). */
+export const DEFAULT_OPERATIONS: Record<
+  AnalysisTask,
+  CognitiveOperationKind[]
+> = {
+  extract: ["propose_event", "propose_claim"],
+  interpret: [
+    "propose_event",
+    "propose_claim",
+    "propose_hypothesis",
+    "propose_question",
+  ],
+  revise: [
+    "propose_claim",
+    "propose_hypothesis",
+    "revise_hypothesis",
+    "propose_question",
+  ],
+  explore: ["propose_question"],
+};
+
+/** Référence à un objet existant, ou à une opération de la même proposition. */
+export type LocalRef = { proposalKey: string };
+export type TargetRef = EntityRef | LocalRef;
+
+export type HypothesisSubjectInput =
+  | { person: EntityRef }
+  | { mention: string }
+  | { self: true };
+
+export type EvidenceInput = {
+  claim: TargetRef;
+  stance: "supports" | "contradicts";
+};
+
+type HypothesisPayload = {
+  statement: string;
+  depth: "D1" | "D2" | "D3" | "D4" | "D5";
+  framework: string | null;
+  construct: string | null;
+  confidence: "low" | "moderate" | "high";
+  subjects: HypothesisSubjectInput[];
+  evidence: EvidenceInput[];
+  limits: string;
+  revisionConditions: string;
+  alternativeTo: TargetRef | null;
+  validFrom: string | null;
+  validTo: string | null;
+};
+
+type RevisePayload = {
+  target: EntityRef;
+  expectedRowVersion: number;
+  status: "draft" | "plausible" | "contradicted" | "superseded";
+  confidence: "low" | "moderate" | "high";
+  addEvidence: EvidenceInput[];
+};
+
+type QuestionPayload = {
+  question: string;
+  targets: TargetRef[];
+  discriminatingInfo: string;
+  whyNow: string;
+};
 
 export type SourceCitation = {
   sourceId: string;
@@ -66,6 +144,24 @@ export type CognitiveOperation =
       key: string;
       kind: "propose_event";
       payload: EventPayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_hypothesis";
+      payload: HypothesisPayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "revise_hypothesis";
+      payload: RevisePayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_question";
+      payload: QuestionPayload;
       rationale: string;
     };
 
@@ -294,6 +390,243 @@ const precisions: TemporalPrecision[] = [
   "unknown",
 ];
 
+function targetRef(value: unknown, name: string): TargetRef {
+  const input = object(value, name);
+  if ("proposalKey" in input) {
+    exactKeys(input, ["proposalKey"], name);
+    return { proposalKey: text(input.proposalKey, `${name}.proposalKey`, 80) };
+  }
+  return reference(input);
+}
+
+function oneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  code: string,
+  message: string,
+): T {
+  if (!allowed.includes(value as T)) throw new DomainError(code, message);
+  return value as T;
+}
+
+function textOrNull(value: unknown, name: string, maximum: number) {
+  return value === null ? null : text(value, name, maximum);
+}
+
+function evidenceList(value: unknown, name: string): EvidenceInput[] {
+  if (!Array.isArray(value) || value.length > 50)
+    throw new DomainError(
+      "invalid_evidence",
+      `${name} doit être une liste de 0 à 50 preuves.`,
+    );
+  return value.map((item) => {
+    const input = object(item, name);
+    exactKeys(input, ["claim", "stance"], name);
+    return {
+      claim: targetRef(input.claim, `${name}.claim`),
+      stance: oneOf(
+        input.stance,
+        ["supports", "contradicts"] as const,
+        "invalid_evidence",
+        "stance doit valoir supports ou contradicts.",
+      ),
+    };
+  });
+}
+
+const depths = ["D1", "D2", "D3", "D4", "D5"] as const;
+const confidences = ["low", "moderate", "high"] as const;
+const hypothesisStatuses = [
+  "draft",
+  "plausible",
+  "contradicted",
+  "superseded",
+] as const;
+
+function subjectInput(value: unknown): HypothesisSubjectInput {
+  const input = object(value, "subject");
+  const keys = Object.keys(input);
+  if (keys.length !== 1)
+    throw new DomainError(
+      "invalid_subject",
+      "Un sujet est { person }, { mention } ou { self: true }.",
+    );
+  if ("person" in input) {
+    const person = reference(input.person);
+    if (person.kind !== "person")
+      throw new DomainError(
+        "invalid_subject",
+        "Le sujet doit être une personne.",
+      );
+    return { person };
+  }
+  if ("mention" in input)
+    return { mention: text(input.mention, "subject.mention", 120) };
+  if ("self" in input && input.self === true) return { self: true };
+  throw new DomainError(
+    "invalid_subject",
+    "Un sujet est { person }, { mention } ou { self: true }.",
+  );
+}
+
+function hypothesisOperation(
+  key: string,
+  rationale: string,
+  payload: Record<string, unknown>,
+): CognitiveOperation {
+  exactKeys(
+    payload,
+    [
+      "statement",
+      "depth",
+      "framework",
+      "construct",
+      "confidence",
+      "subjects",
+      "evidence",
+      "limits",
+      "revisionConditions",
+      "alternativeTo",
+      "validFrom",
+      "validTo",
+    ],
+    "propose_hypothesis.payload",
+  );
+  if (!Array.isArray(payload.subjects) || payload.subjects.length === 0)
+    throw new DomainError(
+      "invalid_subject",
+      "Une hypothèse exige au moins un sujet.",
+    );
+  const evidence = evidenceList(payload.evidence, "hypothesis.evidence");
+  if (!evidence.some((item) => item.stance === "supports"))
+    throw new DomainError(
+      "invalid_evidence",
+      "Une hypothèse exige au moins une preuve favorable.",
+    );
+  return {
+    key,
+    kind: "propose_hypothesis",
+    rationale,
+    payload: {
+      statement: text(payload.statement, "hypothesis.statement", 2_000),
+      depth: oneOf(
+        payload.depth,
+        depths,
+        "invalid_depth",
+        "Profondeur inconnue.",
+      ),
+      framework: textOrNull(payload.framework, "hypothesis.framework", 240),
+      construct: textOrNull(payload.construct, "hypothesis.construct", 240),
+      confidence: oneOf(
+        payload.confidence,
+        confidences,
+        "invalid_confidence",
+        "Confiance inconnue.",
+      ),
+      subjects: payload.subjects.map(subjectInput),
+      evidence,
+      limits: text(payload.limits, "hypothesis.limits", 2_000),
+      revisionConditions: text(
+        payload.revisionConditions,
+        "hypothesis.revisionConditions",
+        2_000,
+      ),
+      alternativeTo:
+        payload.alternativeTo === null
+          ? null
+          : targetRef(payload.alternativeTo, "hypothesis.alternativeTo"),
+      validFrom: dateOrNull(payload.validFrom, "hypothesis.validFrom"),
+      validTo: dateOrNull(payload.validTo, "hypothesis.validTo"),
+    },
+  };
+}
+
+function reviseOperation(
+  key: string,
+  rationale: string,
+  payload: Record<string, unknown>,
+): CognitiveOperation {
+  exactKeys(
+    payload,
+    ["target", "expectedRowVersion", "status", "confidence", "addEvidence"],
+    "revise_hypothesis.payload",
+  );
+  const target = reference(payload.target);
+  if (target.kind !== "hypothesis")
+    throw new DomainError(
+      "invalid_reference",
+      "revise_hypothesis vise une hypothèse existante.",
+    );
+  if (
+    !Number.isInteger(payload.expectedRowVersion) ||
+    Number(payload.expectedRowVersion) < 1
+  )
+    throw new DomainError(
+      "invalid_proposal",
+      "expectedRowVersion doit être un entier positif.",
+    );
+  return {
+    key,
+    kind: "revise_hypothesis",
+    rationale,
+    payload: {
+      target,
+      expectedRowVersion: Number(payload.expectedRowVersion),
+      status: oneOf(
+        payload.status,
+        hypothesisStatuses,
+        "invalid_status",
+        "Statut d’hypothèse inconnu.",
+      ),
+      confidence: oneOf(
+        payload.confidence,
+        confidences,
+        "invalid_confidence",
+        "Confiance inconnue.",
+      ),
+      addEvidence: evidenceList(payload.addEvidence, "revise.addEvidence"),
+    },
+  };
+}
+
+function questionOperation(
+  key: string,
+  rationale: string,
+  payload: Record<string, unknown>,
+): CognitiveOperation {
+  exactKeys(
+    payload,
+    ["question", "targets", "discriminatingInfo", "whyNow"],
+    "propose_question.payload",
+  );
+  if (
+    !Array.isArray(payload.targets) ||
+    payload.targets.length === 0 ||
+    payload.targets.length > 10
+  )
+    throw new DomainError(
+      "invalid_question",
+      "Une question cible entre 1 et 10 hypothèses.",
+    );
+  return {
+    key,
+    kind: "propose_question",
+    rationale,
+    payload: {
+      question: text(payload.question, "question.question", 500),
+      targets: payload.targets.map((item) =>
+        targetRef(item, "question.targets"),
+      ),
+      discriminatingInfo: text(
+        payload.discriminatingInfo,
+        "question.discriminatingInfo",
+        1_000,
+      ),
+      whyNow: text(payload.whyNow, "question.whyNow", 1_000),
+    },
+  };
+}
+
 function operation(value: unknown): CognitiveOperation {
   const input = object(value, "operation");
   exactKeys(input, ["key", "kind", "payload", "rationale"], "operation");
@@ -383,6 +716,12 @@ function operation(value: unknown): CognitiveOperation {
       },
     };
   }
+  if (input.kind === "propose_hypothesis")
+    return hypothesisOperation(key, rationale, payload);
+  if (input.kind === "revise_hypothesis")
+    return reviseOperation(key, rationale, payload);
+  if (input.kind === "propose_question")
+    return questionOperation(key, rationale, payload);
   throw new DomainError(
     "operation_not_allowed",
     "Opération cognitive inconnue.",
@@ -519,16 +858,19 @@ export function parsePrepareAnalysisCommand(
   const focus = input.focus ?? [];
   if (!Array.isArray(focus))
     throw new DomainError("invalid_focus", "focus doit être une liste.");
-  const allowed = input.allowedOperations ?? ["propose_event", "propose_claim"];
+  const allowed =
+    input.allowedOperations ?? DEFAULT_OPERATIONS[input.task as AnalysisTask];
   if (!Array.isArray(allowed))
     throw new DomainError(
       "invalid_allowed_operations",
       "allowedOperations doit être une liste.",
     );
-  const known: CognitiveOperationKind[] = ["propose_event", "propose_claim"];
   if (
     allowed.length === 0 ||
-    allowed.some((kind) => !known.includes(kind as CognitiveOperationKind))
+    allowed.some(
+      (kind) =>
+        !COGNITIVE_OPERATION_KINDS.includes(kind as CognitiveOperationKind),
+    )
   )
     throw new DomainError(
       "invalid_allowed_operations",

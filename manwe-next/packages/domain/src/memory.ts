@@ -110,11 +110,45 @@ export type Episode = {
   updatedAt: string;
 };
 
+export type HypothesisSubject =
+  | { kind: "person"; personId: string }
+  | { kind: "self" };
+
+export type HypothesisEvidence = {
+  claimId: string;
+  stance: "supports" | "contradicts";
+  addedRevision: number;
+  supersededRevision: number | null;
+};
+
 export type Hypothesis = {
   id: string;
   workspaceId: string;
   statement: string;
-  status: "draft" | "plausible" | "review" | "superseded";
+  depth: "D1" | "D2" | "D3" | "D4" | "D5";
+  framework: string | null;
+  construct: string | null;
+  confidence: "low" | "moderate" | "high";
+  status: "draft" | "plausible" | "contradicted" | "superseded";
+  needsReview: boolean;
+  reviewReason: "correction" | "context" | "disagreement" | "answer" | null;
+  reviewSinceRevision: number | null;
+  limits: string | null;
+  revisionConditions: string | null;
+  validFrom: string | null;
+  validTo: string | null;
+  alternativeTo: string | null;
+  subjects: HypothesisSubject[];
+  evidence: HypothesisEvidence[];
+  /** Comptages calculés par le backend (D-007), jamais déclarés par le modèle. */
+  counts: {
+    supportUnits: number;
+    contradictUnits: number;
+    anchoredSupports: number;
+    anchoredContradicts: number;
+    supportSpanDays: number;
+  };
+  createdRevision: number;
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -124,7 +158,11 @@ export type OpenQuestion = {
   id: string;
   workspaceId: string;
   question: string;
-  status: "open" | "answered" | "dismissed";
+  status: "open" | "answered" | "unknown" | "dismissed";
+  targets: EntityRef[];
+  discriminatingInfo: string | null;
+  whyNow: string | null;
+  answerSourceId: string | null;
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -137,6 +175,8 @@ export type Claim = {
   category: Exclude<InformationCategory, "unclassified_note">;
   modality: ClaimModality;
   knowledgeStatus: "unresolved" | "supported" | "contradicted" | "superseded";
+  /** Révision de la correction factuelle de l'utilisateur ; le claim ne compte plus. */
+  contestedRevision: number | null;
   validFrom: string | null;
   validTo: string | null;
   revision: number;
@@ -152,7 +192,8 @@ export type RevisionEntry = {
     | "identity.resolve"
     | "annotate"
     | "goal.update"
-    | "analysis.apply";
+    | "analysis.apply"
+    | "question.answer";
   changedRefs: EntityRef[];
   createdAt: string;
 };

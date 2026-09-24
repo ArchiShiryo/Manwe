@@ -46,7 +46,10 @@ import {
   type ContextPacket,
   type PrepareAnalysisCommand,
   type SourceCitation,
+  COGNITIVE_OPERATION_KINDS,
+  DEFAULT_OPERATIONS,
 } from "../../cognition/src/contract.ts";
+import { HypothesisStore, type OperationContext } from "./hypothesisStore.ts";
 
 type SqlRow = Record<string, unknown>;
 
@@ -81,6 +84,7 @@ function parseResult(value: unknown): CommandResult {
 export class SqliteMemoryStore {
   private readonly database: DatabaseSync;
   private readonly workspaceId: string;
+  private readonly hypotheses: HypothesisStore;
 
   constructor(
     databasePath: string,
@@ -125,6 +129,16 @@ export class SqliteMemoryStore {
       );
       this.database.exec(readFileSync(modalityMigrationPath, "utf8"));
     }
+    const revisionMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 5")
+      .get();
+    if (!revisionMigration) {
+      const revisionMigrationPath = fileURLToPath(
+        new URL("./migrations/005_revision_engine.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(revisionMigrationPath, "utf8"));
+    }
+    this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
     this.database
       .prepare(
@@ -171,6 +185,16 @@ export class SqliteMemoryStore {
     } catch (error) {
       this.database.exec("ROLLBACK");
       throw error;
+    }
+  }
+
+  /** Exécute des écritures pour les valider, puis annule tout. */
+  private dryRun(operation: () => unknown) {
+    this.database.exec("BEGIN IMMEDIATE");
+    try {
+      operation();
+    } finally {
+      this.database.exec("ROLLBACK");
     }
   }
 
@@ -717,6 +741,12 @@ export class SqliteMemoryStore {
       const changed: EntityRef[] = [
         command.target,
         { kind: "annotation", id: annotationId },
+        ...this.hypotheses.onAnnotation(
+          command.target,
+          command.annotationType,
+          nextRevision,
+          timestamp,
+        ),
       ];
       const revision = this.advanceRevision("annotate", changed, timestamp);
       const result: CommandResult = {
@@ -904,6 +934,10 @@ export class SqliteMemoryStore {
         ) as Claim["knowledgeStatus"],
         validFrom: row.valid_from === null ? null : String(row.valid_from),
         validTo: row.valid_to === null ? null : String(row.valid_to),
+        contestedRevision:
+          row.contested_revision == null
+            ? null
+            : Number(row.contested_revision),
         revision: Number(row.row_version),
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
@@ -935,24 +969,8 @@ export class SqliteMemoryStore {
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
       })),
-      hypotheses: hypotheses.map((row) => ({
-        id: String(row.id),
-        workspaceId: String(row.workspace_id),
-        statement: String(row.statement),
-        status: String(row.status) as Hypothesis["status"],
-        revision: Number(row.row_version),
-        createdAt: String(row.created_at),
-        updatedAt: String(row.updated_at),
-      })),
-      questions: questions.map((row) => ({
-        id: String(row.id),
-        workspaceId: String(row.workspace_id),
-        question: String(row.question),
-        status: String(row.status) as OpenQuestion["status"],
-        revision: Number(row.row_version),
-        createdAt: String(row.created_at),
-        updatedAt: String(row.updated_at),
-      })),
+      hypotheses: hypotheses.map((row) => this.hypotheses.mapHypothesis(row)),
+      questions: questions.map((row) => this.hypotheses.mapQuestion(row)),
       identityAmbiguities: identityAmbiguities.map((row) => ({
         id: String(row.id),
         workspaceId: String(row.workspace_id),
@@ -1052,17 +1070,11 @@ export class SqliteMemoryStore {
         "invalid_analysis_task",
         "Tâche d’analyse inconnue.",
       );
-    const allowed = command.allowedOperations ?? [
-      "propose_event",
-      "propose_claim",
-    ];
-    const knownOperations: CognitiveOperationKind[] = [
-      "propose_event",
-      "propose_claim",
-    ];
+    const allowed =
+      command.allowedOperations ?? DEFAULT_OPERATIONS[command.task];
     if (
       allowed.length === 0 ||
-      allowed.some((kind) => !knownOperations.includes(kind))
+      allowed.some((kind) => !COGNITIVE_OPERATION_KINDS.includes(kind))
     )
       throw new DomainError(
         "invalid_allowed_operations",
@@ -1107,6 +1119,18 @@ export class SqliteMemoryStore {
         );
 
     const sourceIds = new Set<string>();
+    const focusHypothesisIds = new Set(
+      focus.filter((ref) => ref.kind === "hypothesis").map((ref) => ref.id),
+    );
+    const hypothesisContext = this.hypotheses.contextFor(
+      new Set(),
+      focusHypothesisIds,
+    );
+    for (const claimId of hypothesisContext.evidenceClaimIds)
+      for (const row of this.database
+        .prepare("SELECT source_id FROM claim_sources WHERE claim_id = ?")
+        .all(claimId) as SqlRow[])
+        sourceIds.add(String(row.source_id));
     for (const ref of focus) {
       if (ref.kind === "source") sourceIds.add(ref.id);
       if (ref.kind === "event") {
@@ -1188,15 +1212,37 @@ export class SqliteMemoryStore {
         .all(event.id) as SqlRow[];
       for (const row of rows) selectedPersonIds.add(String(row.person_id));
     }
-    const selectedClaimIds = new Set(
-      focus.filter((ref) => ref.kind === "claim").map((ref) => ref.id),
-    );
+    const selectedClaimIds = new Set([
+      ...focus.filter((ref) => ref.kind === "claim").map((ref) => ref.id),
+      ...hypothesisContext.evidenceClaimIds,
+    ]);
     for (const sourceId of sourceIds) {
       const rows = this.database
         .prepare("SELECT claim_id FROM claim_sources WHERE source_id = ?")
         .all(sourceId) as SqlRow[];
       for (const row of rows) selectedClaimIds.add(String(row.claim_id));
     }
+    const packetHypotheses = this.hypotheses.contextFor(
+      selectedClaimIds,
+      focusHypothesisIds,
+    );
+    for (const claimId of packetHypotheses.evidenceClaimIds) {
+      if (selectedClaimIds.has(claimId)) continue;
+      selectedClaimIds.add(claimId);
+      for (const row of this.database
+        .prepare("SELECT source_id FROM claim_sources WHERE claim_id = ?")
+        .all(claimId) as SqlRow[])
+        if (!sourceIds.has(String(row.source_id))) {
+          sourceIds.add(String(row.source_id));
+          const source = snapshot.sources.find(
+            (item) => item.id === String(row.source_id),
+          );
+          if (source) selectedSources.push(source);
+        }
+    }
+    for (const hypothesis of packetHypotheses.hypotheses)
+      for (const subject of hypothesis.subjects)
+        if (subject.kind === "person") selectedPersonIds.add(subject.personId);
     const createdAt = nowIso();
     const expiresAt =
       command.expiresAt ??
@@ -1219,6 +1265,8 @@ export class SqliteMemoryStore {
       ...[...selectedPersonIds].map((id) => `person:${id}`),
       ...[...selectedEpisodeIds].map((id) => `episode:${id}`),
       ...[...selectedClaimIds].map((id) => `claim:${id}`),
+      ...packetHypotheses.hypotheses.map((item) => `hypothesis:${item.id}`),
+      ...packetHypotheses.questions.map((item) => `question:${item.id}`),
     ]);
     const packetWithoutHash: Omit<ContextPacket, "contextHash"> = {
       schemaVersion: COGNITION_SCHEMA_VERSION,
@@ -1251,21 +1299,15 @@ export class SqliteMemoryStore {
         selectedEpisodeIds.has(episode.id),
       ),
       claims: snapshot.claims.filter((claim) => selectedClaimIds.has(claim.id)),
-      hypotheses: snapshot.hypotheses.filter((hypothesis) =>
-        focused.has(`hypothesis:${hypothesis.id}`),
-      ),
+      hypotheses: packetHypotheses.hypotheses,
       annotations: snapshot.annotations.filter((annotation) =>
         relevant.has(`${annotation.target.kind}:${annotation.target.id}`),
       ),
-      questions: snapshot.questions.filter((question) =>
-        focused.has(`question:${question.id}`),
-      ),
+      questions: packetHypotheses.questions,
       goals: snapshot.goals.filter((goal) => focused.has(`goal:${goal.id}`)),
       coverage: {
         included: [...sourceIds],
-        omissions: snapshot.hypotheses.length
-          ? ["Les arêtes hypothèse-preuve seront ajoutées au schéma R3."]
-          : [],
+        omissions: [],
         truncated: false,
       },
       allowedOperations: [...new Set(allowed)],
@@ -1376,6 +1418,7 @@ export class SqliteMemoryStore {
         );
       const packet = JSON.parse(String(request.context_json)) as ContextPacket;
       this.validateCitations(proposal.operations, packet);
+      this.dryRun(() => this.applyOperations(proposal, packet, receivedAt));
       const status =
         proposal.outcome === "needs_context"
           ? "needs_context"
@@ -1493,68 +1536,19 @@ export class SqliteMemoryStore {
           409,
         );
       const timestamp = nowIso();
-      const created: EntityRef[] = [];
-      if (proposal.outcome === "proposed") {
-        for (const operation of proposal.operations) {
-          if (operation.kind === "propose_claim") {
-            const id = randomUUID();
-            this.database
-              .prepare(
-                "INSERT INTO claims(id, workspace_id, text, category, modality, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
-              )
-              .run(
-                id,
-                this.workspaceId,
-                operation.payload.text,
-                operation.payload.category,
-                operation.payload.modality,
-                operation.payload.validFrom,
-                operation.payload.validTo,
-                timestamp,
-                timestamp,
-              );
-            for (const source of operation.payload.citations)
-              this.database
-                .prepare(
-                  "INSERT INTO claim_sources(claim_id, source_id, span_start, span_end, quote) VALUES (?, ?, ?, ?, ?)",
-                )
-                .run(
-                  id,
-                  source.sourceId,
-                  source.spanStart,
-                  source.spanEnd,
-                  source.quote,
-                );
-            created.push({ kind: "claim", id });
-          }
-          if (operation.kind === "propose_event") {
-            const id = randomUUID();
-            this.database
-              .prepare(
-                "INSERT INTO events(id, workspace_id, title, text, category, source_id, episode_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 1, ?, ?)",
-              )
-              .run(
-                id,
-                this.workspaceId,
-                operation.payload.title,
-                operation.payload.text,
-                operation.payload.category,
-                operation.payload.citations[0].sourceId,
-                operation.payload.occurredStart,
-                operation.payload.occurredEnd,
-                operation.payload.temporalPrecision,
-                operation.payload.context,
-                timestamp,
-                timestamp,
-              );
-            created.push({ kind: "event", id });
-          }
-        }
-      }
-      const resultRevision = created.length
-        ? this.advanceRevision("analysis.apply", created, timestamp)
+      const packet = JSON.parse(
+        String(lockedRequest.context_json),
+      ) as ContextPacket;
+      const { created, changed } = this.applyOperations(
+        proposal,
+        packet,
+        timestamp,
+      );
+      const touched = [...created, ...changed];
+      const resultRevision = touched.length
+        ? this.advanceRevision("analysis.apply", touched, timestamp)
         : this.revision;
-      const status = created.length ? "applied" : "no_change";
+      const status = touched.length ? "applied" : "no_change";
       const result: ApplicationResult = {
         requestId: proposal.requestId,
         responseId,
@@ -1562,7 +1556,7 @@ export class SqliteMemoryStore {
         baseRevision: proposal.baseRevision,
         resultRevision,
         createdIds: created,
-        changedIds: created,
+        changedIds: touched,
         warnings: [],
         errors: [],
         replayed: false,
@@ -1579,6 +1573,107 @@ export class SqliteMemoryStore {
         .run(status, responseId, proposal.requestId);
       return result;
     });
+  }
+
+  /**
+   * Applique les opérations d'une proposition dans la transaction courante.
+   * Ordre fixe : faits (événements, claims), hypothèses, révisions, questions ;
+   * puis contrôles différés (alternatives, statuts, confiance). Utilisé aussi
+   * à blanc à la réception pour que l'aperçu reflète les refus du moteur.
+   */
+  private applyOperations(
+    proposal: CognitiveProposal,
+    packet: ContextPacket,
+    timestamp: string,
+  ) {
+    const created: EntityRef[] = [];
+    const changed: EntityRef[] = [];
+    if (proposal.outcome !== "proposed") return { created, changed };
+    const context: OperationContext = {
+      packet,
+      revision: this.revision + 1,
+      timestamp,
+      keys: new Map(),
+      deferred: [],
+    };
+    const order: CognitiveOperationKind[] = [
+      "propose_event",
+      "propose_claim",
+      "propose_hypothesis",
+      "revise_hypothesis",
+      "propose_question",
+    ];
+    const operations = [...proposal.operations].sort(
+      (left, right) => order.indexOf(left.kind) - order.indexOf(right.kind),
+    );
+    for (const operation of operations) {
+      if (operation.kind === "propose_claim") {
+        const id = randomUUID();
+        this.database
+          .prepare(
+            "INSERT INTO claims(id, workspace_id, text, category, modality, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
+          )
+          .run(
+            id,
+            this.workspaceId,
+            operation.payload.text,
+            operation.payload.category,
+            operation.payload.modality,
+            operation.payload.validFrom,
+            operation.payload.validTo,
+            timestamp,
+            timestamp,
+          );
+        for (const source of operation.payload.citations)
+          this.database
+            .prepare(
+              "INSERT INTO claim_sources(claim_id, source_id, span_start, span_end, quote) VALUES (?, ?, ?, ?, ?)",
+            )
+            .run(
+              id,
+              source.sourceId,
+              source.spanStart,
+              source.spanEnd,
+              source.quote,
+            );
+        created.push({ kind: "claim", id });
+        context.keys.set(operation.key, { kind: "claim", id });
+      }
+      if (operation.kind === "propose_event") {
+        const id = randomUUID();
+        this.database
+          .prepare(
+            "INSERT INTO events(id, workspace_id, title, text, category, source_id, episode_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 1, ?, ?)",
+          )
+          .run(
+            id,
+            this.workspaceId,
+            operation.payload.title,
+            operation.payload.text,
+            operation.payload.category,
+            operation.payload.citations[0].sourceId,
+            operation.payload.occurredStart,
+            operation.payload.occurredEnd,
+            operation.payload.temporalPrecision,
+            operation.payload.context,
+            timestamp,
+            timestamp,
+          );
+        created.push({ kind: "event", id });
+        context.keys.set(operation.key, { kind: "event", id });
+      }
+      if (
+        operation.kind === "propose_hypothesis" ||
+        operation.kind === "revise_hypothesis" ||
+        operation.kind === "propose_question"
+      ) {
+        const result = this.hypotheses.applyOperation(operation, context);
+        created.push(...result.created);
+        changed.push(...result.changed);
+      }
+    }
+    for (const check of context.deferred) check();
+    return { created, changed };
   }
 
   cancelAnalysis(requestId: string) {
@@ -1633,6 +1728,7 @@ export class SqliteMemoryStore {
       packet.sources.map((source) => [source.sourceId, source]),
     );
     for (const operation of operations) {
+      if (!("citations" in operation.payload)) continue;
       const seen = new Set<string>();
       for (const citation of operation.payload.citations) {
         const key = `${citation.sourceId}:${citation.spanStart}:${citation.spanEnd}`;

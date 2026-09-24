@@ -39,7 +39,7 @@ function capturedStore(store, suffix = "base") {
 function proposal(packet, overrides = {}) {
   const source = packet.sources[0];
   return {
-    schemaVersion: "1.1",
+    schemaVersion: "1.2",
     requestId: packet.requestId,
     workspaceId: packet.workspaceId,
     baseRevision: packet.baseRevision,
@@ -226,7 +226,7 @@ test("un claim intended est persisté et relu après redémarrage", () =>
     reopened.close();
   }));
 
-test("le schéma 1.1 exige la modalité uniquement sur propose_claim", () =>
+test("le schéma 1.2 exige la modalité uniquement sur propose_claim", () =>
   withStore((store) => {
     capturedStore(store, "modality-validation");
     const packet = store.prepareAnalysis({ task: "extract" });

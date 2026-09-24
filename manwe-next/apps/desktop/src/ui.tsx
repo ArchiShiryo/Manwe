@@ -1,8 +1,10 @@
 import type { Person } from "../../../packages/domain/src/demo.ts";
 import type {
   ClaimModality,
+  Hypothesis,
   InformationCategory,
 } from "../../../packages/domain/src/memory.ts";
+import type { CognitiveOperation } from "../../../packages/cognition/src/contract.ts";
 
 export function Sigil({ small = false }: { small?: boolean }) {
   return (
@@ -63,3 +65,80 @@ export const claimModalityLabels: Record<ClaimModality, string> = {
   intended: "intention",
   hypothetical: "hypothèse",
 };
+
+export const depthLabels: Record<Hypothesis["depth"], string> = {
+  D1: "surface",
+  D2: "schéma relationnel",
+  D3: "motifs / attachement",
+  D4: "personnalité / psychodynamique",
+  D5: "groupe / champ",
+};
+
+export const confidenceLabels: Record<Hypothesis["confidence"], string> = {
+  low: "confiance faible",
+  moderate: "confiance modérée",
+  high: "confiance élevée",
+};
+
+export const hypothesisStatusLabels: Record<Hypothesis["status"], string> = {
+  draft: "brouillon",
+  plausible: "plausible",
+  contradicted: "contredite",
+  superseded: "dépassée",
+};
+
+export const reviewReasonLabels: Record<
+  NonNullable<Hypothesis["reviewReason"]>,
+  string
+> = {
+  correction: "correction factuelle",
+  context: "contexte ajouté",
+  disagreement: "désaccord",
+  answer: "réponse à une question",
+};
+
+/** Résumé lisible d'une opération proposée, pour l'aperçu avant confirmation. */
+export function describeOperation(operation: CognitiveOperation): {
+  label: string;
+  classification: string;
+  text: string;
+} {
+  switch (operation.kind) {
+    case "propose_claim":
+      return {
+        label: "claim",
+        classification: `${informationCategoryLabels[operation.payload.category]} · ${claimModalityLabels[operation.payload.modality]}`,
+        text: operation.payload.text,
+      };
+    case "propose_event":
+      return {
+        label: "événement",
+        classification: `${informationCategoryLabels[operation.payload.category]} · ${claimModalityLabels.actual}`,
+        text: operation.payload.text,
+      };
+    case "propose_hypothesis":
+      return {
+        label: "hypothèse",
+        classification: [
+          `${operation.payload.depth} ${depthLabels[operation.payload.depth]}`,
+          operation.payload.construct,
+          confidenceLabels[operation.payload.confidence],
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        text: operation.payload.statement,
+      };
+    case "revise_hypothesis":
+      return {
+        label: "révision",
+        classification: `${hypothesisStatusLabels[operation.payload.status]} · ${confidenceLabels[operation.payload.confidence]}`,
+        text: `${operation.payload.addEvidence.length} preuve(s) ajoutée(s)`,
+      };
+    case "propose_question":
+      return {
+        label: "question",
+        classification: operation.payload.discriminatingInfo,
+        text: operation.payload.question,
+      };
+  }
+}

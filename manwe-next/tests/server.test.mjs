@@ -211,7 +211,7 @@ test("l’API prépare, prévisualise et applique explicitement une proposition 
     const packet = await preparedResponse.json();
     const source = packet.sources[0];
     const proposal = {
-      schemaVersion: "1.1",
+      schemaVersion: "1.2",
       requestId: packet.requestId,
       workspaceId: packet.workspaceId,
       baseRevision: packet.baseRevision,

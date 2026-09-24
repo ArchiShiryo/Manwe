@@ -101,7 +101,7 @@ test("le harnais prépare, applique, rejoue et résume mécaniquement un lot", (
     writeFileSync(
       join(runDir, "T01", "proposal.raw.json"),
       JSON.stringify({
-        schemaVersion: "1.1",
+        schemaVersion: "1.2",
         requestId: packet.requestId,
         workspaceId: packet.workspaceId,
         baseRevision: packet.baseRevision,
