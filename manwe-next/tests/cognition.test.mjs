@@ -125,6 +125,59 @@ test("chaque demande enregistre l’empreinte du prompt analyst-v2 versionné", 
     store.close();
   }));
 
+test("le prompt analyst-v2 documente chaque champ exigé par le parseur strict", () => {
+  const prompt = readFileSync(
+    new URL("../packages/cognition/prompts/analyst-v2.md", import.meta.url),
+    "utf8",
+  );
+  const required = [
+    // CognitiveProposal
+    "schemaVersion",
+    "requestId",
+    "workspaceId",
+    "baseRevision",
+    "contextHash",
+    "modelDeclaration",
+    "outcome",
+    "operations",
+    "clarifications",
+    "summary",
+    // modelDeclaration
+    "declaredModel",
+    "role",
+    "technicalId",
+    // opération
+    "key",
+    "kind",
+    "payload",
+    "rationale",
+    // propose_claim.payload
+    "text",
+    "category",
+    "modality",
+    "validFrom",
+    "validTo",
+    "citations",
+    // propose_event.payload
+    "title",
+    "occurredStart",
+    "occurredEnd",
+    "temporalPrecision",
+    "context",
+    // citation
+    "sourceId",
+    "contentHash",
+    "spanStart",
+    "spanEnd",
+    "quote",
+    // clarification
+    "question",
+    "relatedRefs",
+  ];
+  const missing = required.filter((field) => !prompt.includes(`"${field}"`));
+  assert.deepEqual(missing, []);
+});
+
 test("une proposition sourcée s’applique une fois et survit au redémarrage", () =>
   withStore((store, path) => {
     capturedStore(store);
