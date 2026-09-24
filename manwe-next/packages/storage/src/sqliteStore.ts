@@ -139,6 +139,15 @@ export class SqliteMemoryStore {
       );
       this.database.exec(readFileSync(revisionMigrationPath, "utf8"));
     }
+    const critiqueMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 6")
+      .get();
+    if (!critiqueMigration) {
+      const critiqueMigrationPath = fileURLToPath(
+        new URL("./migrations/006_critiques.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(critiqueMigrationPath, "utf8"));
+    }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
     this.database
@@ -1723,6 +1732,7 @@ export class SqliteMemoryStore {
       "propose_event",
       "propose_claim",
       "propose_hypothesis",
+      "propose_critique",
       "revise_hypothesis",
       "propose_question",
     ];
@@ -1788,7 +1798,8 @@ export class SqliteMemoryStore {
       if (
         operation.kind === "propose_hypothesis" ||
         operation.kind === "revise_hypothesis" ||
-        operation.kind === "propose_question"
+        operation.kind === "propose_question" ||
+        operation.kind === "propose_critique"
       ) {
         const result = this.hypotheses.applyOperation(operation, context);
         created.push(...result.created);

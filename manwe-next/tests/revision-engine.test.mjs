@@ -518,18 +518,53 @@ test("R3-7 · profondeurs : D4 accepté en brouillon, promu seulement sur 3 épi
         { kind: "claim", id: later },
       ],
     });
+    const strengthen = reviseOp(hypothesis(store, deepId), {
+      addEvidence: [
+        { claim: { kind: "claim", id: later }, stance: "supports" },
+      ],
+      confidence: "high",
+    });
+    preview = respond(store, packet, [strengthen]).preview;
+    assert.equal(
+      preview.errors[0]?.code,
+      "status_not_allowed",
+      "D4 sans passe critique ne se consolide pas",
+    );
+    packet = store.prepareAnalysis({
+      task: "revise",
+      focus: [
+        { kind: "hypothesis", id: deepId },
+        { kind: "claim", id: later },
+      ],
+    });
     preview = respond(store, packet, [
-      reviseOp(hypothesis(store, deepId), {
-        addEvidence: [
-          { claim: { kind: "claim", id: later }, stance: "supports" },
-        ],
-        confidence: "high",
-      }),
+      {
+        key: "k1",
+        kind: "propose_critique",
+        payload: {
+          target: { kind: "hypothesis", id: deepId },
+          findings: [
+            {
+              kind: "simpler_explanation",
+              detail:
+                "Les trois premiers épisodes tiennent en neuf jours après la rupture.",
+              claims: crisis.map((id) => ({ kind: "claim", id })),
+            },
+          ],
+        },
+        rationale: "Passe critique distincte.",
+      },
+      strengthen,
     ]).preview;
     assert.equal(
       preview.status,
       "ready_for_review",
       JSON.stringify(preview.errors),
+    );
+    assert.equal(hypothesis(store, deepId).critiques.length, 1);
+    assert.notEqual(
+      hypothesis(store, deepId).critiques[0].resolvedRevision,
+      null,
     );
     assert.equal(hypothesis(store, deepId).status, "plausible");
     assert.equal(hypothesis(store, deepId).confidence, "high");
@@ -705,5 +740,44 @@ test("R3 · un sujet absent des sources est refusé ; l’utilisateur peut être
       "person",
       "self",
     ]);
+    store.close();
+  }));
+
+test("R3.4 · une passe critique vise une hypothèse antérieure et reste ouverte jusqu’à une révision", () =>
+  withStore((open) => {
+    const store = open();
+    const claim = claimFrom(
+      store,
+      "Clara a présenté mon tableau de bord comme son travail.",
+      "2026-01-15T12:00:00-03:00",
+    );
+    const id = createHypothesis(store, [claim], {
+      subjects: [{ mention: "Clara" }],
+      statement: "Clara s’approprie le travail des autres.",
+    });
+    const packet = revisePacket(store, id);
+    const preview = respond(store, packet, [
+      {
+        key: "k1",
+        kind: "propose_critique",
+        payload: {
+          target: { kind: "hypothesis", id },
+          findings: [],
+        },
+        rationale: "Aucun constat.",
+      },
+    ]).preview;
+    assert.equal(
+      preview.status,
+      "ready_for_review",
+      "critique d’une hypothèse antérieure acceptée",
+    );
+    const h = hypothesis(store, id);
+    assert.equal(h.critiques.length, 1);
+    assert.equal(
+      h.critiques[0].resolvedRevision,
+      null,
+      "ouverte jusqu’à une révision",
+    );
     store.close();
   }));

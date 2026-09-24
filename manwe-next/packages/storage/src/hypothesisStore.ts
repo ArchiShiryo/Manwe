@@ -93,6 +93,23 @@ export class HypothesisStore {
           : Number(link.superseded_revision),
     }));
     const summary = this.summary(id);
+    const critiques = (
+      this.database
+        .prepare(
+          "SELECT * FROM hypothesis_critiques WHERE hypothesis_id = ? ORDER BY created_revision, id",
+        )
+        .all(id) as SqlRow[]
+    ).map((critique) => ({
+      id: String(critique.id),
+      findings: JSON.parse(
+        String(critique.findings_json),
+      ) as Hypothesis["critiques"][number]["findings"],
+      createdRevision: Number(critique.created_revision),
+      resolvedRevision:
+        critique.resolved_revision == null
+          ? null
+          : Number(critique.resolved_revision),
+    }));
     return {
       id,
       workspaceId: String(row.workspace_id),
@@ -115,6 +132,7 @@ export class HypothesisStore {
       alternativeTo: nullableString(row.alternative_to),
       subjects,
       evidence,
+      critiques,
       counts: {
         supportUnits: summary.supports.length,
         contradictUnits: summary.contradicts.length,
@@ -181,6 +199,19 @@ export class HypothesisStore {
 
   summary(hypothesisId: string): EvidenceSummary {
     return independentUnits(this.evidenceFacts(hypothesisId));
+  }
+
+  /** État de la passe critique pour les règles (R3.4). */
+  critiqueFacts(hypothesisId: string) {
+    const row = this.database
+      .prepare(
+        "SELECT COUNT(*) AS total, SUM(CASE WHEN resolved_revision IS NULL THEN 1 ELSE 0 END) AS open FROM hypothesis_critiques WHERE hypothesis_id = ?",
+      )
+      .get(hypothesisId) as SqlRow;
+    return {
+      critiqued: Number(row.total) > 0,
+      openCritiques: Number(row.open ?? 0),
+    };
   }
 
   hasActiveAlternative(hypothesisId: string) {
@@ -264,6 +295,7 @@ export class HypothesisStore {
           {
             depth: String(row.depth) as Hypothesis["depth"],
             hasActiveAlternative: this.hasActiveAlternative(id),
+            ...this.critiqueFacts(id),
           },
           summary,
         ).allowed;
@@ -590,6 +622,12 @@ export class HypothesisStore {
       const reviewReason = nullableString(row.review_reason);
       this.addEvidence(id, payload.addEvidence, context);
       context.deferred.push(() => {
+        // Cette révision traite les passes critiques ouvertes.
+        this.database
+          .prepare(
+            "UPDATE hypothesis_critiques SET resolved_revision = ? WHERE hypothesis_id = ? AND resolved_revision IS NULL",
+          )
+          .run(context.revision, id);
         const summary = this.summary(id);
         const hasActiveAlternative = this.hasActiveAlternative(id);
         const check = checkStatus(
@@ -597,6 +635,7 @@ export class HypothesisStore {
           {
             depth: String(row.depth) as Hypothesis["depth"],
             hasActiveAlternative,
+            ...this.critiqueFacts(id),
           },
           summary,
         );
@@ -628,6 +667,39 @@ export class HypothesisStore {
           )
           .run(payload.status, payload.confidence, context.timestamp, id);
       });
+      return { created: [], changed: [{ kind: "hypothesis", id }] };
+    }
+
+    if (operation.kind === "propose_critique") {
+      const payload = operation.payload;
+      const id = this.resolve(payload.target, "hypothesis", context);
+      const row = this.row(id);
+      // Une autocritique dans la réponse qui crée l'hypothèse n'est pas une passe distincte.
+      if (Number(row.created_revision) === context.revision)
+        throw new DomainError(
+          "critique_same_proposal",
+          "La passe critique doit viser une hypothèse issue d’une réponse antérieure.",
+        );
+      const findings = payload.findings.map((finding) => ({
+        kind: finding.kind,
+        detail: finding.detail,
+        claimIds: finding.claims.map((claim) =>
+          this.resolve(claim, "claim", context),
+        ),
+      }));
+      const critiqueId = randomUUID();
+      this.database
+        .prepare(
+          "INSERT INTO hypothesis_critiques(id, workspace_id, hypothesis_id, findings_json, created_revision, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+          critiqueId,
+          this.workspaceId,
+          id,
+          JSON.stringify(findings),
+          context.revision,
+          context.timestamp,
+        );
       return { created: [], changed: [{ kind: "hypothesis", id }] };
     }
 

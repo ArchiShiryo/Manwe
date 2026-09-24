@@ -82,7 +82,7 @@ test("une contre-preuve ancrée retire le droit au statut plausible", () => {
 });
 
 test("D4 est accepté en brouillon mais plausible exige 3 épisodes sur 30 jours et une alternative", () => {
-  const deep = { depth: "D4", hasActiveAlternative: true };
+  const deep = { depth: "D4", hasActiveAlternative: true, critiqued: true };
   const crisis = independentUnits([
     fact("hash:a", "2026-07-01T12:00:00Z"),
     fact("hash:b", "2026-07-04T12:00:00Z"),
@@ -193,5 +193,39 @@ test("un désaccord exige une alternative, une contre-preuve ou l'abandon", () =
   assert.equal(
     disagreementAddressed({ ...base, newStatus: "superseded" }),
     true,
+  );
+});
+
+test("dès D3, la consolidation exige une passe critique enregistrée et traitée", () => {
+  const summary = independentUnits([
+    fact("hash:a", "2026-01-15T12:00:00Z"),
+    fact("hash:b", "2026-02-20T12:00:00Z"),
+  ]);
+  const d3 = { depth: "D3", hasActiveAlternative: true };
+  assert.equal(checkStatus("plausible", d3, summary).allowed, false);
+  assert.equal(
+    checkStatus(
+      "plausible",
+      { ...d3, critiqued: true, openCritiques: 1 },
+      summary,
+    ).allowed,
+    false,
+  );
+  assert.equal(
+    checkStatus(
+      "plausible",
+      { ...d3, critiqued: true, openCritiques: 0 },
+      summary,
+    ).allowed,
+    true,
+  );
+  assert.equal(
+    checkStatus(
+      "plausible",
+      { depth: "D2", hasActiveAlternative: false },
+      summary,
+    ).allowed,
+    true,
+    "D1 et D2 n'exigent pas de passe critique",
   );
 });

@@ -148,10 +148,19 @@ export type Hypothesis = {
     anchoredContradicts: number;
     supportSpanDays: number;
   };
+  /** Passes critiques (R3.4) : jamais des preuves, à traiter par une révision. */
+  critiques: HypothesisCritique[];
   createdRevision: number;
   revision: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type HypothesisCritique = {
+  id: string;
+  findings: Array<{ kind: string; detail: string; claimIds: string[] }>;
+  createdRevision: number;
+  resolvedRevision: number | null;
 };
 
 export type OpenQuestion = {

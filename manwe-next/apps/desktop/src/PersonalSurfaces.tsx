@@ -732,6 +732,32 @@ function PersonalHypothesisInspector({
                   Alternative : {alternative.statement}
                 </p>
               )}
+              {hypothesis.critiques.length > 0 && (
+                <div className="personal-evidence">
+                  <strong>Passe critique</strong>
+                  <ul>
+                    {hypothesis.critiques.flatMap((critique) =>
+                      (critique.findings.length
+                        ? critique.findings
+                        : [
+                            {
+                              kind: "none",
+                              detail: "Aucun constat",
+                              claimIds: [],
+                            },
+                          ]
+                      ).map((finding, index) => (
+                        <li key={`${critique.id}:${index}`}>
+                          {finding.detail}
+                          {critique.resolvedRevision === null
+                            ? " · à traiter"
+                            : ` · traitée (révision ${critique.resolvedRevision})`}
+                        </li>
+                      )),
+                    )}
+                  </ul>
+                </div>
+              )}
               {hypothesis.limits && (
                 <small>Limites : {hypothesis.limits}</small>
               )}

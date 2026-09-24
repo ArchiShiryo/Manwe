@@ -30,7 +30,8 @@ export type CognitiveOperationKind =
   | "propose_claim"
   | "propose_hypothesis"
   | "revise_hypothesis"
-  | "propose_question";
+  | "propose_question"
+  | "propose_critique";
 
 export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_event",
@@ -38,6 +39,7 @@ export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_hypothesis",
   "revise_hypothesis",
   "propose_question",
+  "propose_critique",
 ];
 
 /** Opérations proposées par défaut selon la tâche (contrat 1.2). */
@@ -51,12 +53,14 @@ export const DEFAULT_OPERATIONS: Record<
     "propose_claim",
     "propose_hypothesis",
     "propose_question",
+    "propose_critique",
   ],
   revise: [
     "propose_claim",
     "propose_hypothesis",
     "revise_hypothesis",
     "propose_question",
+    "propose_critique",
   ],
   explore: ["propose_question"],
 };
@@ -96,6 +100,26 @@ type RevisePayload = {
   status: "draft" | "plausible" | "contradicted" | "superseded";
   confidence: "low" | "moderate" | "high";
   addEvidence: EvidenceInput[];
+};
+
+export const CRITIQUE_KINDS = [
+  "ignored_evidence",
+  "simpler_explanation",
+  "overgeneralization",
+  "alternative_not_distinct",
+  "circular_reasoning",
+  "other",
+] as const;
+
+export type CritiqueFinding = {
+  kind: (typeof CRITIQUE_KINDS)[number];
+  detail: string;
+  claims: TargetRef[];
+};
+
+type CritiquePayload = {
+  target: EntityRef;
+  findings: CritiqueFinding[];
 };
 
 type QuestionPayload = {
@@ -162,6 +186,12 @@ export type CognitiveOperation =
       key: string;
       kind: "propose_question";
       payload: QuestionPayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_critique";
+      payload: CritiquePayload;
       rationale: string;
     };
 
@@ -627,6 +657,54 @@ function questionOperation(
   };
 }
 
+function critiqueOperation(
+  key: string,
+  rationale: string,
+  payload: Record<string, unknown>,
+): CognitiveOperation {
+  exactKeys(payload, ["target", "findings"], "propose_critique.payload");
+  const target = reference(payload.target);
+  if (target.kind !== "hypothesis")
+    throw new DomainError(
+      "invalid_reference",
+      "propose_critique vise une hypothèse existante.",
+    );
+  if (!Array.isArray(payload.findings) || payload.findings.length > 20)
+    throw new DomainError(
+      "invalid_critique",
+      "findings est une liste de 0 à 20 constats.",
+    );
+  return {
+    key,
+    kind: "propose_critique",
+    rationale,
+    payload: {
+      target,
+      findings: payload.findings.map((item) => {
+        const finding = object(item, "critique.finding");
+        exactKeys(finding, ["kind", "detail", "claims"], "critique.finding");
+        if (!Array.isArray(finding.claims) || finding.claims.length > 20)
+          throw new DomainError(
+            "invalid_critique",
+            "claims est une liste de 0 à 20 références.",
+          );
+        return {
+          kind: oneOf(
+            finding.kind,
+            CRITIQUE_KINDS,
+            "invalid_critique",
+            "Type de constat critique inconnu.",
+          ),
+          detail: text(finding.detail, "critique.detail", 1_000),
+          claims: finding.claims.map((claim) =>
+            targetRef(claim, "critique.claims"),
+          ),
+        };
+      }),
+    },
+  };
+}
+
 function operation(value: unknown): CognitiveOperation {
   const input = object(value, "operation");
   exactKeys(input, ["key", "kind", "payload", "rationale"], "operation");
@@ -722,6 +800,8 @@ function operation(value: unknown): CognitiveOperation {
     return reviseOperation(key, rationale, payload);
   if (input.kind === "propose_question")
     return questionOperation(key, rationale, payload);
+  if (input.kind === "propose_critique")
+    return critiqueOperation(key, rationale, payload);
   throw new DomainError(
     "operation_not_allowed",
     "Opération cognitive inconnue.",

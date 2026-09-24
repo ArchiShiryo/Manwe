@@ -199,6 +199,9 @@ test("le prompt analyst-v3 documente chaque champ exigé par le parseur strict",
     "targets",
     "discriminatingInfo",
     "whyNow",
+    // propose_critique.payload
+    "findings",
+    "detail",
   ];
   const missing = required.filter((field) => !prompt.includes(`"${field}"`));
   assert.deepEqual(missing, []);

@@ -117,6 +117,10 @@ export type HypothesisFacts = {
   depth: HypothesisDepth;
   /** Une hypothèse alternative non dépassée est liée à celle-ci. */
   hasActiveAlternative: boolean;
+  /** Au moins une passe critique a été enregistrée (R3.4). */
+  critiqued?: boolean;
+  /** Passes critiques non encore traitées par une révision. */
+  openCritiques?: number;
 };
 
 export type StatusCheck = { allowed: boolean; reason: string | null };
@@ -149,6 +153,15 @@ export function checkStatus(
     return {
       allowed: false,
       reason: "Une alternative incompatible active est exigée dès D3.",
+    };
+  if (
+    depthAtLeast(hypothesis.depth, "D3") &&
+    (!hypothesis.critiqued || (hypothesis.openCritiques ?? 0) > 0)
+  )
+    return {
+      allowed: false,
+      reason:
+        "Dès D3, une passe critique distincte, puis traitée par une révision, est exigée avant consolidation.",
     };
   if (
     hypothesis.depth === "D4" &&

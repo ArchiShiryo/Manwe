@@ -140,5 +140,15 @@ export function describeOperation(operation: CognitiveOperation): {
         classification: operation.payload.discriminatingInfo,
         text: operation.payload.question,
       };
+    case "propose_critique":
+      return {
+        label: "passe critique",
+        classification: `${operation.payload.findings.length} constat(s)`,
+        text: operation.payload.findings.length
+          ? operation.payload.findings
+              .map((finding) => finding.detail)
+              .join(" · ")
+          : "Aucun constat",
+      };
   }
 }

@@ -66,21 +66,31 @@ Règles des hypothèses :
     revise_hypothesis : "plausible" exige, en épisodes ancrés nets (favorables
     moins contraires), 1 pour D1, 2 pour D2 et D3, 3 pour D4 et D5 ; en D4 ces
     épisodes s'étalent sur au moins 30 jours ; dès D3 une alternative active
-    doit exister. "contradicted" exige autant de contre-preuves ancrées que de
-    preuves favorables. "superseded" abandonne l'hypothèse.
-13. Sujets : { "mention": "<prénom tel qu'il apparaît dans une source>" },
+    doit exister et une passe critique distincte doit avoir été faite (règle
+    13). "contradicted" exige autant de contre-preuves ancrées que de preuves
+    favorables. "superseded" abandonne l'hypothèse.
+13. Passe critique (propose_critique) : pour une hypothèse déjà présente dans
+    le paquet, cherche activement ce qui l'affaiblit : preuve ignorée
+    (ignored_evidence), explication plus simple par l'état, le contexte ou la
+    relation (simpler_explanation), généralisation excessive
+    (overgeneralization), alternative qui n'est qu'une reformulation
+    (alternative_not_distinct), raisonnement circulaire (circular_reasoning).
+    Une critique n'est jamais une preuve. Dès D3, une hypothèse ne devient
+    "plausible" qu'après une passe critique suivie d'un revise_hypothesis, qui
+    peut figurer dans la même réponse que la critique.
+14. Sujets : { "mention": "<prénom tel qu'il apparaît dans une source>" },
     { "person": { "kind": "person", "id": … } } si la personne est dans le
     paquet, ou { "self": true } pour l'utilisateur lui-même.
-14. Annotations de l'utilisateur : un accord (agreement) n'est jamais une
+15. Annotations de l'utilisateur : un accord (agreement) n'est jamais une
     preuve. Une hypothèse "needsReview" avec reviewReason "disagreement" ne
     peut être révisée qu'en proposant une alternative, en ajoutant une
     contre-preuve ou en la passant "superseded". Pour réviser, recopie
     expectedRowVersion = le champ "revision" de l'hypothèse dans le paquet.
-15. Questions : pose une question seulement si sa réponse départage des
+16. Questions : pose une question seulement si sa réponse départage des
     hypothèses. Ne repose jamais une question présente dans le paquet, quel
     que soit son statut ; « je ne sais pas » (status "unknown") n'est pas un
     indice.
-16. rationale et summary sont courts et ne contiennent aucune affirmation
+17. rationale et summary sont courts et ne contiennent aucune affirmation
     absente des opérations. N'utilise que les opérations listées dans
     allowedOperations.
 
@@ -108,7 +118,7 @@ listés sont obligatoires ; null est écrit null.
 }
 
 <OPÉRATION> est l'une des formes suivantes, chacune avec une "key" unique
-(c1, e1, h1, r1, q1…) :
+(c1, e1, h1, k1, r1, q1…) :
 
 { "key": "c1", "kind": "propose_claim",
   "payload": {
@@ -167,6 +177,15 @@ listés sont obligatoires ; null est écrit null.
     "targets": [ <RÉF_OU_CLÉ d'une hypothèse> ],
     "discriminatingInfo": "<ce que la réponse permet de départager>",
     "whyNow": "<pourquoi la poser maintenant>"
+  },
+  "rationale": "<justification courte>" }
+
+{ "key": "k1", "kind": "propose_critique",
+  "payload": {
+    "target": { "kind": "hypothesis", "id": "<id du paquet>" },
+    "findings": [ { "kind": "ignored_evidence" | "simpler_explanation" | "overgeneralization" | "alternative_not_distinct" | "circular_reasoning" | "other",
+                    "detail": "<constat précis>",
+                    "claims": [ <RÉF_OU_CLÉ d'un claim> ] } ]
   },
   "rationale": "<justification courte>" }
 
