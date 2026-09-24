@@ -102,11 +102,11 @@ test("un ContextPacket est figé, sourcé et son empreinte exclut uniquement con
     store.close();
   }));
 
-test("chaque demande enregistre l’empreinte du prompt analyst-v2 versionné", () =>
+test("chaque demande enregistre l’empreinte du prompt analyst-v3 versionné", () =>
   withStore((store) => {
     capturedStore(store, "prompt-hash");
     const prompt = readFileSync(
-      new URL("../packages/cognition/prompts/analyst-v2.md", import.meta.url),
+      new URL("../packages/cognition/prompts/analyst-v3.md", import.meta.url),
       "utf8",
     );
     const expectedHash = createHash("sha256")
@@ -118,16 +118,16 @@ test("chaque demande enregistre l’empreinte du prompt analyst-v2 versionné", 
     ];
     for (const packet of requests) {
       const journal = store.getAnalysis(packet.requestId);
-      assert.equal(packet.promptVersion, "analyst-v2");
-      assert.equal(journal.promptVersion, "analyst-v2");
+      assert.equal(packet.promptVersion, "analyst-v3");
+      assert.equal(journal.promptVersion, "analyst-v3");
       assert.equal(journal.promptHash, expectedHash);
     }
     store.close();
   }));
 
-test("le prompt analyst-v2 documente chaque champ exigé par le parseur strict", () => {
+test("le prompt analyst-v3 documente chaque champ exigé par le parseur strict", () => {
   const prompt = readFileSync(
-    new URL("../packages/cognition/prompts/analyst-v2.md", import.meta.url),
+    new URL("../packages/cognition/prompts/analyst-v3.md", import.meta.url),
     "utf8",
   );
   const required = [
@@ -173,6 +173,32 @@ test("le prompt analyst-v2 documente chaque champ exigé par le parseur strict",
     // clarification
     "question",
     "relatedRefs",
+    // propose_hypothesis.payload
+    "statement",
+    "depth",
+    "framework",
+    "construct",
+    "confidence",
+    "subjects",
+    "evidence",
+    "limits",
+    "revisionConditions",
+    "alternativeTo",
+    "mention",
+    "person",
+    "self",
+    "claim",
+    "stance",
+    "proposalKey",
+    // revise_hypothesis.payload
+    "target",
+    "expectedRowVersion",
+    "status",
+    "addEvidence",
+    // propose_question.payload
+    "targets",
+    "discriminatingInfo",
+    "whyNow",
   ];
   const missing = required.filter((field) => !prompt.includes(`"${field}"`));
   assert.deepEqual(missing, []);

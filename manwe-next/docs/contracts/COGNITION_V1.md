@@ -1,12 +1,12 @@
 # Contrat cognitif v1
 
-Date : 14 septembre 2026. Version du contrat : `1.1`.
+Date : 14 septembre 2026, mis à jour le 24 septembre 2026. Version du contrat : `1.2`.
 
-Ce document fixe la frontière entre la mémoire et le LLM. Le sous-ensemble R2
-`propose_event` / `propose_claim` est maintenant exécutable : types, validation
-stricte, `ContextPacket`, conservation des réponses, aperçu, confirmation et
-application transactionnelle. Les autres opérations de ce contrat restent la
-cible de R3 à R5.
+Ce document fixe la frontière entre la mémoire et le LLM. Les opérations
+`propose_event`, `propose_claim`, `propose_hypothesis`, `revise_hypothesis` et
+`propose_question` sont exécutables : types, validation stricte,
+`ContextPacket`, conservation des réponses, aperçu, confirmation et application
+transactionnelle. `propose_goal` et `propose_direction` restent la cible de R5.
 
 Le transport assisté est disponible dans la vue Mémoire. Trois sorties réelles
 de Sol ont été importées dans une preuve versionnée sur des données fictives ;
@@ -14,6 +14,22 @@ elles sont assistées et non aveugles. R2 reste « en cours » pendant l'extensi
 de la couverture des catégories et jusqu'au contexte hypothèse/contre-preuve de
 R3. L'ingestion, les ambiguïtés d'identité et la métrologie assistée sont
 désormais implémentées.
+
+> **Changements 1.2 — moteur de révision (R3).** Trois opérations deviennent
+> exécutables : `propose_hypothesis` (profondeur D1 à D5, cadre et construct,
+> confiance qualitative, sujets `mention` / `person` / `self`, preuves par
+> claims avec `stance`, alternative), `revise_hypothesis` (version attendue,
+> statut, confiance, preuves ajoutées) et `propose_question` (cibles,
+> information discriminante, raison). Une référence peut viser un objet du
+> paquet (`{ "kind", "id" }`) ou une opération de la même réponse
+> (`{ "proposalKey" }`). Le backend calcule lui-même les unités d'indépendance,
+> les ancrages, les statuts permis et le plafond de confiance
+> (`packages/cognition/src/revision.ts`) ; une réponse est validée à blanc dès
+> la réception, pour que l'aperçu montre les refus du moteur. Les opérations
+> proposées par défaut dépendent de la tâche. Les annotations humaines ont des
+> effets déterministes (D-008). Les propositions `1.1` ne sont plus
+> réimportables. Règles détaillées : [BRIEF-002](../pilotage/briefs/BRIEF-002-moteur-revision-R3.md),
+> décisions D-006 à D-010 de [PILOTAGE.md](../pilotage/PILOTAGE.md).
 
 > **Changements 1.1 — modalité des claims.** La provenance (`category`) et la
 > modalité (`actual`, `intended`, `hypothetical`) sont maintenant deux axes
@@ -130,15 +146,15 @@ Champs obligatoires :
 
 Opérations autorisables selon la tâche :
 
-| `kind`               | `payload` minimal                                                                                   | Restriction                                                                  |
-| -------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `propose_event`      | participants ou candidats, temps/précision, contexte, épisode existant ou candidat, extraits source | Fait accompli uniquement ; aucune modalité ni fusion silencieuse d'identité  |
-| `propose_claim`      | texte, catégorie, modalité, sujets, période, références source                                      | Une extraction reste sourcée ; provenance et modalité restent indépendantes  |
-| `propose_hypothesis` | énoncé, preuves favorables/contraires, alternatives, limites, conditions de révision                | Au plus deux hypothèses pour le focus du PoC ; zéro est un résultat valide   |
-| `revise_hypothesis`  | cible existante, version attendue, nouvelle lecture/statut, références et motif                     | Historique préservé ; aucune modification des sources ni des annotations     |
-| `propose_question`   | question, cibles, information discriminante, raison de la poser                                     | Au plus une question active pertinente au focus ; ne pas forcer une question |
-| `propose_goal`       | formulation candidate, contexte, sources utilisateur                                                | Ne remplace pas une intention confirmée sans choix utilisateur               |
-| `propose_direction`  | goal ciblé, possibilité, conditions, effort, limites, signaux à observer                            | Au plus deux pistes ; aucune action sur des personnes ou services externes   |
+| `kind`               | `payload` minimal                                                                                   | Restriction                                                                                                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `propose_event`      | participants ou candidats, temps/précision, contexte, épisode existant ou candidat, extraits source | Fait accompli uniquement ; aucune modalité ni fusion silencieuse d'identité                                                                                             |
+| `propose_claim`      | texte, catégorie, modalité, sujets, période, références source                                      | Une extraction reste sourcée ; provenance et modalité restent indépendantes                                                                                             |
+| `propose_hypothesis` | énoncé, preuves favorables/contraires, alternatives, limites, conditions de révision                | Plafond d'affichage décidé par la vue, pas de refus backend (D-010) ; alternative incompatible exigée dès D3 ; cadre et construct exigés en D4 ; statut initial `draft` |
+| `revise_hypothesis`  | cible existante, version attendue, nouvelle lecture/statut, références et motif                     | Historique préservé ; aucune modification des sources ni des annotations                                                                                                |
+| `propose_question`   | question, cibles, information discriminante, raison de la poser                                     | Plafond d'affichage décidé par la vue, pas de refus backend (D-010) ; jamais une question déjà posée pour les mêmes cibles                                              |
+| `propose_goal`       | formulation candidate, contexte, sources utilisateur                                                | Ne remplace pas une intention confirmée sans choix utilisateur                                                                                                          |
+| `propose_direction`  | goal ciblé, possibilité, conditions, effort, limites, signaux à observer                            | Au moins deux pistes, jamais une réponse unique ; aucune action sur des personnes ou services externes tant que cette fonction n'est pas construite                     |
 
 Une nouvelle entité porte une clé locale, jamais un identifiant canonique choisi
 par Sol. Une référence intra-proposition utilise `{ "proposalKey": "..." }` ;

@@ -68,11 +68,11 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
-const ANALYST_PROMPT_VERSION = "analyst-v2";
+const ANALYST_PROMPT_VERSION = "analyst-v3";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
     fileURLToPath(
-      new URL("../../cognition/prompts/analyst-v2.md", import.meta.url),
+      new URL("../../cognition/prompts/analyst-v3.md", import.meta.url),
     ),
     "utf8",
   ),
