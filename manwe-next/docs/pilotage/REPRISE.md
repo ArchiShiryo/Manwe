@@ -48,7 +48,9 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **R5.2 fait** : la synthèse ouvre sur la « situation » (deux lectures concurrentes au plus, une question).
 
-**Prochaine étape** : R5.1, R5.3, R5.4, R5.6 et R5.7 (démonstration à l'utilisateur), puis les cas R5 d'IA-A.5.
+**R5.3 fait** (`node scripts/ui-check-r5-3.mjs`).
+
+**Prochaine étape** : R5.1, R5.4, R5.6 et R5.7 (démonstration à l'utilisateur), puis les cas R5 d'IA-A.5.
 
 **Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
 

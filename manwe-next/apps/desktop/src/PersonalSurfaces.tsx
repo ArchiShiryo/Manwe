@@ -510,7 +510,7 @@ function memberLabel(
   member: { kind: "self" } | { kind: "person"; personId: string },
 ) {
   return member.kind === "self"
-    ? "toi"
+    ? "vous"
     : (snapshot.persons.find((person) => person.id === member.personId)
         ?.displayName ?? "personne inconnue");
 }
@@ -563,6 +563,8 @@ function PersonalHypothesisInspector({
     "analysis.apply": "analyse appliquée",
     annotate: "annotation de l’utilisateur",
     "question.answer": "réponse à une question",
+    "action.choose": "choix d’une direction",
+    "action.outcome": "résultat d’une action",
   };
 
   const answer = async (
@@ -639,7 +641,7 @@ function PersonalHypothesisInspector({
               setAnswers({ ...answers, [question.id]: event.target.value })
             }
             aria-label={`Réponse à : ${question.question}`}
-            placeholder="Ta réponse, avec tes mots"
+            placeholder="Votre réponse, avec vos mots"
           />
           <div className="personal-question-actions">
             <button
