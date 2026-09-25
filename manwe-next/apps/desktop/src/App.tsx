@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Lieu } from "./Lieu.tsx";
 import {
   CONTEXT_COLORS,
   CONTEXT_LABELS,
@@ -50,7 +51,6 @@ import {
   PersonalMemory,
   PersonalPeople,
   PersonalUnavailable,
-  PersonalWorld,
 } from "./PersonalSurfaces.tsx";
 import { IntentionsView, MemoryView, PeopleView } from "./Surfaces.tsx";
 import { usePersonalWorkspace } from "./usePersonalWorkspace.ts";
@@ -142,7 +142,9 @@ const pageCopy = {
 
 export default function App() {
   const { state, setState, warning } = useWorkspace();
-  const [mode, setMode] = useState<"demo" | "personal">("demo");
+  // BRIEF-007 : on ouvre sur sa propre mémoire ; la démonstration est un
+  // mode signalé, choisi explicitement.
+  const [mode, setMode] = useState<"demo" | "personal">("personal");
   const personal = usePersonalWorkspace(mode === "personal");
   const [page, setPage] = useState<Page>("world");
   const [selection, setSelection] = useState<Selection>(initialSelection);
@@ -587,10 +589,13 @@ export default function App() {
                   />
                 )}
               {mode === "personal" && personal.snapshot && page === "world" && (
-                <PersonalWorld
+                <Lieu
                   snapshot={personal.snapshot}
-                  onMemory={() => navigate("memory")}
+                  onReload={personal.reload}
                   onAnnotate={annotatePersonal}
+                  onWrite={async (input) => {
+                    await personal.capture(input);
+                  }}
                   connection={personal.connection}
                   remote={personal.remote}
                 />
@@ -633,145 +638,147 @@ export default function App() {
                     }}
                   />
                 )}
-              <form
-                className="composer"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void saveNote();
-                }}
-              >
-                <div className="composer-entry">
-                  <span className="composer-sigil">
-                    <Sigil small />
-                  </span>
-                  <label htmlFor="memory-input" className="sr-only">
-                    Raconter un événement ou ajouter une note
-                  </label>
-                  <textarea
-                    ref={composer}
-                    id="memory-input"
-                    value={draft}
-                    maxLength={12000}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (
-                        e.key === "Enter" &&
-                        !e.shiftKey &&
-                        !e.nativeEvent.isComposing
-                      ) {
-                        e.preventDefault();
-                        void saveNote();
-                      }
-                    }}
-                    placeholder="Un événement, une impression, quelque chose à éclaircir…"
-                    rows={2}
-                  />
-                  <button
-                    className="send-button"
-                    disabled={!draft.trim() || personal.status === "saving"}
-                    aria-label="Conserver la note"
-                  >
-                    <ArrowUp size={18} />
-                  </button>
-                </div>
-                {mode === "personal" && (
-                  <>
+              {/* Dans le lieu, on écrit par la conversation ou le journal. */}
+              {(mode === "demo" || page !== "world") && (
+                <form
+                  className="composer"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void saveNote();
+                  }}
+                >
+                  <div className="composer-entry">
+                    <span className="composer-sigil">
+                      <Sigil small />
+                    </span>
+                    <label htmlFor="memory-input" className="sr-only">
+                      Raconter un événement ou ajouter une note
+                    </label>
+                    <textarea
+                      ref={composer}
+                      id="memory-input"
+                      value={draft}
+                      maxLength={12000}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (
+                          e.key === "Enter" &&
+                          !e.shiftKey &&
+                          !e.nativeEvent.isComposing
+                        ) {
+                          e.preventDefault();
+                          void saveNote();
+                        }
+                      }}
+                      placeholder="Un événement, une impression, quelque chose à éclaircir…"
+                      rows={2}
+                    />
                     <button
-                      type="button"
-                      className={`composer-details-toggle ${captureDetailsOpen ? "active" : ""}`}
-                      onClick={() => setCaptureDetailsOpen((open) => !open)}
-                      aria-expanded={captureDetailsOpen}
+                      className="send-button"
+                      disabled={!draft.trim() || personal.status === "saving"}
+                      aria-label="Conserver la note"
                     >
-                      <CalendarDays size={13} />
-                      Date et contexte
-                      {(eventPrecision !== "unknown" || noteContext.trim()) && (
-                        <span>renseignés</span>
-                      )}
+                      <ArrowUp size={18} />
                     </button>
-                    {captureDetailsOpen && (
-                      <div className="composer-details">
-                        <label>
-                          Précision
-                          <select
-                            value={eventPrecision}
-                            onChange={(event) => {
-                              const precision = event.target
-                                .value as TemporalPrecision;
-                              setEventPrecision(precision);
-                              if (precision === "unknown") {
-                                setEventStart("");
-                                setEventEnd("");
-                              } else if (precision !== "interval") {
-                                setEventEnd("");
-                              }
-                            }}
-                          >
-                            <option value="unknown">Date inconnue</option>
-                            <option value="day">Jour connu</option>
-                            <option value="approximate">
-                              Date approximative
-                            </option>
-                            <option value="interval">Période</option>
-                          </select>
-                        </label>
-                        {eventPrecision !== "unknown" && (
+                  </div>
+                  {mode === "personal" && (
+                    <>
+                      <button
+                        type="button"
+                        className={`composer-details-toggle ${captureDetailsOpen ? "active" : ""}`}
+                        onClick={() => setCaptureDetailsOpen((open) => !open)}
+                        aria-expanded={captureDetailsOpen}
+                      >
+                        <CalendarDays size={13} />
+                        Date et contexte
+                        {(eventPrecision !== "unknown" ||
+                          noteContext.trim()) && <span>renseignés</span>}
+                      </button>
+                      {captureDetailsOpen && (
+                        <div className="composer-details">
                           <label>
-                            {eventPrecision === "interval" ? "Début" : "Date"}
+                            Précision
+                            <select
+                              value={eventPrecision}
+                              onChange={(event) => {
+                                const precision = event.target
+                                  .value as TemporalPrecision;
+                                setEventPrecision(precision);
+                                if (precision === "unknown") {
+                                  setEventStart("");
+                                  setEventEnd("");
+                                } else if (precision !== "interval") {
+                                  setEventEnd("");
+                                }
+                              }}
+                            >
+                              <option value="unknown">Date inconnue</option>
+                              <option value="day">Jour connu</option>
+                              <option value="approximate">
+                                Date approximative
+                              </option>
+                              <option value="interval">Période</option>
+                            </select>
+                          </label>
+                          {eventPrecision !== "unknown" && (
+                            <label>
+                              {eventPrecision === "interval" ? "Début" : "Date"}
+                              <input
+                                type="date"
+                                value={eventStart}
+                                onChange={(event) =>
+                                  setEventStart(event.target.value)
+                                }
+                              />
+                            </label>
+                          )}
+                          {eventPrecision === "interval" && (
+                            <label>
+                              Fin
+                              <input
+                                type="date"
+                                min={eventStart || undefined}
+                                value={eventEnd}
+                                onChange={(event) =>
+                                  setEventEnd(event.target.value)
+                                }
+                              />
+                            </label>
+                          )}
+                          <label className="composer-context-field">
+                            Contexte
                             <input
-                              type="date"
-                              value={eventStart}
+                              value={noteContext}
+                              maxLength={240}
                               onChange={(event) =>
-                                setEventStart(event.target.value)
+                                setNoteContext(event.target.value)
                               }
+                              placeholder="Travail, amis, famille…"
                             />
                           </label>
-                        )}
-                        {eventPrecision === "interval" && (
-                          <label>
-                            Fin
-                            <input
-                              type="date"
-                              min={eventStart || undefined}
-                              value={eventEnd}
-                              onChange={(event) =>
-                                setEventEnd(event.target.value)
-                              }
-                            />
-                          </label>
-                        )}
-                        <label className="composer-context-field">
-                          Contexte
-                          <input
-                            value={noteContext}
-                            maxLength={240}
-                            onChange={(event) =>
-                              setNoteContext(event.target.value)
-                            }
-                            placeholder="Travail, amis, famille…"
-                          />
-                        </label>
-                      </div>
-                    )}
-                  </>
-                )}
-                <div className="composer-footer">
-                  <span>
-                    <ShieldCheck size={12} />
-                    {mode === "personal"
-                      ? personal.status === "saving"
-                        ? "Enregistrement dans la mémoire SQLite…"
-                        : personal.error
-                          ? "Service local en difficulté · texte préservé"
-                          : "Mémoire SQLite locale · sources intactes"
-                      : warning
-                        ? "Stockage indisponible · session uniquement"
-                        : "Notes du navigateur · non analysées"}
-                  </span>
-                  <span className="composer-shortcut">
-                    Entrée pour conserver <span>↵</span>
-                  </span>
-                </div>
-              </form>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="composer-footer">
+                    <span>
+                      <ShieldCheck size={12} />
+                      {mode === "personal"
+                        ? personal.status === "saving"
+                          ? "Enregistrement dans la mémoire SQLite…"
+                          : personal.error
+                            ? "Service local en difficulté · texte préservé"
+                            : "Mémoire SQLite locale · sources intactes"
+                        : warning
+                          ? "Stockage indisponible · session uniquement"
+                          : "Notes du navigateur · non analysées"}
+                    </span>
+                    <span className="composer-shortcut">
+                      Entrée pour conserver <span>↵</span>
+                    </span>
+                  </div>
+                </form>
+              )}
               <div className="workspace-footer">
                 <span>
                   Un espace pour comprendre, pas pour conclure à votre place.

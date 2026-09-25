@@ -38,9 +38,19 @@ export type MemoryStatus = {
 
 export type AutomaticJob = {
   requestId: string;
+  task?: "extract" | "interpret" | "revise" | "explore";
+  /** D-028 : pourquoi l'agent a lancé cette analyse (null si demandée). */
+  reason?: string | null;
+  applied?: {
+    revision: number;
+    created: number;
+    changed: number;
+    warnings: { code: string; message: string }[];
+  } | null;
   status:
     | "running"
     | "ready_for_review"
+    | "applied"
     | "needs_context"
     | "failed"
     | "cancelled";
@@ -49,6 +59,33 @@ export type AutomaticJob = {
   attempts: { status: string; errors: { code: string; message: string }[] }[];
   preview: AnalysisPreview | null;
   error: { code: string; message: string } | null;
+};
+
+/** D-028 : ce que fait l'agent, ce qu'il a fait, ce qu'il fera ensuite. */
+export type AgentState = {
+  enabled: boolean;
+  consent: boolean;
+  job: AutomaticJob | null;
+  scheduled: boolean;
+  next: { task: string; reason: string } | null;
+};
+
+export type ConversationTurn = {
+  id: string;
+  role: "user" | "agent";
+  text: string;
+  sourceId: string | null;
+  gap: string | null;
+  motive: { kind: string; id: string }[];
+  createdAt: string;
+};
+
+export type ConversationState = {
+  enabled: boolean;
+  consent: boolean;
+  thinking: boolean;
+  error: string | null;
+  turns: ConversationTurn[];
 };
 
 const API_ORIGIN = "http://127.0.0.1:5181";
@@ -288,6 +325,55 @@ class MemoryApi {
   automaticJob(requestId: string) {
     return this.request<AutomaticJob>(
       `/api/analyses/automatic/${encodeURIComponent(requestId)}`,
+    );
+  }
+
+  agent() {
+    return this.request<AgentState>("/api/analyses/automatic/current");
+  }
+
+  consent(granted: boolean) {
+    return this.request<AgentState>("/api/agent/consent", {
+      method: "POST",
+      body: JSON.stringify({ granted }),
+    });
+  }
+
+  conversation() {
+    return this.request<ConversationState>("/api/conversation");
+  }
+
+  openConversation() {
+    return this.request<ConversationState>("/api/conversation/open", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  }
+
+  say(text: string) {
+    return this.request<ConversationTurn>("/api/conversation/messages", {
+      method: "POST",
+      body: JSON.stringify({ idempotencyKey: crypto.randomUUID(), text }),
+    });
+  }
+
+  renamePerson(
+    personId: string,
+    change: {
+      displayName?: string;
+      relatedPersonId?: string | null;
+      relationLabel?: string | null;
+    },
+  ) {
+    return this.request<CommandResult>(
+      `/api/persons/${encodeURIComponent(personId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          idempotencyKey: crypto.randomUUID(),
+          ...change,
+        }),
+      },
     );
   }
 

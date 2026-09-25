@@ -105,7 +105,7 @@ node scripts/scenario-run.mjs auto packages/evaluation/runs/<date>-<nom> [--mode
 node scripts/scenario-run.mjs summary packages/evaluation/runs/<date>-<nom>
 ```
 
-**Analyse automatique dans l'application (IA-A.2)** : lancer le service avec `MANWE_ANALYST_PROVIDER=deepseek` (et `NODE_USE_ENV_PROXY=1` derrière le proxy cloud ; `MANWE_ANALYST_MODEL`, `MANWE_ANALYST_EFFORT` et `MANWE_ANALYST_DAILY_TOKENS` facultatifs). Sans cette variable, seule l'analyse assistée existe. Contrôles navigateur : `node scripts/ui-check-automatic.mjs` (fournisseur simulé, gratuit) ou `--real` (un appel réel, coût minime).
+**Analyse automatique dans l'application (IA-A.2)** : lancer le service avec `MANWE_ANALYST_PROVIDER=deepseek` (et `NODE_USE_ENV_PROXY=1` derrière le proxy cloud ; `MANWE_ANALYST_MODEL`, `MANWE_ANALYST_EFFORT` et `MANWE_ANALYST_DAILY_TOKENS` facultatifs). Sans cette variable, seule l'analyse assistée existe. Depuis D-028, l'agent analyse seul, après le consentement donné une fois dans l'application ; `MANWE_AGENT_QUIET_MS` règle le silence attendu après la dernière note (12 s par défaut). Contrôle navigateur du lieu : `node scripts/ui-check-lieu.mjs` (fournisseur simulé, gratuit).
 
 **Accès à DeepSeek** :
 

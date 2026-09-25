@@ -52,7 +52,7 @@ try {
   await page.goto("http://127.0.0.1:5180");
   await page.getByRole("button", { name: /Mon espace/ }).click();
   await page.getByRole("button", { name: /Mémoire personnelle/ }).click();
-  await page.waitForSelector(".personal-world");
+  await page.waitForSelector(".lieu");
   await page
     .getByRole("button", { name: "Mémoire", exact: true })
     .first()

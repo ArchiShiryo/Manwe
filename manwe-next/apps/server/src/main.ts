@@ -38,12 +38,15 @@ if (process.env.MANWE_ANALYST_PROVIDER === "deepseek") {
       "Proxy détecté : relancer avec NODE_USE_ENV_PROXY=1 pour joindre le fournisseur.",
     );
 }
+// D-028 : silence attendu après la dernière note avant que l'agent analyse.
+const quiet = Number(process.env.MANWE_AGENT_QUIET_MS ?? 12_000);
 const running = await startManweServer({
   databasePath,
   workspaceId,
   port,
   allowedOrigin,
   analyst,
+  agent: { quietMs: Number.isFinite(quiet) && quiet >= 0 ? quiet : 12_000 },
 });
 
 console.log(`MANWË memory ready at ${running.origin}`);

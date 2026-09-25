@@ -35,7 +35,29 @@ import {
 } from "../../../packages/domain/src/memory.ts";
 import { syncLabels, type ConnectionState } from "./syncLabels.ts";
 import { CORRECTED_LABEL, WorldGraph } from "./WorldGraph.tsx";
-import { AutomaticAnalysisPanel } from "./AutomaticAnalysis.tsx";
+/**
+ * D-028 : quand l'agent est configuré, il analyse seul ; la page Mémoire
+ * n'expose ni choix de tâche ni confirmation. Sans fournisseur, l'analyse
+ * assistée (échange de fichiers) reste le seul recours.
+ */
+function AnalysisFallback({ children }: { children: React.ReactNode }) {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    memoryApi
+      .automaticProvider()
+      .then((provider) => setEnabled(provider.enabled))
+      .catch(() => setEnabled(false));
+  }, []);
+  if (enabled === null) return null;
+  if (enabled)
+    return (
+      <p className="surface-footnote">
+        MANWË lit vos notes de lui-même ; ce qu’il fait est visible dans « Mon
+        monde ».
+      </p>
+    );
+  return <>{children}</>;
+}
 import { Directions } from "./Directions.tsx";
 import analystPrompt from "../../../packages/cognition/prompts/analyst-v11.md?raw";
 import {
@@ -91,82 +113,6 @@ export function PersonalLoading() {
       <div className="eyebrow">OUVERTURE DE LA MÉMOIRE</div>
       <h2>Retrouver votre espace…</h2>
       <p>Connexion au service qui conserve vos sources sur ce poste.</p>
-    </section>
-  );
-}
-
-export function PersonalWorld({
-  snapshot,
-  onMemory,
-  onAnnotate,
-  connection = "online",
-  remote = null,
-}: {
-  snapshot: WorkspaceSnapshot;
-  onMemory: () => void;
-  onAnnotate?: MemoryProps["onAnnotate"];
-  connection?: ConnectionState;
-  remote?: MemoryStatus | null;
-}) {
-  const lastEvent = snapshot.events[0];
-  const labels = syncLabels(connection, remote);
-  return (
-    <section className="surface-panel personal-world">
-      <div
-        className={`personal-status-row ${connection === "reconnecting" ? "is-offline" : ""}`}
-        role="status"
-      >
-        <span>
-          <i /> {labels.connection}
-        </span>
-        {labels.analysis && <span>{labels.analysis}</span>}
-        <span>
-          {connection === "reconnecting"
-            ? "Affichage : révision "
-            : "Révision "}
-          {snapshot.workspace.revision.toString().padStart(2, "0")}
-        </span>
-      </div>
-      <div className="personal-world-core">
-        <span className="personal-emblem">
-          <CircleDotDashed size={31} strokeWidth={1} />
-        </span>
-        <div className="eyebrow">VOTRE MONDE PERSONNEL</div>
-        <h2>
-          {snapshot.events.length
-            ? "La mémoire commence à prendre forme."
-            : "Un espace encore ouvert."}
-        </h2>
-        <p>
-          {snapshot.events.length
-            ? `${snapshot.events.length} note${snapshot.events.length > 1 ? "s" : ""} conservée${snapshot.events.length > 1 ? "s" : ""}.${snapshot.persons.length ? ` ${snapshot.persons.length} identité${snapshot.persons.length > 1 ? "s" : ""} issue${snapshot.persons.length > 1 ? "s" : ""} des imports.` : " Aucun nom n’est transformé silencieusement en identité."}`
-            : "Racontez un premier événement ci-dessous. Il sera conservé mot pour mot, sans interprétation silencieuse."}
-        </p>
-        {lastEvent && (
-          <button className="personal-latest" onClick={onMemory}>
-            <FileText size={15} />
-            <span>
-              <small>DERNIÈRE NOTE · {dateLabel(lastEvent.createdAt)}</small>
-              <strong>{lastEvent.title}</strong>
-            </span>
-            <ArrowUpRight size={14} />
-          </button>
-        )}
-      </div>
-      {(snapshot.relations.length > 0 || snapshot.hypotheses.length > 0) && (
-        <WorldGraph snapshot={snapshot} onAnnotate={onAnnotate} />
-      )}
-      <div className="personal-world-foot">
-        <span>
-          <ShieldCheck size={13} /> Sources brutes conservées
-        </span>
-        <span>
-          <CircleDotDashed size={13} /> Analyse Sol :{" "}
-          {snapshot.claims.length
-            ? `${snapshot.claims.length} proposition${snapshot.claims.length > 1 ? "s" : ""} appliquée${snapshot.claims.length > 1 ? "s" : ""}`
-            : "non demandée"}
-        </span>
-      </div>
     </section>
   );
 }
@@ -457,17 +403,14 @@ export function PersonalMemory({
           })
         }
       />
-      <AutomaticAnalysisPanel
-        disabled={snapshot.events.length === 0}
-        onReload={onReload}
-        onNotify={onNotify}
-      />
-      <AssistedAnalysisPanel
-        request={analysisRequest}
-        disabled={snapshot.events.length === 0}
-        onReload={onReload}
-        onNotify={onNotify}
-      />
+      <AnalysisFallback>
+        <AssistedAnalysisPanel
+          request={analysisRequest}
+          disabled={snapshot.events.length === 0}
+          onReload={onReload}
+          onNotify={onNotify}
+        />
+      </AnalysisFallback>
       <p className="surface-footnote">
         La mémoire personnelle vient du service local. Le texte source n’est
         jamais réécrit par une correction.
