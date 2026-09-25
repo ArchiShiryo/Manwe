@@ -1,0 +1,394 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { SqliteMemoryStore } from "../packages/storage/src/sqliteStore.ts";
+import {
+  AutomaticAnalyses,
+  ProviderError,
+  composePrompt,
+  createDeepSeekCall,
+} from "../apps/server/src/analystProvider.ts";
+
+const PROMPT_V6 = readFileSync(
+  new URL("../packages/cognition/prompts/analyst-v6.md", import.meta.url),
+  "utf8",
+);
+
+function withStore(callback) {
+  const directory = mkdtempSync(join(tmpdir(), "manwe-automatic-"));
+  const store = new SqliteMemoryStore(
+    join(directory, "memory.sqlite3"),
+    "auto",
+  );
+  store.capture({
+    idempotencyKey: "auto:capture:0001",
+    text: "Claire a écrit : « Je préfère rester seule ce week-end. »",
+  });
+  return Promise.resolve(callback(store)).finally(() => {
+    store.close();
+    rmSync(directory, { recursive: true, force: true });
+  });
+}
+
+/** Réponse valide pour un paquet, comme la renverrait le modèle. */
+function validProposal(packet) {
+  const source = packet.sources[0];
+  return JSON.stringify({
+    schemaVersion: "1.4",
+    requestId: packet.requestId,
+    workspaceId: packet.workspaceId,
+    baseRevision: packet.baseRevision,
+    contextHash: packet.contextHash,
+    modelDeclaration: {
+      declaredModel: "DeepSeek V4.1-Flash",
+      role: "analyse automatique",
+      technicalId: "deepseek-flash",
+    },
+    outcome: "proposed",
+    operations: [
+      {
+        key: "c1",
+        kind: "propose_claim",
+        payload: {
+          text: "Claire préfère rester seule ce week-end.",
+          category: "explicit_statement",
+          modality: "actual",
+          validFrom: null,
+          validTo: null,
+          citations: [
+            {
+              sourceId: source.sourceId,
+              contentHash: source.contentHash,
+              spanStart: 0,
+              spanEnd: source.text.length,
+              quote: source.text,
+            },
+          ],
+        },
+        rationale: "Citation directe.",
+      },
+    ],
+    clarifications: [],
+    summary: "Une déclaration explicite.",
+  });
+}
+
+const packetOf = (prompt) =>
+  JSON.parse(
+    prompt
+      .slice(PROMPT_V6.trimEnd().length)
+      .split("\n\nTa réponse précédente")[0],
+  );
+
+const reply = (content) => ({
+  content,
+  reasoning: null,
+  meta: {
+    servedModel: "deepseek-flash",
+    finishReason: "stop",
+    usage: { total_tokens: 1234 },
+    latencyMs: 5,
+  },
+});
+
+test("IA-A.2 · même prompt que le harnais, proposition validée mais jamais appliquée seule", () =>
+  withStore(async (store) => {
+    const prompts = [];
+    const automatic = new AutomaticAnalyses(store, {
+      id: "deepseek:test",
+      model: "test",
+      call: async ({ prompt }) => {
+        prompts.push(prompt);
+        return reply(validProposal(packetOf(prompt)));
+      },
+    });
+    const revision = store.revision;
+    const job = automatic.start({ task: "extract" });
+    assert.equal(store.status().analyses.awaitingResponse, 1);
+    assert.deepEqual(store.status().analyses.modes, ["automatic"]);
+    const done = await automatic.settle(job.requestId);
+    assert.equal(done.status, "ready_for_review");
+    assert.equal(done.attempts.length, 1);
+    assert.ok(prompts[0].startsWith(PROMPT_V6.trimEnd()), "prompt v6 intact");
+    const packet = packetOf(prompts[0]);
+    assert.equal(prompts[0], composePrompt(packet), "composition du harnais");
+    assert.equal(packet.requestId, job.requestId);
+    assert.equal(
+      store.revision,
+      revision,
+      "rien n'est appliqué sans confirmation",
+    );
+    const analysis = store.getAnalysis(job.requestId);
+    assert.equal(analysis.responses.length, 1);
+    const row = store.database
+      .prepare(
+        "SELECT verified_model, provider_usage_json, inference_duration_ms FROM analysis_responses WHERE id = ?",
+      )
+      .get(done.preview.responseId);
+    assert.equal(row.verified_model, "deepseek-flash");
+    assert.equal(JSON.parse(row.provider_usage_json).total_tokens, 1234);
+    assert.equal(row.inference_duration_ms, 5);
+    store.applyAnalysis(done.preview.responseId);
+    assert.ok(store.revision > revision);
+  }));
+
+test("IA-A.3 · seconde tentative informée, puis échec explicite après deux rejets", () =>
+  withStore(async (store) => {
+    const prompts = [];
+    let answers = ["pas du JSON", null];
+    const automatic = new AutomaticAnalyses(store, {
+      id: "deepseek:test",
+      model: "test",
+      call: async ({ prompt }) => {
+        prompts.push(prompt);
+        const next = answers.shift();
+        return reply(next ?? validProposal(packetOf(prompt)));
+      },
+    });
+    const first = await automatic.settle(
+      automatic.start({ task: "extract" }).requestId,
+    );
+    assert.equal(first.status, "ready_for_review");
+    assert.equal(first.attempts.length, 2);
+    assert.match(prompts[1], /Ta réponse précédente à ce paquet a été rejetée/);
+    assert.match(prompts[1], /invalid_json/);
+
+    answers = ["{}", "{}"];
+    prompts.length = 0;
+    const second = await automatic.settle(
+      automatic.start({ task: "extract" }).requestId,
+    );
+    assert.equal(second.status, "failed");
+    assert.equal(second.error.code, "proposal_rejected");
+    assert.equal(prompts.length, 2, "une seule seconde tentative");
+    assert.equal(
+      store.status().analyses.awaitingResponse,
+      0,
+      "plus rien « en cours »",
+    );
+  }));
+
+test("IA-A.3 · erreur du fournisseur explicite, annulation et résultat tardif ignoré", () =>
+  withStore(async (store) => {
+    const failing = new AutomaticAnalyses(store, {
+      id: "deepseek:test",
+      model: "test",
+      call: async () => {
+        throw new ProviderError(
+          "provider_quota",
+          "Crédit du fournisseur épuisé.",
+        );
+      },
+    });
+    const failed = await failing.settle(
+      failing.start({ task: "extract" }).requestId,
+    );
+    assert.equal(failed.status, "failed");
+    assert.equal(failed.error.code, "provider_quota");
+    assert.equal(store.getAnalysis(failed.requestId).status, "cancelled");
+
+    let release;
+    const slow = new AutomaticAnalyses(store, {
+      id: "deepseek:test",
+      model: "test",
+      call: ({ prompt }) =>
+        new Promise((done) => {
+          release = () => done(reply(validProposal(packetOf(prompt))));
+        }),
+    });
+    const job = slow.start({ task: "extract" });
+    assert.throws(() => slow.start({ task: "extract" }), /déjà en cours/);
+    slow.abort(job.requestId);
+    store.cancelAnalysis(job.requestId);
+    release();
+    await new Promise((done) => setTimeout(done, 50));
+    const after = slow.get(job.requestId);
+    assert.equal(after.status, "cancelled");
+    assert.equal(
+      store.getAnalysis(job.requestId).responses.length,
+      0,
+      "résultat tardif ignoré",
+    );
+  }));
+
+test("IA-A.3 · le client DeepSeek classe clé refusée, crédit, délai, réseau et reprise bornée", async () => {
+  let mode = "ok";
+  let hits = 0;
+  const server = createServer((request, response) => {
+    hits += 1;
+    let body = "";
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      if (mode === "auth") return response.writeHead(401).end("{}");
+      if (mode === "quota") return response.writeHead(402).end("{}");
+      if (mode === "hang") return; // jamais de réponse
+      if (mode === "flaky" && hits === 1)
+        return response.writeHead(503).end("{}");
+      const parsed = JSON.parse(body);
+      assert.equal(parsed.response_format.type, "json_object");
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(
+        JSON.stringify({
+          model: "deepseek-flash",
+          usage: { total_tokens: 7 },
+          choices: [
+            {
+              finish_reason: "stop",
+              message: { content: '{"ok":true}', reasoning_content: "…" },
+            },
+          ],
+        }),
+      );
+    });
+  });
+  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  const endpoint = `http://127.0.0.1:${server.address().port}`;
+  const call = (options = {}) =>
+    createDeepSeekCall({
+      endpoint,
+      model: "deepseek-flash",
+      backoffMs: 10,
+      ...options,
+    });
+  const signal = new AbortController().signal;
+  try {
+    const ok = await call()({ prompt: "p", signal });
+    assert.equal(ok.content, '{"ok":true}');
+    assert.equal(ok.meta.usage.total_tokens, 7);
+    for (const [name, code] of [
+      ["auth", "provider_auth"],
+      ["quota", "provider_quota"],
+    ]) {
+      mode = name;
+      await assert.rejects(
+        call()({ prompt: "p", signal }),
+        (error) => error.code === code,
+      );
+    }
+    mode = "flaky";
+    hits = 0;
+    const retried = await call({ transportRetries: 1 })({
+      prompt: "p",
+      signal,
+    });
+    assert.equal(retried.content, '{"ok":true}');
+    assert.equal(hits, 2, "une reprise bornée");
+    mode = "hang";
+    await assert.rejects(
+      call({ timeoutMs: 100 })({ prompt: "p", signal }),
+      (error) => error.code === "provider_timeout",
+    );
+    const cancelled = new AbortController();
+    const pending = call()({ prompt: "p", signal: cancelled.signal });
+    cancelled.abort();
+    await assert.rejects(
+      pending,
+      (error) => error.code === "analysis_cancelled",
+    );
+  } finally {
+    server.closeAllConnections();
+    await new Promise((done) => server.close(done));
+  }
+  await assert.rejects(
+    createDeepSeekCall({ endpoint, model: "m", transportRetries: 0 })({
+      prompt: "p",
+      signal,
+    }),
+    (error) => error.code === "provider_unreachable",
+  );
+});
+
+test("IA-A.2 · routes du service : désactivé par défaut, puis parcours automatique complet", async () => {
+  const { startManweServer } = await import("../apps/server/src/server.ts");
+  const uiOrigin = "http://127.0.0.1:5180";
+  const directory = mkdtempSync(join(tmpdir(), "manwe-automatic-server-"));
+  const open = async (analyst) => {
+    const server = await startManweServer({
+      databasePath: join(directory, "memory.sqlite3"),
+      port: 0,
+      allowedOrigin: uiOrigin,
+      analyst,
+    });
+    const cookie = (
+      await fetch(`${server.origin}/api/session`, {
+        method: "POST",
+        headers: { origin: uiOrigin },
+      })
+    ).headers
+      .get("set-cookie")
+      .split(";", 1)[0];
+    const call = (path, options = {}) =>
+      fetch(`${server.origin}${path}`, {
+        ...options,
+        headers: {
+          origin: uiOrigin,
+          cookie,
+          ...(options.body ? { "content-type": "application/json" } : {}),
+        },
+      });
+    return { server, call };
+  };
+  try {
+    const off = await open(null);
+    assert.deepEqual(await (await off.call("/api/analyses/automatic")).json(), {
+      enabled: false,
+      providerId: null,
+      model: null,
+    });
+    const refused = await off.call("/api/analyses/automatic", {
+      method: "POST",
+      body: JSON.stringify({ task: "extract" }),
+    });
+    assert.equal(refused.status, 503);
+    assert.equal((await refused.json()).error.code, "provider_unconfigured");
+    await off.call("/api/captures", {
+      method: "POST",
+      body: JSON.stringify({
+        idempotencyKey: "auto:route:capture",
+        text: "Claire a écrit : « Je préfère rester seule ce week-end. »",
+      }),
+    });
+    await off.server.close();
+
+    const on = await open({
+      id: "deepseek:test",
+      model: "test",
+      call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
+    });
+    const forged = await on.call("/api/analyses/automatic", {
+      method: "POST",
+      body: JSON.stringify({ task: "extract", providerId: "autre" }),
+    });
+    assert.equal(forged.status, 202, "providerId du client ignoré");
+    const job = await forged.json();
+    let state = job;
+    for (let i = 0; i < 50 && state.status === "running"; i += 1) {
+      await new Promise((done) => setTimeout(done, 20));
+      state = await (
+        await on.call(`/api/analyses/automatic/${job.requestId}`)
+      ).json();
+    }
+    assert.equal(state.status, "ready_for_review");
+    const analysis = await (
+      await on.call(`/api/analyses/${job.requestId}`)
+    ).json();
+    assert.equal(analysis.packet.providerId, "deepseek:test");
+    assert.equal(analysis.packet.mode, "automatic");
+    assert.equal(analysis.promptVersion, "analyst-v6");
+    const applied = await on.call(`/api/analyses/${job.requestId}/apply`, {
+      method: "POST",
+      body: JSON.stringify({
+        requestId: job.requestId,
+        responseId: state.preview.responseId,
+        confirmed: true,
+      }),
+    });
+    assert.equal(applied.status, 200);
+    await on.server.close();
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

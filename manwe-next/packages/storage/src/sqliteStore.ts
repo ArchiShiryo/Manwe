@@ -1940,6 +1940,30 @@ export class SqliteMemoryStore {
     return { created, changed, warnings: context.warnings };
   }
 
+  /** IA-A.4 : usage, modèle servi et durée d'inférence d'une réponse automatique. */
+  recordProviderUsage(
+    responseId: string,
+    input: {
+      servedModel: string | null;
+      usage: unknown;
+      inferenceDurationMs: number | null;
+    },
+  ) {
+    this.database
+      .prepare(
+        "UPDATE analysis_responses SET verified_model = ?, provider_usage_json = ?, inference_duration_ms = ? WHERE workspace_id = ? AND id = ?",
+      )
+      .run(
+        input.servedModel,
+        input.usage === null || input.usage === undefined
+          ? null
+          : JSON.stringify(input.usage),
+        input.inferenceDurationMs,
+        this.workspaceId,
+        responseId,
+      );
+  }
+
   cancelAnalysis(requestId: string) {
     const result = this.database
       .prepare(

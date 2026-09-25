@@ -24,6 +24,7 @@ import {
   type FocusContext,
 } from "../../../packages/cognition/src/projection.ts";
 import { buildSynthesis } from "../../../packages/cognition/src/synthesis.ts";
+import { AutomaticAnalyses, type ProviderConfig } from "./analystProvider.ts";
 
 const JSON_LIMIT = 64 * 1024;
 
@@ -33,6 +34,8 @@ type ServerOptions = {
   allowedOrigin?: string;
   workspaceId?: string;
   workspaceName?: string;
+  /** Fournisseur automatique (IA-A.2) ; absent = analyse assistée seulement. */
+  analyst?: ProviderConfig | null;
 };
 
 function json(response: ServerResponse, status: number, body: unknown) {
@@ -74,6 +77,7 @@ export async function startManweServer(options: ServerOptions) {
     workspaceId,
     options.workspaceName,
   );
+  const automatic = new AutomaticAnalyses(store, options.analyst ?? null);
   const sessionToken = randomBytes(32).toString("base64url");
   const rate = new Map<string, number[]>();
 
@@ -164,6 +168,39 @@ export async function startManweServer(options: ServerOptions) {
       }
       if (pathname === "/api/workspace" && request.method === "GET") {
         json(response, 200, store.snapshot());
+        return;
+      }
+      if (pathname === "/api/analyses/automatic" && request.method === "GET") {
+        json(response, 200, automatic.describe());
+        return;
+      }
+      if (pathname === "/api/analyses/automatic" && request.method === "POST") {
+        // Le client choisit la tâche et le focus, jamais le fournisseur.
+        const body = await readJson(request);
+        const input =
+          body && typeof body === "object" && !Array.isArray(body)
+            ? (body as { task?: unknown; focus?: unknown })
+            : {};
+        const command = parsePrepareAnalysisCommand({
+          task: input.task,
+          ...(input.focus === undefined ? {} : { focus: input.focus }),
+        });
+        json(
+          response,
+          202,
+          automatic.start({ task: command.task, focus: command.focus }),
+        );
+        return;
+      }
+      const automaticRoute = pathname.match(
+        /^\/api\/analyses\/automatic\/([^/]+)$/,
+      );
+      if (automaticRoute && request.method === "GET") {
+        json(
+          response,
+          200,
+          automatic.get(decodeURIComponent(automaticRoute[1])),
+        );
         return;
       }
       const analysisRoute = pathname.match(/^\/api\/analyses\/([^/]+)$/);
@@ -365,11 +402,9 @@ export async function startManweServer(options: ServerOptions) {
       }
       const cancelRoute = pathname.match(/^\/api\/analyses\/([^/]+)\/cancel$/);
       if (cancelRoute && request.method === "POST") {
-        json(
-          response,
-          200,
-          store.cancelAnalysis(decodeURIComponent(cancelRoute[1])),
-        );
+        const requestId = decodeURIComponent(cancelRoute[1]);
+        automatic.abort(requestId);
+        json(response, 200, store.cancelAnalysis(requestId));
         return;
       }
       json(response, 404, {
