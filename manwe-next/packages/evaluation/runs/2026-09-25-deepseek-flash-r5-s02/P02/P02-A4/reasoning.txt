@@ -1,0 +1,499 @@
+Let me analyze this ContextPacket.
+
+Task: "explore" with a goal in "goals" (confirmedByUser: true, goal id 8dbcc0bd-e55a-4848-bb96-4f81c650ac7b). allowedOperations: propose_question, propose_direction, propose_goal.
+
+Since there is already a confirmed goal, per rule G3, I should not propose a new goal. So I need to propose directions (max 2 action directions + 1 do_nothing) for the goal, and possibly questions.
+
+The goal text: "Que l'équipe s'organise sans que tout repose sur lui, sans quitter le club." Confirmed by user.
+
+O1: propose at most TWO action directions for the goal, and ONE "do_nothing" direction.
+
+O2: Each action direction activates a reading present in the packet or proposed in the response (lever.hypothesis), not superseded or contradicted, with a lever type.
+
+Let me pick hypotheses to anchor levers.
+
+Available hypotheses (not superseded/contradicted):
+- 2c85f3df: D3 - user maintains his place as the one thanks to whom the club holds; charge is price of link and recognition. rank 1. draft.
+- 8219602d: D3 alternative - fatigue is conjunctural. draft.
+- dd53019d: D2 - with Léa, initiative of tasks comes from Léa, execution by user; recognition. plausible rank 1.
+- 46a35c53: D2 - distribution not tied to relation with Léa but to seasonal task sharing. draft.
+- 742a4e2c: D2 - with Hugo, user compensates. plausible rank 1.
+- 9241269d: D3 - with Hugo, user absorbs. draft.
+- 7c1d79d4: D5 - club functions as ensemble where charge concentrates on the one who doesn't refuse; recognition as payment. draft rank 1.
+- 1173d51a: D5 alt - club size.
+- 9076b52b: D3 - with Léa, attempts to redistribute fail; planning approved then charged back to user. draft.
+- eb7cbf27: D2 - between Léa and Hugo, demand passes through Léa and withdrawal through Hugo. plausible.
+- ca005b20: D3 - with Samir, link outside club yields to obligations. draft.
+- c88ee62a: D2 - Samir occupies third-party position.
+- ec42c0f3: D4 - regulation of belonging by indispensability and conflict avoidance.
+- 8cd2c9df, fa7f3af9, 0a0b3629, 39e05d91, 8cd2... alternatives.
+
+For directions, I need to choose levers:
+1. change_reward (change what repetition rewards)
+2. lower_barrier (lower transition barrier, small steps)
+3. alternative_source (offer other source of same gain)
+4. disconfirming_experience
+5. change_game
+
+Let me design two action directions:
+
+Direction 1: lower_barrier - make a small step: rather than refuse or take on everything, delegate one specific task with a named person and explicit deadline; or ask someone specific for a small concrete help. Lever on hypothesis 2c85f3df (mechanismKey "barrier") — the barrier is that refusing/delegating would make the imbalance visible and risk the place. Lower the barrier by small steps: ask one person for one concrete small task, e.g. "Samir, tu peux appeler le gymnase cette semaine ?" That's a small step. Or announce one absence for one task without justification.
+
+Direction 2: change_reward - change what the repetition rewards. E.g., stop being the one who systematically absorbs; make visible the task and ask for a peer-based rotation explicitly assigned, with names and deadlines, but not held by himself. Using hypothesis 9076b52b (attempts to redistribute fail because they are approved then handed back) with mechanismKey "barrier" (tenir soi-même le planning évite le conflit ouvert). Actually perhaps use 7c1d79d4 (D5 club) with mechanismKey "barrier" — "redistributing would require each to learn the procedures and to give up a member who takes charge". The lever: change_game — change the frame/group: introduce a rotation where each task is assigned to a named person, publicly, and the user stops executing. Hmm.
+
+Let me think about lever types with mechanismKeys:
+
+- For the goal "that the team organizes without everything resting on him, without leaving the club", the key mechanism at play: charge concentrates on the one who doesn't refuse; the reward is recognition and central place (hypothesis 2c85f3df "soothes": being the one counted on, public recognition; "barrier": refusing or delegating would make the imbalance visible and risk the place and link). And the club-level barrier: 7c1d79d4 "barrier": redistributing would require each to learn procedures and give up a member who takes charge.
+
+Direction A: lower_barrier — small step: ask a named person for a small, dated, concrete task (not "a planning"), and let it happen without recovering it. Lever hypothesis: 2c85f3df, mechanismKey "barrier". This is a small step that lowers the transition barrier: it doesn't require refusing Léa or confronting Hugo, just one small request to one person one time.
+
+Direction B: change_reward — change what the repetition rewards: make the invisible work visible and non-automatic. E.g., announce explicitly that on a given task he will not do it (without saying who does it), and let the group handle it. That changes what maintaining the equilibrium rewards. But this touches barrier. Alternatively change_reward: stop accepting the recognition-as-payment for carrying everything; e.g., Léa's public recognition is the "payment" stabilizing the concentration (7c1d79d4). Changing reward would be: accept recognition but for one role explicitly limited (e.g., "je veux bien être référent X, pas Y"), so that the recognition stops being tied to absorbing everything. Hmm, this might be a bit abstract.
+
+Alternatively, Direction B: change_game — change the frame: bring the redistribution to a group setting (a meeting where each task gets a name), so that assignment becomes a group norm rather than a personal favor asked by the user. Lever hypothesis 7c1d79d4 (D5, the club), mechanismKey "barrier" (redistributing would require each to learn, and give up a member who takes charge). Actually the lever of "change_game" fits D5 well: change the cadre/group norm.
+
+Hmm, but I should also consider using proposed hypotheses. The rules allow lever.hypothesis referencing a hypothesis in the packet or one proposed in this response. I could propose a new hypothesis but the allowedOperations don't include propose_hypothesis! allowedOperations: only propose_question, propose_direction, propose_goal. So I can only anchor to existing hypotheses in the packet.
+
+So I must anchor to packet hypotheses: e.g., 2c85f3df (D3 self), 7c1d79d4 (D5 club), 9076b52b (D3 relation Léa), 742a4e2c (D2 Hugo, plausible), dd53019d (D2 Léa, plausible), 9241269d (D3 Hugo), ec42c0f3 (D4 self), eb7cbf27 (D2 Léa-Hugo), etc.
+
+Good choices for the goal:
+- 2c85f3df (self D3): barrier = refusing/delegating would make imbalance visible, risk place and link. lever lower_barrier. mechanismKey "barrier".
+- 9076b52b (relation Léa D3): attempts to redistribute fail: planning approved then charged back. mechanismKey "barrier" (holding the planning himself avoids open conflict and the visible failure of the planning). A lever "change_reward" or "change_game" here: e.g. assign the planning's upkeep to someone else explicitly, or make the planning a group thing not held by him.
+- 7c1d79d4 (D5 club): barrier = redistribution would require learning and giving up the member who takes charge. lever change_game (change the cadre/norm: bring the distribution to the group, formalize roles).
+
+O5: With limited data (D1 readings, single episode), limit to a low-effort information-oriented direction. Here we have many episodes (~20 events over ~53 days), and readings up to D5, so we can propose more substantial levers, but still be careful.
+
+O3: predict actor responses with phase and horizonDays. For levers removing what repetition rewards or touching a barrier, announce transient worsening.
+
+Let me pick:
+
+Direction 1 (key d1): "Demander une seule tâche précise à une personne nommée, et ne pas la reprendre"
+- goal: goal ref 8dbcc0bd...
+- title: "Un petit pas : une tâche, une personne, une date"
+- action: "Demander à une personne précise (par exemple Samir, qui nomme déjà la charge) de prendre en charge une tâche datée — par exemple l'appel au gymnase ou une partie de la préparation du tournoi — et laisser la tâche se faire sans la reprendre."
+- lever: { kind: "lower_barrier", hypothesis: {kind:"hypothesis", id:"2c85f3df-e9fb-4dd4-99e4-f54817e50983"}, mechanismKey: "barrier" }
+- conditions: "..."
+- effort: "low"
+- limits: "..."
+- signals: [...]
+- learnsIfFails: "..."
+- predictions: [{actor: Samir or person, response, phase immediate, horizonDays: 7}, etc.]
+
+Direction 2 (key d2): change_reward anchored on 9076b52b — "Faire du planning un objet du groupe, pas un objet tenu par lui": propose that the next redistribution (planning) be explicitly assigned by names at a meeting, and he announces he will not be the one holding it. Actually that's more change_game. Hmm.
+
+Alternatively change_reward: reward what the repetition rewards. The repetition rewards: recognition/central place (2c85f3df soothes). Changing the reward: get recognition for something other than absorbing— e.g., explicitly claim a role he enjoys (playing, a specific responsibility) rather than the whole organization. Hmm.
+
+Let me think about better lever: alternative_source — offer another source of the same gain. The gain is the link/recognition and the club staying functional. Alternative source: get the link through playing and shared moments (Samir's ciné, the team) rather than through service. So the direction could be: accept one outing with Samir / one non-organizational moment with the team, as a source of link that doesn't pass through service. That leverages ca005b20 (with Samir, link outside club yields to obligations) with mechanismKey "optimizes" or "barrier". Hmm, but that's more about Samir than about the goal (team organizing without everything on him). Actually it does serve the goal: if the link doesn't require indispensability, the cost of letting go of tasks decreases. Lever: alternative_source on hypothesis 2c85f3df with mechanismKey "soothes" (being counted on, recognition is the soothing) — offer an alternative source of the same soothing: belonging through play and friendship, not through service. That's coherent.
+
+Hmm. But two action directions. Let me choose:
+
+Direction A (lower_barrier): one small concrete delegation to a named person; don't take it back. Anchor 2c85f3df, mechanismKey "barrier". Predict: immediate mild discomfort, Léa may test/be surprised; transient worsening possible.
+
+Direction B (change_game): bring the distribution into the group: propose that the next task list be filled with names in a meeting where each person writes their own task, and the user explicitly says he won't hold the tracking. Anchor 9076b52b (attempts to redistribute fail), mechanismKey "barrier" — the barrier is that holding the planning himself avoids open conflict and visible failure; changing the game = the planning becomes a group object with named owners and a public date, so it can't be handed back to him. Predict: Léa's immediate approval with condition ("tu le tiens à jour ?") again — that's the immediate phase prediction; transitional: Hugo's silence/avoidance; equilibrium.
+
+Hmm, maybe better for Direction B: use 7c1d79d4 (D5) with mechanismKey "barrier" and lever change_game. The club's barrier: redistributing would require each to learn procedures and to give up a member who takes charge. Change_game: create a frame where tasks come with a written procedure so that another person can take them without the user.
+
+Hmm, I like the idea: "Transmettre une procédure, pas seulement une tâche" — for one recurring task, write down the steps once (or record them) and hand it to a named person for one occurrence. That lowers the club's barrier (learning) and changes what the equilibrium maintains. Lever: lower_barrier or change_game. Hmm, that's arguably lower_barrier (abaisser la barrière de transition) on the D5 hypothesis.
+
+But maybe I shouldn't have two similar directions. Let me differentiate:
+
+Direction A: one small, dated, named delegation; don't take it back (lower_barrier on self hypothesis 2c85f3df, mechanismKey barrier) — targets the personal barrier (fear of risking his place).
+
+Direction B: change_game on the relation/club: make the redistribution public and named in a group setting (the planning becomes a group object; the user announces he won't be the one holding it). Anchor 9076b52b with mechanismKey "barrier". change_game: change the frame — from a personal request ("quelqu'un peut m'aider ?") to a group norm with named owners.
+
+Hmm, 9076b52b is about relation with Léa; change_game fits "changer de cadre, de groupe ou de jeu". OK.
+
+Direction C (do_nothing): predict what happens if nothing changes: per 2c85f3df prediction "de nouvelles demandes seront acceptées, la fatigue restera verbalisée sans que la répartition change" and 7c1d79d4 prediction "toute nouvelle échéance du club retombera sur l'utilisateur, et l'épuisement signalé par Samir s'accentuera". Predictions: Léa continues to request (immediate), fatigue grows (transitional), possible rupture point... equilibrium: charge concentrates further; Samir's remarks become more pointed; risk of burnout or of the club losing him.
+
+Also questions: existing open questions should not be repeated. There are 6 open questions. I could ask a new one that discriminates between readings relevant to the directions. E.g., a question that discriminates 2c85f3df vs 7c1d79d4 or ... Hmm. What question would help choose the direction? Maybe: "Quelle tâche, parmi celles que tu portes, accepterais-tu le plus facilement de voir faite par quelqu'un d'autre ?" — that's for action, not discriminating hypotheses. Rule 20: pose a question only if its answer discriminates hypotheses. And targets must be hypotheses refs.
+
+Possible new question: does the answer discriminate? Existing questions cover: refusal/manquement (742a4e2c vs 39e05d91), Léa's recognition feeling (dd53019d vs 46a35c53), Hugo's money (9241269d vs 0a0b3629), ciné felt as constraint or choice (ca005b20 vs 8cd2c9df), Samir's question unanswered (ca005b20 vs c88ee62a), lighter weekend (2c85f3df vs 8219602d).
+
+A new discriminating question might be: "Quand quelqu'un d'autre prend une tâche du club sans toi, qu'est-ce que tu ressens — soulagement, ou gêne que ce ne soit pas fait comme tu le fais ?" This discriminates 2c85f3df (place as indispensable; letting go threatens place) vs 7c1d79d4/1173d51a (club-level: it's structural, not his place) — actually it discriminates self-driven (2c85f3df, 8219602d) vs club-structural (7c1d79d4, 1173d51a), which is directly relevant to whether a lower_barrier/personal lever or a change_game/group lever is the right one. That's a good discriminating question. Targets: 2c85f3df and 7c1d79d4 (or 8219602d).
+
+Also could ask: "Si tu annonçais demain que tu ne t'occupes plus de l'organisation pendant deux semaines, que se passerait-il selon toi ?" — discriminates 7c1d79d4 (nothing else knows the procedures → things stall) vs 1173d51a (club size) vs 2c85f3df. Hmm, hypothetical question maybe fine.
+
+I'll include one or two questions. Let's keep it to one or two strong ones.
+
+Now the output must be a single JSON object CognitiveProposal. Operations allowed: propose_question, propose_direction, propose_goal. Since goal confirmed exists, no propose_goal.
+
+Outcome: "proposed" since we have directions.
+
+Now let's carefully build citations. I must use exact quotes with correct offsets from sources. Safest: copy sourceId, contentHash, spanStart, spanEnd, quote exactly as given in the packet sources. Note: in this packet, sources include contentHash. Good — I'll copy entire-source citations.
+
+Citations available:
+- Source 917d658b (repas): quote "Léa m'a demandé d'organiser le repas de fin de saison ; j'ai hésité puis j'ai accepté." span 0-86, hash f768c510cb1df6d4b9e004e862ba2029a5207f6e1879d80db59684a917167424
+- Source 0239f4a6 (Samir plus léger): hash 86aadba31f6d56bb003cb686d528b9e5729473e15844a26b9cafe91e330eac5b, 0-95
+- Source 4302f404 (fatigué de tout porter): hash 5cc4f46fe88742db4316e1667f98378ee5545e9c91deb9bb8a1575187f2962e1, 0-157
+- Source 49f87399 (préparé seul la salle): hash 518c83a15f08f4087c0961835a3bcf24e5b81621f3932dd326973b8cb5f4443d, 0-77
+- Source e380415a (Hugo déteste plannings): hash d691cf7f4910849aeed2451def7f718c6179e6feffc64ba93d6dcd28320c1fcf, 0-88
+- Source 4fa21c24 (Léa agacée maillots): hash 8d4fae8bdcd473e3c6648f6e714d5456725f97763bebaeb8ec09dca0201bbd84, 0-111
+- Source da05288d (Samir ciné): hash 7fb5d067947e23d08cb25abb05751054b6d3e09f2bf5728fe406bda49a4832b4, 0-98
+- Source 23a0e1ab (Hugo rend cotisation): hash 80e0aa3a5471b6c544049796116a0b1764540dcee05f7b624f632c48033ac74f, 0-71
+- Source 55e0f2fe (réunion mairie): hash ee73a8f4a3f107f988d4ed265c8dc28c2c6699e27439224f14abf430f6707259, 0-108
+- Source 0f7be254 (ballons): hash f1f00894c6fda49e41803080ed9e855945be6f184300bc75f93e4365f98d02bb, 0-94
+- Source 20ce1b6b (Hugo prêter cotisation): hash 9774b5624954dd18ba8b534dbb20b414101ac931370781b6ab4f5be458bdca83, 0-71
+- Source c58e6e78 (Samir pourquoi toujours toi): hash 6263d61f5e067238df1bcb26f8beb764bd3a48dbdf54d75afb045929bdd15268, 0-93
+- Source 9265ede7 (planning): hash 58542749de5dd4bf7606c60ee1b61200b81e1ab0faba963f833a5f6d524c1dcc, 0-103
+- Source 1b201d4e (Léa dit au coach): hash c6acb45098e990e96cf67a403ab613f1ab3e98ad0f2374a098e85e709bf872f0, 0-73
+- Source 1c91059c (covoiturage): hash 75943afacfc749d686fae8bb0518eb42ee4b7b046e520673e9881308093cf6c8, 0-95
+- Source c8c6c1f9 (gymnase): hash 5b863f138ee1087b6421d9f7e18d9bd224e2cad2e8dd91e5c798e209bb93951e, 0-76
+- Source 3b1d28df (Samir épuisé): hash fa9979be1c32374525bc2d12256d882990a23a9bfcce4688a99ab323fa704734, 0-103
+- Source d498bd03 (clé): hash 8d0ac99be2099ef33facc7b308bc933c8b2f8898de3fea24ef7cb3f196a474cb, 0-87
+- Source ea77d40e (avancé argent maillots): hash 1728f1e3e19a037a3d890a044fdc94a07c20ef34217310b00b03bb21c2825cc0, 0-98
+- Source 827703fe (inscriptions): hash b27af315bf1da32ec0cb1dae4dae272913de32ff7c1a3c929853e33ff009eb97, 0-105
+
+Good.
+
+Now design directions.
+
+Direction d1: lower_barrier, hypothesis 2c85f3df, mechanismKey "barrier".
+
+Title: "Une tâche, une personne, une date"
+
+Action: "Demander à une personne nommée (par exemple Samir, qui nomme déjà la charge, ou Hugo sur une tâche précise et datée) de prendre en charge une seule tâche concrète du club, avec une date, et ne pas la reprendre si elle est faite autrement ou en retard."
+
+Conditions: "Quand une échéance précise se présente et qu'une personne est identifiable — pas de grand planning, une seule tâche."
+
+Effort: low.
+
+Limits: "Ne règle pas la répartition globale ; la personne peut accepter puis ne pas faire, et le coût retomberait sur lui ; si la tâche est mal faite, la tentation de reprendre sera forte."
+
+Signals: ["une tâche est faite par quelqu'un d'autre sans que l'utilisateur s'en occupe", "l'utilisateur ressent de la gêne à ne pas vérifier", "une remarque du type « tu ne le fais plus, toi ? »"]
+
+learnsIfFails: "Si la tâche retombe toujours sur lui, cela indique que le frein est le club ou les autres ; si c'est lui qui la reprend, le frein est de son côté."
+
+Predictions:
+- { actor: {person: Hugo or Léa}, response: "accepte la demande sans s'engager au-delà (Léa approuve puis laisse la mise en œuvre ; Hugo ne répond pas)", phase: immediate, horizonDays: 7 }
+- { actor: {self:true}, response: "inconfort à laisser une tâche non vérifiée, envie de reprendre", phase: transitional, horizonDays: 14 }
+- { actor: {person: Samir}, response: "remarque que la charge change, ou propose de prendre une part", phase: equilibrium, horizonDays: 30 }
+
+Hmm, predictions' actor: MEMBRE. Can be self? MEMBRE = {mention} | {person: REF} | {self: true}. So self is allowed. OK.
+
+Careful: predictions should be observable and datable. "Léa accepte puis laisse la mise en œuvre" — a bit vague. Let me write concrete.
+
+Direction d2: change_game, hypothesis 9076b52b, mechanismKey "barrier".
+
+Hmm, is change_game appropriate? change_game = changer de cadre, de groupe ou de jeu. Action: "Faire de la répartition un objet du groupe : lors d'une réunion, chaque tâche reçoit un nom et une date écrits par la personne qui la prend, et l'utilisateur annonce qu'il ne tiendra pas le suivi." This changes the frame from a plan held by him to a group distribution. Anchor 9076b52b: the barrier is that holding the planning himself avoids open conflict and the visible failure; the change is that the planning no longer passes through him.
+
+Alternatively change_reward on 7c1d79d4? "change_reward: changer ce que la répétition récompense". What does the repetition reward currently? Recognition and central place (2c85f3df soothes; 7c1d79d4 optimizes). Change what it rewards: e.g., get recognition for a different contribution (playing, coaching the young) while the organization becomes someone else's, or make visible/tracked the tasks so the recognition goes to whoever does them. Hmm.
+
+I think a cleaner second direction: alternative_source — offer another source of the same gain (belonging + recognition without indispensability): accept/initiate a non-organizational moment with the team/Samir (e.g., say yes to the next ciné, or a drink after training without club business), and test that the link survives when he isn't carrying anything. Anchor ca005b20 (link outside club yields to obligations; Samir names what others don't), mechanismKey "barrier" — barrier is that responding to Samir would require looking at the task distribution, which touches the link with Léa and his place in the club. The lever alternative_source on "soothes" of 2c85f3df: the soothing is being counted on; alternative: being part of the team without being the one who carries.
+
+Hmm — but is that serving the goal? The goal is that the team organizes without everything on him while keeping the club. If his belonging is secured by other means (play, friendship), letting go of tasks becomes less costly. Yes, it serves the goal indirectly but relevantly. And its lever is alternative_source.
+
+But note the rule: "Chaque direction d'action actionne une lecture présente dans le paquet ou proposée dans la réponse (lever.hypothesis)". So anchor it to a hypothesis. ca005b20 is a hypothesis about relation with Samir; using it for the goal is fine if the mechanism links: responding to Samir's invitation/remarks exercises accepting the link without service.
+
+Hmm, I need to decide on the two directions. I think the strongest levers given the readings:
+
+1. lower_barrier on 2c85f3df barrier: small concrete step — one task handed to a named person, and, critically, the user doesn't take it back. This directly targets the personal barrier (fear for his place).
+
+2. change_game on 7c1d79d4 (D5 club) barrier: make the distribution a group object where each task is attached to a name and a written step, so the club's barrier (each must learn, and give up the one who takes charge) is lowered by transferring procedures. Actually that's more lower_barrier at club level... but lever types: "change_game" = changer de cadre, de groupe ou de jeu. Changing the frame where tasks are assigned by Léa→user to a named/public distribution is changing the game. Hmm, so change_game on 7c1d79d4 barrier or on 9076b52b barrier.
+
+Hmm, alternatively change_reward on 7c1d79d4: "the recognition of Léa is the payment that stabilizes this concentration". Change what the repetition rewards: make the recognition follow the execution (each task's doer is named publicly) so that the payment for carrying no longer accrues only to him.
+
+Let me pick:
+
+d2: change_reward, hypothesis 7c1d79d4, mechanismKey "optimizes"? Hmm — "change_reward (changer ce que la répétition récompense)". The mechanism field to name: the reading's field the lever aims at. Options: optimizes, protects, defenses, beliefs, triggers, soothes, barrier, prediction. For changing reward, maybe "soothes" or "optimizes". I'd use "optimizes" ("Le club obtient les tâches faites sans avoir à les répartir ; l'utilisateur obtient une place centrale et reconnue").
+
+Action: "Rendre la répartition nominative et publique : chaque tâche du club porte le nom de celle ou celui qui la fait, affiché là où l'équipe le voit (groupe, vestiaire), y compris quand c'est l'utilisateur — puis, sur une échéance, laisser un autre nom que le sien." Hmm — plus simply: "Rendre visible qui fait quoi (un tableau nominatif affiché au club), de sorte que la reconnaissance suive celui qui exécute plutôt que de se concentrer sur celui qui prend tout."
+
+That changes what the repetition rewards: currently recognition flows to the one who absorbs; if the recognition is attached to named tasks, others can receive it too, and the user's monopoly on recognition-as-payment weakens.
+
+Hmm, but this still requires the user to set it up. Fine.
+
+Alternatively d2: change_game on 9076b52b (attempts to redistribute fail — approved then handed back). Action: at the next redistribution, don't carry the plan: state one task he will not take and let the group decide who does; then don't do it even if nobody takes it. This is more like "disconfirming_experience" (an experience that belies a belief: "si je pose l'organisation, les autres suivront" / "sans moi, le club ne tient pas"). Hmm, disconfirming_experience on 2c85f3df beliefs ("le club tient grâce à lui") or on 9076b52b beliefs ("Si je pose l'organisation, les autres suivront").
+
+O4 says prefer lowering barrier; also "actions qui apprennent quelque chose même en cas d'échec". 
+
+I think a good set:
+- d1: lower_barrier (small step, one task, one person, one date) on 2c85f3df.barrier.
+- d2: alternative_source (belonging outside the service) on 2c85f3df.soothes... but same hypothesis twice; allowed? Probably allowed but better to vary. Use ca005b20 for alternative_source? That's about Samir. Hmm. Actually "alternative_source (offrir une autre source du même gain)" — the same gain as what the repetition provides. The repetition (2c85f3df) provides belonging/recognition; the alternative source is being with the team without organizing. Anchoring to 2c85f3df.soothes with hypothesis 2c85f3df is fine, and mechanismKey "soothes". Actually maybe anchor to ca005b20 with mechanismKey "barrier": the barrier says "répondre à Samir obligerait à regarder la répartition des tâches, ce qui touche le lien à Léa et la place dans le club" — the lever of accepting a non-club moment with Samir tests that the link survives without service, and lowers the cost of looking at the distribution. Hmm — that's a mix of alternative_source and disconfirming_experience.
+
+I'll do: d2 = change_reward on 7c1d79d4? Or d2 = alternative_source on ca005b20?
+
+Given the goal is about the team organizing, I think a direction directly on the distribution is better as d2, and the Samir one is more indirect. But at most two action directions; the do_nothing is the third.
+
+Let me reconsider: maybe the two strongest levers for this goal:
+
+Lever 1 (lower_barrier): make the first concrete handover small and dated — ask one named person for one task, don't take it back. (targets 2c85f3df.barrier)
+
+Lever 2 (change_game): change the frame of redistribution from personal requests to a group/named allocation where the user publicly gives up ownership of one recurring task ("je ne m'occupe plus des inscriptions"), announced as a fact rather than a request for help. This leverages 9076b52b (attempts fail because approved then handed back) — the barrier is the plan held by him; by not holding it and by announcing, the game changes. Hmm.
+
+Actually, changing what the repetition rewards (change_reward) might be the most powerful: the repetition rewards the user with the central place and public recognition (7c1d79d4: "la reconnaissance publique de Léa est le paiement qui stabilise cette concentration"). Change: get recognition for the role he enjoys (playing) and let the organizational recognition go to whoever does it — e.g., explicitly credit the person who takes a task in front of the team ("c'est X qui a appelé le gymnase"), and stop being the one thanked for everything. That's a specific, small, observable action and it changes the reward. I like it; it also serves the goal: once recognition no longer only flows through absorbing, the maintenance of the concentration loses its payment.
+
+Hmm, but careful about O5: no manipulation. This is fine, it's honest credit attribution.
+
+I'll go with:
+- d1: lower_barrier on 2c85f3df (barrier). One task, one named person, one date; don't take it back.
+- d2: change_reward on 7c1d79d4 (mechanismKey "optimizes" or "soothes"? The mechanism field here: 7c1d79d4's mechanism has optimizes and barrier only. The reward is described in "optimizes": "Le club obtient les tâches faites sans avoir à les répartir ; l'utilisateur obtient une place centrale et reconnue." So mechanismKey "optimizes"). Action: attribute credit explicitly to whoever does a task, and let one's own tasks be seen as ordinary; concretely, in the team chat or after a match, name who did what, including when it isn't him — and don't list what he did himself. Hmm, "don't list what he did himself" may feel odd.
+
+Alternative action for change_reward: "Prendre une place non organisationnelle visible (par exemple un rôle de jeu ou d'entraînement) et laisser une tâche organisationnelle aller à quelqu'un d'autre sans se proposer." Hmm that's vague.
+
+Let me simplify d2: "Faire circuler la reconnaissance avec la tâche : quand une tâche est prise par quelqu'un d'autre, le dire devant l'équipe (« c'est X qui a appelé le gymnase »), et quand une tâche qu'il faisait est reprise, ne pas ajouter « je m'en suis occupé » — de sorte que le paiement (être celui grâce à qui le club tient) ne soit plus le seul prix du lien."
+
+Hmm, this may be too clever. Maybe better to keep d2 as change_game with a group meeting/plan where names get written by the doers.
+
+Let me settle: I'll do d2 = change_game, hypothesis 7c1d79d4, mechanismKey "barrier". Action: "Lors d'une réunion ou dans le fil de l'équipe, faire établir la liste des échéances à venir où chacun inscrit lui-même son nom en face de la tâche qu'il prend (l'utilisateur n'en tient pas la liste et ne la complète pas à leur place), et annoncer explicitement la ou les tâches qu'il ne prend plus."
+
+That changes the frame (the distribution becomes the group's, not his plan), which weakens the barrier ("redistribuer demanderait à chacun d'apprendre... et de renoncer à un membre qui les prend en charge") and the payment structure. Yes: change_game.
+
+Predictions for d2: immediate: Léa approuve et demande qui tient la liste à jour (as on 27 Jan) → but this time the user says "personne ne la tient, chacun regarde la sienne"; Hugo: silence/no inscription (immediate, 7 days); transitional (21-30 days): une ou deux tâches non prises restent en suspens, tension visible, tentation de reprendre; equilibrium (60 days): si l'utilisateur tient, la répartition se déplace et sa fatigue baisse; sinon retour à l'état antérieur.
+
+Note: predictions should be about actors' responses. Let's include actors: Léa, Hugo, self, maybe Samir.
+
+d3: do_nothing: lever {kind: "do_nothing", hypothesis: null, mechanismKey: null}. Action: "Ne rien changer : continuer à prendre les tâches comme elles viennent." Conditions/limits... Predictions: Léa continues (immediate, ~7 days): "de nouvelles demandes arrivent par Léa"; Samir remarks (transitional, ~30 days) "l'épuisement signalé s'accentue et Samir le nomme à nouveau"; self (transitional/equilibrium): "la fatigue reste verbalisée, la répartition ne change pas"; equilibrium: "le club continue de tenir sur lui, et une échéance ratée ou un épuisement plus fort deviendra le point de rupture".
+
+Now the questions (propose_question): I'll ask one question that discriminates between the self-reading and the group-reading, relevant to choosing between the levers:
+
+"Quand quelqu'un d'autre fait une tâche du club à ta place, qu'est-ce qui se passe chez toi — soulagement, ou gêne que ce soit fait autrement ?" Targets: 2c85f3df (self, D3) and 7c1d79d4 (D5 club) — discriminatingInfo: "Un soulagement sans gêne soutient la lecture où la charge tient au club et à ses procédures (le frein est le groupe) ; une gêne ou le besoin de vérifier soutient la lecture où la place d'indispensable est protégée (le frein est de son côté) — ce qui départage un levier de petit pas personnel d'un levier sur le cadre du groupe."
+
+whyNow: "Les deux lectures principales (D3 sur lui, D5 sur le club) prédisent la même chose tant que rien ne change, et le choix du levier dépend de ce qui bloque."
+
+Should I also ask something about the goal scope? Maybe one question is enough. Actually maybe a second question: "Sur quoi porterait le premier pas, selon toi : une tâche que tu détestes, ou une que tu aimes ?" — that doesn't discriminate hypotheses. Skip. Or one to discriminate 9076b52b (parentheses: redistributions fail) vs 46a35c53 (seasonal titular): "Si tu arrêtais de faire les inscriptions, qui les ferait ?" Hmm, that discriminates 46a35c53 (structural titular) vs 9076b52b (relation with Léa). Could be useful but maybe redundant with existing question 9aacad43 (as-tu déjà dit non...). I'll include just one or two. Let me include a second one that's genuinely discriminating and not already asked:
+
+"Le 27 janvier, quand Léa a répondu « super, tu le tiens à jour ? », qu'as-tu fait ensuite du planning ?" — Targets 9076b52b vs 46a35c53. discriminatingInfo: if he kept it up himself, supports 9076b52b (redistribution handed back); if it fell into disuse without consequence, supports a simpler explanation (46a35c53 or state). whyNow: "Le paquet ne dit pas ce que le planning est devenu, et cela départage une redistribution remise à l'utilisateur d'une organisation saisonnière." Hmm, is that question already in the packet? No, the existing questions don't ask this. Good. But note the packet does not contain "what happened to the planning" — so it's a discriminating question. Good.
+
+Actually careful: rule 20 says pose a question only if its answer discriminates hypotheses; and don't repeat packet questions. Fine.
+
+Now, mechanismKey for the levers, must be a field of the mechanism of the reading. 2c85f3df mechanism has: optimizes, protects, defenses, beliefs, triggers, soothes, barrier, prediction. So "barrier" ok. 7c1d79d4 mechanism has: optimizes, barrier. So "optimizes" or "barrier" ok.
+
+For d1, lever.hypothesis = {kind: "hypothesis", id: "2c85f3df-e9fb-4dd4-99e4-f54817e50983"}, mechanismKey "barrier", lever kind "lower_barrier".
+
+For d2, lever.hypothesis = {kind: "hypothesis", id: "7c1d79d4-6ff1-48cd-b5a3-56048f628610"}, mechanismKey "optimizes", lever kind "change_game"? Hmm — changing the game targets the frame, which relates to the "barrier" (redistributing would require learning and giving up a member who takes charge). Actually change_game addresses the barrier by changing the rules. I'll use mechanismKey "barrier" for d2 as well... but the same mechanismKey twice is fine. Hmm, but conceptually the lever "change_game" (change the frame/norm) aims at the club's organization of recognition (optimizes: club gets tasks done without distributing; user gets central place). I'll use "optimizes" for d2 since changing the game changes what the arrangement produces for both. Hmm. Let me think: which is more precise? The lever changes the frame so that tasks are attributed publicly; this changes what the arrangement yields (recognition), so "optimizes". I'll say mechanismKey "optimizes" and explain in rationale.
+
+Now the direction payload requires: goal ref, title, action, lever, conditions, effort, limits, signals, learnsIfFails, predictions. 
+
+goal: {"kind": "goal", "id": "8dbcc0bd-e55a-4848-bb96-4f81c650ac7b"}.
+
+Now predictions actors: use person refs for Léa (a5e7aa3a-...), Hugo (2ede28ab-...), Samir (671cb28d-...), and self.
+
+Let me write the predictions carefully with phase and horizonDays.
+
+d1 predictions:
+1. { actor: {person: lÉa}, response: "Accepte la demande sans s'engager : elle valide l'idée et laisse la tâche à celui qui l'a demandée.", phase: "immediate", horizonDays: 7 } — hmm, response should be observable. Maybe better: "Répond favorablement puis demande qui suit la tâche (« tu t'en occupes ? »), comme pour le planning du 27 janvier." That's a plausible prediction based on 9076b52b.
+2. { actor: {person: Samir}, response: "Prend la tâche si on la lui demande nommément, ou propose une alternative de date ; il est celui qui parle déjà de la charge.", phase: "immediate", horizonDays: 10 }
+Hmm — but is the delegation to Samir? Let me keep the action neutral: "à une personne nommée". Predictions can be about Léa and Hugo and self.
+
+Let me set d1 predictions:
+- Léa (immediate, 7): "valide et laisse la mise en œuvre à l'utilisateur (« tu t'en occupes ? »), comme pour le planning du 27 janvier" → transitional. Hmm.
+
+Let me structure: immediate: Léa approuve et renvoie la tenue; Hugo: silence. transitional (14-30 j): la tâche demandée à une personne nommée est faite ou non ; si non, tentation de reprendre, gêne. equilibrium (60 j): une première tâche est durablement faite par un autre, la fatigue baisse légèrement.
+
+d1 predictions (3):
+1. { actor: {person: a5e7aa3a}, response: "valide la demande et laisse la responsabilité de la suite à l'utilisateur (« tu t'en occupes ? »), comme pour le planning du 27 janvier.", phase: "immediate", horizonDays: 7 }
+2. { actor: {self: true}, response: "hésite ou vérifie si la tâche confiée a été faite, et ressent le besoin de reprendre si elle ne l'est pas.", phase: "transitional", horizonDays: 21 }
+3. { actor: {person: 671cb28d Samir}, response: "remarque le changement ou propose de prendre une part, lui qui nomme déjà la charge.", phase: "equilibrium", horizonDays: 45 }
+
+Hmm, prediction 3 might be flattering. Fine.
+
+d2 predictions:
+1. { actor: Léa, response: "approuve la liste nominative et demande qui la tient à jour.", phase: "immediate", horizonDays: 7 }
+2. { actor: Hugo, response: "ne s'inscrit sur aucune tâche et ne dit rien.", phase: "immediate", horizonDays: 7 }
+3. { actor: {self: true}, response: "voit une ou deux échéances rester sans nom et ressent l'envie de les reprendre ; la fatigue ne baisse pas tout de suite.", phase: "transitional", horizonDays: 30 }
+4. { actor: Léa, response: "si l'utilisateur ne reprend pas les tâches non attribuées, Léa s'agace qu'une tâche ne soit pas faite (comme pour les maillots) et le déséquilibre devient visible.", phase: "transitional", horizonDays: 30 } — this is the transient worsening.
+5. { actor: {self: true}, response: "si la répartition tient, les échéances suivantes arrivent à d'autres noms.", phase: "equilibrium", horizonDays: 90 }
+
+do_nothing predictions:
+1. Léa: "continue de transmettre les demandes du club à l'utilisateur." immediate, 14.
+2. self: "la fatigue reste verbalisée sans que la répartition change." transitional, 45.
+3. Samir: "nomme à nouveau la charge, plus directement." transitional, 60.
+4. self: "porte une échéance de plus, ou une échéance rate et le point de rupture se déplace là." equilibrium, 90.
+
+Now "signals" — observable signals for each direction.
+
+Also "conditions" and "limits".
+
+Also "learnsIfFails".
+
+Now rule O2: "Chaque direction d'action actionne une lecture présente dans le paquet ou proposée dans la réponse (lever.hypothesis), ni superseded ni contradicted". OK.
+
+Now let me also decide whether to add questions op. Yes, 2 questions.
+
+Also outcome "proposed".
+
+Summary: short.
+
+Note the "focus" contains goal + events + hypotheses. Fine.
+
+modelDeclaration: declaredModel "<ton nom de modèle>" — I am given as the model; I'll declare something like "deepseek-flash" hmm. The workspaceId says "deepseek-flash-r5". I'd put declaredModel: "deepseek-flash". Actually the system prompt says I should declare my model name. I'll use "deepseek-flash". TechnicalId null.
+
+Now let me write the JSON.
+
+Schema check for direction payload fields: goal, title, action, lever {kind, hypothesis, mechanismKey}, conditions, effort, limits, signals[], learnsIfFails, predictions[{actor, response, phase, horizonDays}].
+
+Everything else as specified.
+
+Now writing rationales short, no claims absent from operations.
+
+Let me now write citations for direction operations? Directions don't have citations field. Only claims/events/roles have citations. So directions don't need citations. Questions don't either. Good — that simplifies; I don't need citations except... none of my operations (propose_direction, propose_question) require citations. Wait, propose_question payload: question, targets, discriminatingInfo, whyNow — no citations. propose_direction: no citations. Good. So I don't need any CITATION at all. But if I quote in text, the rule says citations must be exact; I'll avoid quotes in fields to be safe (or use short quotes that are exact substrings... they'd only matter if I include a citations array). I'll avoid introducing citation arrays since no operation requires them. Actually the operations allowed don't include propose_claim or propose_event, so no citations needed. I'll avoid quoting in fields to prevent mismatch issues, or use exact short phrases. I'll use a couple exact short phrases in quotes carefully — they must be exact substrings of source text if they were citations, but since they aren't citations, it's fine. Still, better to keep exact when quoting. E.g. « super, tu le tiens à jour ? » appears in source 9265ede7. And « le club s'est toujours débrouillé » appears in e380415a. I'll use them carefully.
+
+Let me write the JSON now.
+
+Keys: d1, d2, d3 (directions), q1, q2 (questions). Actually maybe order: directions first.
+
+Wait — should I also propose a goal? Goal exists confirmed (8dbcc0bd) - G3 says don't propose a goal if goals contains a confirmed equivalent. So no.
+
+Let me write:
+
+{
+ "schemaVersion": "1.6",
+ "requestId": "e77771fe-9577-48a4-ba09-02d1491f2005",
+ "workspaceId": "evaluation-2026-09-25-deepseek-flash-r5-s02-P02",
+ "baseRevision": 24,
+ "contextHash": "9b9a938be1183fa8a58240de626fa222fd3595dc84cdae3e51ec5938141a5fa6",
+ "modelDeclaration": {"declaredModel": "deepseek-flash", "role": "analyst", "technicalId": null},
+ "outcome": "proposed",
+ "operations": [ ... ],
+ "clarifications": [],
+ "summary": "..."
+}
+
+Operations:
+
+d1:
+{
+ "key": "d1",
+ "kind": "propose_direction",
+ "payload": {
+   "goal": {"kind": "goal", "id": "8dbcc0bd-e55a-4848-bb96-4f81c650ac7b"},
+   "title": "Une tâche, une personne, une date",
+   "action": "Choisir une seule tâche du club à venir, la confier nommément à une personne en lui donnant une date précise (par exemple demander à Samir l'appel au gymnase, ou à Hugo une remise datée), puis ne pas la reprendre : ne pas rappeler, ne pas faire à sa place si elle est faite autrement ou plus tard.",
+   "lever": {"kind": "lower_barrier", "hypothesis": {"kind": "hypothesis", "id": "2c85f3df-e9fb-4dd4-99e4-f54817e50983"}, "mechanismKey": "barrier"},
+   "conditions": "Une échéance concrète et proche existe et une personne est identifiable ; il n'y a pas besoin de réunion ni de refus public.",
+   "effort": "low",
+   "limits": "Ne règle pas la répartition d'ensemble et ne touche pas les demandes de Léa ; la personne peut accepter puis ne pas faire, et le coût retomberait sur l'utilisateur ; la tentation de vérifier ou de reprendre est le principal point de rupture.",
+   "signals": ["une tâche est faite par quelqu'un d'autre sans intervention de l'utilisateur", "l'utilisateur se surprend à vérifier si c'est fait", "une remarque comme « je croyais que tu t'en occupais »"],
+   "learnsIfFails": "Si la tâche est faite sans lui, le frein était de son côté plus que du côté du club ; si elle retombe toujours sur lui, le frein est dans le club ou dans la relation ; si c'est lui qui la reprend, le frein est chez lui.",
+   "predictions": [
+     {"actor": {"person": {"kind": "person", "id": "a5e7aa3a-2c0a-4a3f-90fc-e0f166af15ee"}}, "response": "Accueille favorablement la demande et laisse la suite à l'utilisateur (« tu t'en occupes ? »), comme lors du planning du 27 janvier.", "phase": "immediate", "horizonDays": 7},
+     {"actor": {"self": true}, "response": "Hésite ou vérifie discrètement si la tâche confiée a été faite, et ressent l'envie de la reprendre.", "phase": "transitional", "horizonDays": 21},
+     {"actor": {"person": {"kind": "person", "id": "671cb28d-fe7c-4e0d-a2d4-13a4287a7dd5"}}, "response": "Remarque le changement ou propose de prendre une part, lui qui nomme déjà la charge.", "phase": "equilibrium", "horizonDays": 45}
+   ]
+ },
+ "rationale": "..."
+}
+
+Hmm, MEMBRE for person: { "person": <RÉF> } where RÉF = {kind, id}. So { "person": { "kind": "person", "id": "a5e7aa3a-..." } }. Yes.
+
+d2:
+{
+ "key": "d2",
+ "kind": "propose_direction",
+ "payload": {
+  "goal": {...},
+  "title": "Sortir la répartition du face-à-face et la faire écrire par le groupe",
+  "action": "Lors de la prochaine réunion, faire lister les échéances à venir et demander à chacun d'inscrire lui-même son nom en face d'une tâche ; l'utilisateur annonce une ou deux tâches qu'il ne prend plus et ne tient pas la liste (personne ne la tient à sa place), chacun lisant la sienne.",
+  "lever": {"kind": "change_game", "hypothesis": {"kind": "hypothesis", "id": "7c1d79d4-6ff1-48cd-b5a3-56048f628610"}, "mechanismKey": "optimizes"},
+  "conditions": "Un moment collectif existe déjà (réunion, entraînement, fil de l'équipe) et l'utilisateur accepte que la liste ne soit pas tenue par lui.",
+  "effort": "moderate",
+  "limits": "Léa peut approuver puis demander qui tient la liste, et Hugo peut ne rien inscrire ; des tâches sans nom devront rester sans nom sans que l'utilisateur les reprenne, sinon le jeu se referme ; cela ne garantit pas que Léa et Hugo se répartissent entre eux.",
+  "signals": ["au moins une tâche porte un autre nom que le sien", "Hugo s'inscrit ou ne s'inscrit pas", "une échéance reste sans nom", "l'utilisateur est sollicité pour reprendre une tâche sans nom"],
+  "learnsIfFails": "Si les tâches sans nom restent sans nom sans conséquences, la répétition n'est pas entretenue par le groupe ; si une échéance rate, on apprend qui vient réparer et par quel chemin la charge revient.",
+  "predictions": [
+   {"actor": Léa, "response": "Approuve la liste nominative et demande qui la tient à jour.", immediate, 7},
+   {"actor": Hugo, "response": "Ne s'inscrit sur aucune tâche et ne dit rien.", immediate, 7},
+   {"actor": self, "response": "Voit une ou deux échéances sans nom et ressent l'envie de les reprendre ; la fatigue ne baisse pas encore.", transitional, 30},
+   {"actor": Léa, "response": "S'agace qu'une tâche non attribuée ne soit pas faite, comme pour les maillots, et le déséquilibre devient visible devant l'équipe.", transitional, 30},
+   {"actor": self, "response": "Si les tâches sans nom restent sans lui, les échéances suivantes arrivent nommément à d'autres et la charge baisse.", equilibrium, 90}
+  ]
+ },
+ "rationale": "..."
+}
+
+d3 (do_nothing):
+{
+ "key": "d3",
+ "kind": "propose_direction",
+ "payload": {
+  "goal": {...},
+  "title": "Ne rien changer",
+  "action": "Continuer comme aujourd'hui : accepter les demandes qui arrivent, préparer seul ce qui n'a pas de volontaire, et se contenter de dire la fatigue.",
+  "lever": {"kind": "do_nothing", "hypothesis": null, "mechanismKey": null},
+  "conditions": "Choix par défaut, si aucun petit pas n'est possible maintenant.",
+  "effort": "low",
+  "limits": "Le problème exprimé (« je suis fatigué de tout porter ») n'est pas traité ; le risque est l'épuisement ou une échéance ratée qui rende le retrait coûteux.",
+  "signals": ["une nouvelle demande arrive par Léa", "Samir reformule l'épuisement", "l'utilisateur repousse une sortie pour une tâche du club"],
+  "learnsIfFails": "Si rien ne change et que la fatigue augmente, cela indique que l'équilibre actuel ne se corrige pas de lui-même et que la redistribution doit être provoquée.",
+  "predictions": [
+   {"actor": Léa, "response": "Continue de transmettre les demandes du club à l'utilisateur.", immediate, 14},
+   {"actor": self, "response": "La fatigue reste dite sans que la répartition change.", transitional, 45},
+   {"actor": Samir, "response": "Nomme à nouveau la charge, plus directement.", transitional, 60},
+   {"actor": self, "response": "Une échéance de plus retombe sur lui, ou une échéance rate et le point de rupture se déplace là.", equilibrium, 90}
+  ]
+ },
+ "rationale": "..."
+}
+
+Questions:
+
+q1: 
+{
+ "key": "q1",
+ "kind": "propose_question",
+ "payload": {
+  "question": "Quand quelqu'un d'autre fait une tâche du club à ta place, qu'est-ce que tu ressens : du soulagement, ou une gêne parce que ce n'est pas fait comme tu le ferais ?",
+  "targets": [{"kind": "hypothesis", "id": "2c85f3df-e9fb-4dd4-99e4-f54817e50983"}, {"kind": "hypothesis", "id": "7c1d79d4-6ff1-48cd-b5a3-56048f628610"}],
+  "discriminatingInfo": "Le soulagement sans gêne soutient la lecture où la charge tient au club et à ses procédures (le frein est dans le groupe) ; la gêne ou l'envie de vérifier soutient la lecture où c'est la place d'indispensable qui est protégée (le frein est de son côté) — ce qui départage un levier de petit pas personnel d'un levier sur le cadre du groupe.",
+  "whyNow": "Les deux lectures principales prédisent la même chose tant que rien ne change, et le choix entre les deux directions dépend de ce qui bloque."
+ },
+ "rationale": "..."
+}
+
+q2:
+{
+ "key": "q2",
+ "kind": "propose_question",
+ "payload": {
+  "question": "Après le planning proposé le 27 janvier, qu'est-ce qui s'est passé : tu l'as tenu à jour, ou il est tombé sans que personne ne le reprenne ?",
+  "targets": [{"kind":"hypothesis","id":"9076b52b-f0d6-42da-9a4e-04fb616da820"}, {"kind":"hypothesis","id":"46a35c53-3cb1-436a-b126-49fa03f1ad33"}],
+  "discriminatingInfo": "Si l'utilisateur a tenu le planning seul, cela soutient la lecture d'une redistribution approuvée puis rendue à celui qui l'a proposée ; si le planning est tombé sans conséquence, cela soutient l'explication plus simple d'une organisation saisonnière où personne ne s'appuie sur lui.",
+  "whyNow": "Le paquet ne dit pas ce que le planning est devenu, et c'est exactement ce qui départage les deux lectures de la relation à Léa."
+ },
+ "rationale": "..."
+}
+
+Hmm, careful with "le 27 janvier" — fine.
+
+Summary: "Objectif confirmé : que l'équipe s'organise sans que tout repose sur l'utilisateur, sans quitter le club. Deux directions (un petit pas de délégation nominative ; faire écrire la répartition par le groupe) et un do_nothing, plus deux questions qui départagent ce qui bloque : sa place ou le cadre du club."
+
+Rationales: short.
+
+d1 rationale: "Petit pas qui abaisse la barrière de la lecture principale sur lui-même (refuser ou déléguer rendrait le déséquilibre visible et risquerait sa place), sans refus public ni conflit avec Léa."
+
+d2 rationale: "Change le jeu au niveau du club : la charge se concentre là où personne ne la refuse et la reconnaissance en est le paiement ; faire écrire les noms par chacun déplace le paiement et la barrière d'apprentissage."
+
+d3 rationale: "Direction do_nothing : prédit ce qui se passe si la répartition actuelle reste en place."
+
+q1 rationale: "Départage la lecture D3 sur lui-même et la lecture D5 sur le club, qui orientent des leviers différents."
+
+q2 rationale: "Le devenir du planning du 27 janvier n'est pas dans le paquet et départage une redistribution rendue à l'utilisateur d'une organisation saisonnière sans lui."
+
+Check rule 21: rationale and summary contain no affirmation absent from operations. My summary mentions the goal text (from packet goals) — hmm, "aucune affirmation absente des opérations". The summary should stay close. I'll phrase summary referencing the operations: "Deux directions ... et un do_nothing, plus deux questions". Mentioning the goal statement is in the packet (goal confirmed); but strictly the summary should not contain affirmations absent from operations. The goal is referenced in the directions' payload. I think it's acceptable. Keep it brief.
+
+Also check: directions' predictions actor for Léa uses person ref. Fine.
+
+One more check: O3 wants predictions to be observable and datable (horizonDays) — done.
+
+Also O4 asks "Donne des signaux observables (signals), les conditions, l'effort et les limites." done.
+
+Check the lever for do_nothing: "lever.hypothesis vaut null seulement pour do_nothing." done.
+
+Now, is there a concern about O5: "Avec peu de données (lectures D1, un seul épisode), limite-toi à une direction à faible effort..." We have ~20 episodes, readings up to D5. Fine.
+
+Also should I worry that direction d2 uses a D5 draft hypothesis with only 4 support units? O5 says "n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides". d1 uses 2c85f3df (D3, 5 supports / 2 contradicts, moderate). d2 uses 7c1d79d4 (D5, 4 supports, moderate confidence, draft). Claims: 4 anchored supports, 34 days span. Is that "preuves solides"? Moderately. Alternatively anchor d2 to dd53019d (D2 plausible, 3/1) or 9076b52b (D3, 1 anchored support — weak). Hmm. Maybe anchoring d2 to 7c1d79d4 is fine given 4 anchored supports and moderate confidence. Yes.
+
+Also the allowed mention: hypothesis must not be superseded/contradicted — 7c1d79d4 status "draft", fine.
+
+Double check 2c85f3df status draft, confidence moderate — fine.
+
+Now write final JSON carefully, valid.
+
+For predictions phase values: "immediate" | "transitional" | "equilibrium".
+
+Ensure keys unique: d1, d2, d3, q1, q2.
+
+I'll now produce the final JSON. Length modest.
+
+One consideration: the payload "response" strings should be observable and datable — they are.
+
+Let me finalize.
