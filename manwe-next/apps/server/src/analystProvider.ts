@@ -248,9 +248,24 @@ export class AutomaticAnalyses {
   private readonly store: SqliteMemoryStore;
   private readonly provider: ProviderConfig | null;
 
-  constructor(store: SqliteMemoryStore, provider: ProviderConfig | null) {
+  /** Archivage facultatif des réponses brutes, jamais retouchées (évaluations). */
+  private readonly onCall:
+    | ((entry: {
+        requestId: string;
+        attempt: number;
+        prompt: string;
+        call: ProviderCallResult;
+      }) => void)
+    | null;
+
+  constructor(
+    store: SqliteMemoryStore,
+    provider: ProviderConfig | null,
+    onCall: AutomaticAnalyses["onCall"] = null,
+  ) {
     this.store = store;
     this.provider = provider;
+    this.onCall = onCall;
   }
 
   get enabled() {
@@ -363,9 +378,13 @@ export class AutomaticAnalyses {
     let errors: { code: string; message: string }[] = [];
     try {
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        const call = await provider.call({
-          prompt: attempt ? composeRetryPrompt(prompt, errors) : prompt,
-          signal,
+        const sent = attempt ? composeRetryPrompt(prompt, errors) : prompt;
+        const call = await provider.call({ prompt: sent, signal });
+        this.onCall?.({
+          requestId: job.requestId,
+          attempt: attempt + 1,
+          prompt: sent,
+          call,
         });
         if (signal.aborted || job.status === "cancelled") return;
         errors = [];
