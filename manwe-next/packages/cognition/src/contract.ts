@@ -408,6 +408,13 @@ export type AnalysisPreview = {
   summary: string | null;
   operations: CognitiveOperation[];
   errors: Array<{ code: string; message: string }>;
+  /** D-025 : opérations écartées (citation fausse ou dépendante), le reste s'applique. */
+  droppedOperations: Array<{
+    key: string;
+    kind: string;
+    code: string;
+    message: string;
+  }>;
   applicationResult: ApplicationResult | null;
   telemetry: {
     manualWaitDurationMs: number | null;
@@ -593,14 +600,19 @@ const hypothesisStatuses = HYPOTHESIS_STATUSES;
 
 function subjectInput(value: unknown): HypothesisSubjectInput {
   const input = object(value, "subject");
-  if ("relation" in input) {
-    exactKeys(input, ["relation"], "subject");
-    if (!Array.isArray(input.relation) || input.relation.length !== 2)
+  // D-025 : une relation est une dyade ou un groupe (3 à 8 membres), écrit
+  // { relation: [...] } ou { group: [...] } ; les deux formes sont stockées
+  // comme une relation à plusieurs membres.
+  if ("relation" in input || "group" in input) {
+    const key = "relation" in input ? "relation" : "group";
+    exactKeys(input, [key], "subject");
+    const members = input[key];
+    if (!Array.isArray(members) || members.length < 2 || members.length > 8)
       throw new DomainError(
         "invalid_subject",
-        "Une relation réunit exactement deux membres (dyade).",
+        "Une relation réunit 2 membres, un groupe de 3 à 8 membres.",
       );
-    return { relation: input.relation.map(memberInput) };
+    return { relation: members.map(memberInput) };
   }
   return memberInput(value);
 }

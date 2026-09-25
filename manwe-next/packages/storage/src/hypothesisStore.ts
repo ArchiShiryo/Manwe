@@ -258,10 +258,14 @@ export class HypothesisStore {
   /** Relation d'une dyade, créée au besoin : une dyade n'existe qu'une fois. */
   ensureRelation(members: RelationMember[], timestamp: string): string {
     const keys = members.map(memberKey);
-    if (new Set(keys).size !== 2)
+    if (
+      new Set(keys).size !== keys.length ||
+      keys.length < 2 ||
+      keys.length > 8
+    )
       throw new DomainError(
         "invalid_subject",
-        "Une relation réunit deux membres distincts.",
+        "Une relation ou un groupe réunit de 2 à 8 membres distincts.",
       );
     const key = relationKey(keys);
     const existing = this.database
@@ -1286,13 +1290,7 @@ export class HypothesisStore {
         }
         counts.doNothing = true;
       } else {
-        if (counts.actions >= 2) {
-          context.warnings.push({
-            code: "too_many_directions",
-            message: `Au plus deux directions d’action par objectif ; « ${payload.title} » est écartée.`,
-          });
-          return { created: [], changed: [] };
-        }
+        // D-024 : aucun plafond sur les directions d'action (capacité maximale).
         counts.actions += 1;
       }
       const predictions = payload.predictions.map((prediction) => ({

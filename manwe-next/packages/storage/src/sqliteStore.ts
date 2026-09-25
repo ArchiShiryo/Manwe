@@ -187,6 +187,15 @@ export class SqliteMemoryStore {
       );
       this.database.exec(readFileSync(goalMigrationPath, "utf8"));
     }
+    const partialMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 11")
+      .get();
+    if (!partialMigration) {
+      const partialMigrationPath = fileURLToPath(
+        new URL("./migrations/011_partial_application.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(partialMigrationPath, "utf8"));
+    }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
     this.database
@@ -1962,15 +1971,15 @@ export class SqliteMemoryStore {
           "La proposition contient une opération non autorisée.",
         );
       const packet = JSON.parse(String(request.context_json)) as ContextPacket;
-      this.validateCitations(proposal.operations, packet);
-      this.dryRun(() => this.applyOperations(proposal, packet, receivedAt));
+      const { kept, dropped } = this.withoutMiscited(proposal, packet);
+      this.dryRun(() => this.applyOperations(kept, packet, receivedAt));
       const status =
         proposal.outcome === "needs_context"
           ? "needs_context"
           : "ready_for_review";
       this.database
         .prepare(
-          "INSERT INTO analysis_responses(id, workspace_id, request_id, response_hash, raw_json, normalized_json, outcome, declared_model, verified_model, received_at, status, provider_usage_json, provider_cost_json, inference_duration_ms, manual_wait_duration_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, ?)",
+          "INSERT INTO analysis_responses(id, workspace_id, request_id, response_hash, raw_json, normalized_json, outcome, declared_model, verified_model, received_at, status, provider_usage_json, provider_cost_json, inference_duration_ms, manual_wait_duration_ms, dropped_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, ?, ?)",
         )
         .run(
           responseId,
@@ -1978,12 +1987,13 @@ export class SqliteMemoryStore {
           proposal.requestId,
           responseHash,
           rawJson,
-          JSON.stringify(proposal),
+          JSON.stringify(kept),
           proposal.outcome,
           proposal.modelDeclaration.declaredModel,
           receivedAt,
           status,
           manualWaitDurationMs,
+          dropped.length ? JSON.stringify(dropped) : null,
         );
       this.database
         .prepare(
@@ -2102,7 +2112,21 @@ export class SqliteMemoryStore {
         resultRevision,
         createdIds: created,
         changedIds: touched,
-        warnings,
+        warnings: [
+          ...(response.dropped_json
+            ? (
+                JSON.parse(String(response.dropped_json)) as Array<{
+                  key: string;
+                  code: string;
+                  message: string;
+                }>
+              ).map((item) => ({
+                code: "operation_dropped",
+                message: `Opération « ${item.key} » écartée (${item.code}) : ${item.message}`,
+              }))
+            : []),
+          ...warnings,
+        ],
         errors: [],
         replayed: false,
       };
@@ -2338,6 +2362,70 @@ export class SqliteMemoryStore {
     };
   }
 
+  /**
+   * D-025 : écarte les opérations dont une citation est fausse, et celles qui
+   * en dépendent (proposalKey), au lieu de rejeter toute la réponse ; au-delà
+   * de 20 % d'opérations écartées, la réponse est rejetée en entier.
+   */
+  private withoutMiscited(proposal: CognitiveProposal, packet: ContextPacket) {
+    const dropped: Array<{
+      key: string;
+      kind: string;
+      code: string;
+      message: string;
+    }> = [];
+    const bad = new Set<string>();
+    let first: DomainError | null = null;
+    for (const operation of proposal.operations)
+      try {
+        this.validateCitations([operation], packet);
+      } catch (error) {
+        if (!(error instanceof DomainError)) throw error;
+        first ??= error;
+        bad.add(operation.key);
+        dropped.push({
+          key: operation.key,
+          kind: operation.kind,
+          code: error.code,
+          message: error.message,
+        });
+      }
+    if (!bad.size) return { kept: proposal, dropped };
+    // Dépendances transitives : une opération qui cite la clé d'une opération écartée.
+    for (let changed = true; changed; ) {
+      changed = false;
+      for (const operation of proposal.operations) {
+        if (bad.has(operation.key)) continue;
+        const text = JSON.stringify(operation.payload);
+        const on = [...bad].find((key) =>
+          text.includes(`"proposalKey":"${key}"`),
+        );
+        if (on) {
+          bad.add(operation.key);
+          dropped.push({
+            key: operation.key,
+            kind: operation.kind,
+            code: "dependent_dropped",
+            message: `Dépend de l’opération écartée « ${on} ».`,
+          });
+          changed = true;
+        }
+      }
+    }
+    if (
+      bad.size > proposal.operations.length * 0.2 ||
+      bad.size === proposal.operations.length
+    )
+      throw first as DomainError;
+    return {
+      kept: {
+        ...proposal,
+        operations: proposal.operations.filter((item) => !bad.has(item.key)),
+      },
+      dropped,
+    };
+  }
+
   private validateCitations(
     operations: CognitiveOperation[],
     packet: ContextPacket,
@@ -2401,6 +2489,9 @@ export class SqliteMemoryStore {
               message: String(row.rejection_message),
             },
           ]
+        : [],
+      droppedOperations: row.dropped_json
+        ? JSON.parse(String(row.dropped_json))
         : [],
       applicationResult: row.application_result_json
         ? (JSON.parse(String(row.application_result_json)) as ApplicationResult)

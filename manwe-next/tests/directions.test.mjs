@@ -163,7 +163,7 @@ const explorePacket = (store, goalId, hypothesisId) =>
     ],
   });
 
-test("BRIEF-005 · directions : levier requis, deux au plus, « ne rien entreprendre » attendu", () =>
+test("BRIEF-005 · directions : levier requis, aucun plafond (D-024), « ne rien entreprendre » attendu", () =>
   withStore((store) => {
     const { hypothesisId, goalId } = setup(store);
     const packet = explorePacket(store, goalId, hypothesisId);
@@ -177,13 +177,14 @@ test("BRIEF-005 · directions : levier requis, deux au plus, « ne rien entrepre
     ]);
     assert.equal(result.status, "applied");
     assert.ok(
-      result.warnings.some((item) => item.code === "too_many_directions"),
+      !result.warnings.some((item) => item.code === "too_many_directions"),
+      "aucun plafond de directions (D-024)",
     );
     assert.ok(
       result.warnings.some((item) => item.code === "do_nothing_missing"),
     );
     const directions = store.snapshot().directions;
-    assert.equal(directions.length, 2);
+    assert.equal(directions.length, 3);
     assert.deepEqual(directions[0].predictions[0].actor.kind, "person");
     assert.equal(directions[0].lever.hypothesisId, hypothesisId);
 
@@ -199,7 +200,7 @@ test("BRIEF-005 · directions : levier requis, deux au plus, « ne rien entrepre
     const statuses = store.snapshot().directions.map((item) => item.status);
     assert.deepEqual(
       statuses.filter((item) => item === "superseded").length,
-      2,
+      3,
     );
     assert.deepEqual(statuses.filter((item) => item === "proposed").length, 2);
   }));
@@ -521,4 +522,142 @@ test("RAPPORT-011 · une citation mal recopiée est refusée avec un message qui
       /crevé/,
       "le texte exact est rappelé",
     );
+  }));
+
+test("D-025 · application partielle : l'opération mal citée et ses dépendantes sont écartées, le reste s'applique", () =>
+  withStore((store) => {
+    setup(store);
+    const packet = store.prepareAnalysis({ task: "interpret" });
+    const source = packet.sources[0];
+    const claim = (key, bad = false) => ({
+      key,
+      kind: "propose_claim",
+      payload: {
+        text: `Fait ${key}.`,
+        category: "reported_observation",
+        modality: "actual",
+        validFrom: null,
+        validTo: null,
+        citations: [
+          {
+            ...citation(source),
+            quote: bad ? source.text.replace("crevé", "crevè") : source.text,
+          },
+        ],
+      },
+      rationale: "Test.",
+    });
+    const hypothesis = {
+      key: "h9",
+      kind: "propose_hypothesis",
+      payload: {
+        statement: "Lecture qui s'appuie sur le fait mal cité.",
+        depth: "D1",
+        framework: null,
+        construct: null,
+        confidence: "low",
+        subjects: [{ mention: "Lucas" }],
+        evidence: [{ claim: { proposalKey: "bad" }, stance: "supports" }],
+        limits: "Test.",
+        revisionConditions: "Test.",
+        alternativeTo: null,
+        validFrom: null,
+        validTo: null,
+      },
+      rationale: "Test.",
+    };
+    const operations = [
+      claim("bad", true),
+      hypothesis,
+      ...["a", "b", "c", "d", "e", "f", "g", "h"].map((key) => claim(key)),
+    ];
+    const preview = store.receiveAnalysis(proposal(packet, operations));
+    assert.equal(preview.status, "ready_for_review");
+    assert.deepEqual(
+      preview.droppedOperations.map((item) => [item.key, item.code]),
+      [
+        ["bad", "citation_mismatch"],
+        ["h9", "dependent_dropped"],
+      ],
+    );
+    assert.equal(preview.operations.length, 8);
+    const result = store.applyAnalysis(preview.responseId);
+    assert.equal(
+      result.warnings.filter((item) => item.code === "operation_dropped")
+        .length,
+      2,
+    );
+    assert.ok(
+      !store.snapshot().claims.some((item) => item.text === "Fait bad."),
+    );
+
+    // Plus de 20 % d'opérations écartées : rejet complet, comme avant.
+    const packet2 = store.prepareAnalysis({ task: "interpret" });
+    const many = store.receiveAnalysis(
+      proposal(packet2, [claim("x1", true), claim("x2", true), claim("x3")]),
+    );
+    assert.equal(many.status, "rejected");
+  }));
+
+test("D-025 · sujet de groupe de trois membres ou plus", () =>
+  withStore((store) => {
+    store.capture(
+      parseCaptureCommand({
+        idempotencyKey: "group:capture:1",
+        text: "Maya m'a demandé de faire les courses et Jules a laissé sa vaisselle ; j'ai tout fait.",
+        occurredStart: "2026-03-01T20:00:00+01:00",
+        temporalPrecision: "day",
+      }),
+    );
+    const packet = store.prepareAnalysis({ task: "interpret" });
+    const { preview, result } = respond(store, packet, [
+      {
+        key: "c1",
+        kind: "propose_claim",
+        payload: {
+          text: "L'utilisateur a fait les courses et la vaisselle.",
+          category: "explicit_statement",
+          modality: "actual",
+          validFrom: null,
+          validTo: null,
+          citations: [citation(packet.sources[0])],
+        },
+        rationale: "Fait.",
+      },
+      {
+        key: "h1",
+        kind: "propose_hypothesis",
+        payload: {
+          statement:
+            "Dans la colocation, la charge se concentre sur l'utilisateur.",
+          depth: "D2",
+          framework: null,
+          construct: null,
+          confidence: "low",
+          subjects: [
+            {
+              group: [
+                { mention: "Maya" },
+                { mention: "Jules" },
+                { self: true },
+              ],
+            },
+          ],
+          evidence: [{ claim: { proposalKey: "c1" }, stance: "supports" }],
+          limits: "Un épisode.",
+          revisionConditions: "Une tâche prise spontanément par Maya ou Jules.",
+          alternativeTo: null,
+          validFrom: null,
+          validTo: null,
+        },
+        rationale: "Lecture de groupe.",
+      },
+    ]);
+    assert.equal(result?.status, "applied", JSON.stringify(preview.errors));
+    const snapshot = store.snapshot();
+    const group = snapshot.relations.find((item) => item.members.length === 3);
+    assert.ok(group, "groupe stocké comme relation à trois membres");
+    const reading = snapshot.hypotheses.find((item) => item.depth === "D2");
+    assert.equal(reading.subjects[0].kind, "relation");
+    assert.equal(reading.subjects[0].members.length, 3);
   }));
