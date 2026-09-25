@@ -237,25 +237,19 @@ function runUntilAnalysis(runDir, scenario, state, store) {
         goal: pending?.text ?? step.fallbackText,
       });
     } else if (step.type === "choose") {
-      // Règle fixe, écrite avant tout run : parmi les directions d'action
-      // proposées pour l'objectif (ordre de création, jamais « ne rien
-      // faire »), la première dont le titre ou l'action contient un mot de
-      // step.match (mots du résultat, RAPPORT-012) ; à défaut la première.
-      const candidates = store
+      // Règle fixe, écrite avant tout run : la première direction d'action
+      // proposée pour l'objectif (ordre de création), jamais « ne rien
+      // faire ». Le résultat enregistré ensuite est celui de son levier
+      // (step.outcomes de l'étape outcome, RAPPORT-013).
+      const direction = store
         .snapshot()
-        .directions.filter(
+        .directions.find(
           (item) =>
             item.status === "proposed" &&
             item.lever.kind !== "do_nothing" &&
             item.goalId === (state.goalId ?? null),
         );
-      const words = (step.match ?? []).map((word) => word.toLowerCase());
-      const direction =
-        candidates.find((item) =>
-          words.some((word) =>
-            `${item.title} ${item.action}`.toLowerCase().includes(word),
-          ),
-        ) ?? candidates[0];
+      state.leverKind = direction?.lever.kind ?? null;
       if (direction) {
         const result = store.chooseDirection({
           idempotencyKey: `scenario:${stepId}`,
@@ -270,27 +264,25 @@ function runUntilAnalysis(runDir, scenario, state, store) {
         outcome: direction ? "chosen" : "no_direction",
         directionId: direction?.id ?? null,
         title: direction?.title ?? null,
-        matched: Boolean(
-          direction &&
-            words.some((word) =>
-              `${direction.title} ${direction.action}`
-                .toLowerCase()
-                .includes(word),
-            ),
-        ),
+        leverKind: direction?.lever.kind ?? null,
       });
     } else if (step.type === "outcome") {
-      if (state.actionId)
+      // Un résultat par levier quand la fixture en fournit ; sinon le texte unique.
+      const text =
+        (state.leverKind && step.outcomes?.[state.leverKind]) ?? step.text;
+      if (state.actionId && text)
         store.recordOutcome({
           idempotencyKey: `scenario:${stepId}`,
           actionId: state.actionId,
-          text: step.text,
+          text,
           verdicts: null,
         });
       state.log.push({
         step: stepId,
         type: "outcome",
-        outcome: state.actionId ? "recorded" : "no_action",
+        outcome: state.actionId && text ? "recorded" : "no_action",
+        leverKind: state.leverKind ?? null,
+        text: text ?? null,
       });
     } else if (step.type === "analyze") {
       const snapshot = store.snapshot();
