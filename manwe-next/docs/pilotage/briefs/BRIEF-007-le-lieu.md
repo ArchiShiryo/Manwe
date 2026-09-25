@@ -67,3 +67,14 @@ Trois surfaces, dans un même lieu :
 4. Un rechargement ne perd ni analyse en cours ni analyse prête.
 5. Aucun écran n'expose le choix d'une tâche d'analyse ni une confirmation d'application.
 6. Tests et contrôles navigateur existants verts, ou adaptés quand ils testaient une confirmation supprimée par D-028.
+
+## État (25 septembre 2026)
+
+| Lot                | État                                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| P1 · moteur        | Fait, sauf la fusion de deux fiches.                                                                                  |
+| P2 · conversation  | Fait : prompt `interviewer-v1`, service `Interviewer`, messages devenus des notes.                                    |
+| P3 · lieu          | Fait : `Lieu.tsx`, ouverture sur la mémoire locale, consentement unique, analyse assistée seulement sans fournisseur. |
+| P4 · démonstration | À faire par l'utilisateur.                                                                                            |
+
+Critères 1 à 5 vérifiés par `scripts/ui-check-lieu.mjs` avec un fournisseur simulé. Le critère 6 est vérifié par 110 tests et les contrôles navigateur R4, synchronisation, directions, objectif et R5.3. La qualité des questions et des personnes proposées par DeepSeek reste à mesurer dans un lot scellé.

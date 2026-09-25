@@ -117,6 +117,137 @@ export function PersonalLoading() {
   );
 }
 
+/**
+ * D-030 : une personne, nommée ou décrite (« la femme d'un ami »). Son
+ * identité se met à jour à tout moment : la nommer, dire à qui elle est
+ * liée. Tout ce qui la concerne suit, l'ancien nom reste reconnu.
+ */
+function PersonCard({
+  person,
+  snapshot,
+  onReload,
+  onNotify,
+}: {
+  person: WorkspaceSnapshot["persons"][number];
+  snapshot: WorkspaceSnapshot;
+  onReload: () => Promise<void>;
+  onNotify: (message: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(person.displayName);
+  const [related, setRelated] = useState(person.relatedPersonId ?? "");
+  const [label, setLabel] = useState(person.relationLabel ?? "");
+  const relatedName = snapshot.persons.find(
+    (item) => item.id === person.relatedPersonId,
+  )?.displayName;
+  const episodes = new Set(
+    snapshot.roles
+      .filter(
+        (role) =>
+          role.subject.kind === "person" && role.subject.personId === person.id,
+      )
+      .map((role) => role.eventId),
+  ).size;
+  const save = async () => {
+    try {
+      await memoryApi.renamePerson(person.id, {
+        ...(name.trim() !== person.displayName ? { displayName: name } : {}),
+        relatedPersonId: related || null,
+        relationLabel: label.trim() || null,
+      });
+      await onReload();
+      setEditing(false);
+      onNotify("Identité mise à jour partout");
+    } catch (error) {
+      onNotify(
+        error instanceof MemoryApiError
+          ? error.message
+          : "L’identité n’a pas pu être mise à jour",
+      );
+    }
+  };
+  return (
+    <article className="person-card">
+      <span className="personal-emblem compact">
+        <Users size={18} strokeWidth={1} />
+      </span>
+      <div>
+        <div className="eyebrow">
+          {person.description ? "DÉCRITE SANS NOM" : "PERSONNE"} · {episodes}{" "}
+          ÉPISODE{episodes > 1 ? "S" : ""}
+        </div>
+        <h2>{person.displayName}</h2>
+        {(relatedName || person.relationLabel) && (
+          <p>
+            {person.relationLabel ?? "liée à"}
+            {relatedName ? ` · ${relatedName}` : ""}
+          </p>
+        )}
+        {person.formerNames.length > 0 && (
+          <small>Aussi appelée : {person.formerNames.join(", ")}</small>
+        )}
+        {editing ? (
+          <form
+            className="person-edit"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save();
+            }}
+          >
+            <label>
+              Nom
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <label>
+              Liée à
+              <select
+                value={related}
+                onChange={(event) => setRelated(event.target.value)}
+              >
+                <option value="">personne</option>
+                {snapshot.persons
+                  .filter((item) => item.id !== person.id)
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.displayName}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              Lien
+              <input
+                placeholder="conjointe, frère, collègue…"
+                value={label}
+                onChange={(event) => setLabel(event.target.value)}
+              />
+            </label>
+            <div>
+              <button className="primary-button" disabled={!name.trim()}>
+                Enregistrer
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setEditing(false)}
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button className="text-button" onClick={() => setEditing(true)}>
+            {person.description ? "La nommer" : "Modifier"}
+          </button>
+        )}
+      </div>
+    </article>
+  );
+}
+
 export function PersonalPeople({
   snapshot,
   onReload,
@@ -199,22 +330,13 @@ export function PersonalPeople({
         {error && <div className="analysis-error people-error">{error}</div>}
         <div className="people-list">
           {snapshot.persons.map((person) => (
-            <article className="person-card" key={person.id}>
-              <span className="personal-emblem compact">
-                <Users size={18} strokeWidth={1} />
-              </span>
-              <div>
-                <div className="eyebrow">
-                  {person.resolutionStatus.replace("_", " ")}
-                </div>
-                <h2>{person.displayName}</h2>
-                <p>
-                  Identité locale issue d’un import sourcé. Une clé externe peut
-                  la résoudre ; un nom seul reste un candidat.
-                </p>
-                <small>{person.id}</small>
-              </div>
-            </article>
+            <PersonCard
+              key={person.id}
+              person={person}
+              snapshot={snapshot}
+              onReload={onReload}
+              onNotify={onNotify}
+            />
           ))}
         </div>
       </section>

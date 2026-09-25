@@ -200,6 +200,27 @@ try {
     "le consentement n'est demandé qu'une fois",
   );
 
+  // 4 bis. D-030 : nommer la personne décrite ; le graphe suit.
+  await page
+    .getByRole("button", { name: "Personnes", exact: true })
+    .first()
+    .click();
+  await page
+    .locator(".person-card", { hasText: "la femme d'un ami" })
+    .getByRole("button", { name: "La nommer" })
+    .click();
+  const card = page.locator(".person-card", { hasText: "la femme d'un ami" });
+  await card.getByLabel("Nom").fill("Julie");
+  await card.getByRole("button", { name: "Enregistrer" }).click();
+  await page
+    .locator(".person-card", { hasText: "Aussi appelée : la femme d'un ami" })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Mon monde", exact: true })
+    .first()
+    .click();
+  await page.waitForSelector('.world-node[aria-label="personne : Julie"]');
+
   // 5. Journal, et aucune mécanique exposée.
   await page.getByRole("tab", { name: /Journal/ }).click();
   await page
@@ -215,7 +236,7 @@ try {
   ])
     assert.ok(!text.includes(forbidden), `« ${forbidden} » ne s'affiche pas`);
   console.log(
-    "Lieu vérifié : ouverture locale, consentement unique, conversation, analyse autonome (personne décrite dans le graphe), rechargement, journal.",
+    "Lieu vérifié : ouverture locale, consentement unique, conversation, analyse autonome (personne décrite dans le graphe), rechargement, personne nommée ensuite, journal.",
   );
 } finally {
   await browser.close();

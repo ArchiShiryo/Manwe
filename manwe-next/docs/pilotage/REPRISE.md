@@ -58,7 +58,17 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **Lot R5-S05 validé** ([RAPPORT-014](./rapports/RAPPORT-014.md)) : résultat par levier de la direction choisie ; 9/9 [L], 8/8 [B] ; paquets réduits de 49,6 %. BRIEF-006, R5.1, R5.4 et R5.6 sont validés.
 
-**Prochaine étape** : R5.7 (démonstration à l'utilisateur dans l'application). À surveiller : cinq rejets de premier essai sur dix en R5-S05, tous corrigés par la seconde tentative (bride à lever : une seule tentative). À trancher : accepter dans le contrat qu'une référence porte `claim` et `stance`. Corpus de téléréalité (D-022) : saison 1 de Survivor en sous-titres bruts dans `manwe-next/.qa/corpus/survivor/` (ignoré par git) ; prétraitement par DeepSeek et recherche d'autres corpus de groupe en discussion avec l'utilisateur.
+**BRIEF-007 codé (le lieu, D-028 à D-031)** :
+
+- **agent autonome** : `agentPlan()` choisit la tâche, application automatique, relance après chaque écriture, trois essais, état courant lisible après un rechargement ;
+- **personnes décrites sans nom** : `propose_person`, contrat 1.8, prompt v11, migration 013 ; renommage et rattachement rétroactifs sur la page Personnes ; toute personne citée apparaît dans le graphe ;
+- **conversation** (R5.8) : prompt `interviewer-v1`, migration 014, routes `/api/conversation` ;
+- **consentement unique** : migration 015 ;
+- **écran du lieu** : `Lieu.tsx`, avec graphe, conversation, journal et ligne d'activité.
+
+Contrôle navigateur : `node scripts/ui-check-lieu.mjs`.
+
+**Prochaine étape** : l'utilisateur rejoue la démonstration dans le lieu (BRIEF-007, lot P4), puis on note les constats. Restent à faire : fusion de deux fiches qui désignent la même personne (D-030) ; lot scellé mesurant la conversation et `propose_person` sur DeepSeek.
 
 **Thème d'interface** : « Jewel case » (maquette 13) appliqué à `apps/desktop` (D-027) : `jewel.css`, shader `JewelField.tsx`, couleurs de contexte `jewelTheme.ts`. Références : `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)).
 
