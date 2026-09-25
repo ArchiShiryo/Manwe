@@ -147,3 +147,54 @@ Le constat 19 de la première session (message par défaut qui masque la cause) 
 | —          | Lanceur Windows (`MANWE.cmd`) : mise à jour depuis git, installation si besoin, lancement et ouverture du navigateur.                                                         |
 
 Les constats 22 à 24 (profil de l'utilisateur, objectif propre de l'agent, plan de couverture) sont des choix de produit, proposés à l'utilisateur.
+
+## Troisième session · parcours complet rejoué sur un groupe fictif (version `52dcd1e` + correctifs de transport)
+
+Objectif : jouer les étapes 3 à 6 du déroulé, restées non jouées. **Ce n'est pas la démonstration de l'utilisateur** : elle a été conduite par l'assistant, par l'interface de programmation du service (mêmes routes que l'interface), sur une colocation **fictive** de 12 notes (quatre colocataires, un propriétaire, un voisin inconnu), dans un espace séparé. Elle valide la chaîne technique et le comportement de l'agent, pas la lisibilité à l'écran ni l'accueil par l'utilisateur.
+
+### Déroulé
+
+1. **Saisie et consentement** : 12 notes, consentement de transmission accordé pour cet espace de test. L'agent lance seul l'extraction, puis l'interprétation : 7 personnes, 10 relations, 36 affirmations, 12 hypothèses, 2 questions et 1 objectif proposé, en 3 min 30, sans rejet ni analyse périmée.
+2. **Corrections** : correction d'une preuve, réponse à une question, contexte sur une lecture. L'agent réanalyse seul (2 min 20). La lecture concernée passe de « brouillon » à « plausible », la question est marquée répondue, une nouvelle question apparaît, la preuve corrigée est marquée contestée.
+3. **Intentions** : reformulation de l'objectif proposé (il devient confirmé). L'agent propose 5 directions avec des prédictions par acteur. Choix d'une direction avec l'attente de l'utilisateur, puis saisie d'un résultat sans verdict (les verdicts sont facultatifs).
+4. **Réanalyse finale** (4 min) : quatre faits du résultat sont extraits, **mais aucune lecture n'est révisée** et aucune ne cite le résultat.
+5. **Redémarrage** : le service est arrêté puis relancé. L'état est **strictement identique** (révision 24, tout le contenu égal).
+
+### Constats
+
+| N° | Étape | Constat | Gravité | Correction proposée |
+| --- | --- | --- | --- | --- |
+| 29 | Analyse | Sur les analyses longues, la connexion au fournisseur était coupée vers 120 s (« terminated »), sans relance. Le graphe restait vide. | bloquant | **Corrigé en local** (commit `e418e94`) : réponse lue en flux, connexion coupée relancée, motif du refus affiché. À intégrer. |
+| 30 | Analyse | En flux, les appels d'outils du modèle étaient rejoués sans leur champ `type`, et le fournisseur répondait 422. Régression de ma première correction, trouvée et corrigée avec un test. | bloquant | Corrigé avec le point 29. |
+| 31 | Fond | Le fond WebGL se fige quand le système demande de réduire les animations, sans réglage ni avertissement. | confort | **Corrigé en local** : bouton « Fond animé / Fixe » mémorisé. Le style reste à recaler sur les maquettes. |
+| 32 | Réanalyse finale | La comparaison entre prédiction et résultat n'apparaît pas : sans verdicts saisis, la réanalyse extrait les faits du résultat mais ne révise aucune hypothèse et ne dit pas ce qui était juste dans la prédiction. Les prédictions (Nora vient, Théo en retard, Basile absent) n'ont jamais été jugées. | bloquant (étape 5 du déroulé) | Faire produire les verdicts par l'agent (avec l'utilisateur en validation), ou rendre la comparaison visible même sans verdicts. |
+| 33 | Extraction | Doublon de personne : « Camille » et « Camille, la petite amie de Théo » coexistent, sans ambiguïté signalée. | gênant | Détecter les noms qui se recouvrent et proposer la fusion. Lié aux constats 14 et 15. |
+| 34 | Interprétation | 12 notes donnent 12 hypothèses, dont plusieurs de profondeur D5 (norme du groupe) ou sur l'intériorité de l'utilisateur (« ne dit rien parce que cela ne le dérange pas »). Marquées « brouillon » ou de faible confiance, mais hardies pour si peu de faits. Conforme au mode capacité maximale (D-006). | à trancher | Question ouverte : où placer le seuil entre profondeur et prudence pour un public vulnérable. |
+| 35 | Graphe | Autour de « Vous », le graphe est tronqué (19 nœuds, « schéma allégé »). Il ne donne toujours pas de vue d'ensemble (constat 12). | gênant | Vue globale avec zoom. |
+| 36 | Couverture | La couverture est à 58 % après 12 notes, avec « Vous » à 2 sur 8 champs connus. Le profil de l'utilisateur reste largement vide. | gênant | À relier à l'entretien guidé (constats 2, 22 et 23). |
+
+### Ce qui a fonctionné
+
+- L'enchaînement autonome extraction, interprétation, réanalyse, exploration, sans intervention : 5 analyses appliquées, **0 rejet, 0 périmée**.
+- Les corrections sont prises en compte et se lisent dans les hypothèses et les questions.
+- Les 5 directions sont concrètes, avec des prédictions par acteur et par horizon.
+- Reprise après redémarrage : état identique.
+
+### Données techniques de la troisième session
+
+- **Jetons** : 493 913 au total (38 086 extraction, 103 485 interprétation, 151 224 première réanalyse, 141 237 exploration, 59 881 réanalyse finale). La réanalyse est l'étape la plus coûteuse.
+- **Inférence** : 77 s, 125 s, 108 s, 67 s et 93 s, soit 470 s cumulées.
+- **Rejets et périmées** : aucun.
+
+### Limites de cette session
+
+- Conduite par l'assistant, sur des données fictives : aucun retour d'usage, aucune lecture d'écran.
+- Les notes ont été saisies par le journal ; la conversation avec l'agent n'a pas été testée.
+- Objectif : seule la reformulation a été jouée (ni l'adoption telle quelle ni l'écart).
+- Verdicts : non testés (facultatifs).
+
+### Questions ouvertes supplémentaires pour le pilote
+
+1. **Boucle d'action** : l'agent doit-il juger lui-même les prédictions à partir du résultat, ou l'utilisateur les note-t-il ? Sans l'un ou l'autre, la comparaison n'existe pas.
+2. **Intégration** : reprendre les commits de transport et de fond (branche locale `claude/fix-provider-coupure`), avec leurs tests.
+3. **Nouvelle démonstration par l'utilisateur** : la rejouer sur la version actuelle, avec ses propres notes, pour juger l'accueil et la lisibilité.
