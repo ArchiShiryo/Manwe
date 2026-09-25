@@ -196,9 +196,56 @@ function runUntilAnalysis(runDir, scenario, state, store) {
         outcome: question ? `answered:${step.choice}` : "no_open_question",
         questionId: question?.id ?? null,
       });
+    } else if (step.type === "goal") {
+      // BRIEF-005 : objectif de l'utilisateur, formulé par le corpus.
+      const result = store.updateGoal({
+        idempotencyKey: `scenario:${stepId}`,
+        text: step.text,
+      });
+      state.goalId = result.created[0]?.id ?? state.goalId ?? null;
+      state.log.push({ step: stepId, type: "goal", outcome: "set" });
+    } else if (step.type === "choose") {
+      // Règle fixe, écrite avant tout run : la première direction d'action
+      // proposée pour l'objectif (ordre de création), jamais « ne rien faire ».
+      const direction = store
+        .snapshot()
+        .directions.find(
+          (item) =>
+            item.status === "proposed" &&
+            item.lever.kind !== "do_nothing" &&
+            item.goalId === (state.goalId ?? null),
+        );
+      if (direction) {
+        const result = store.chooseDirection({
+          idempotencyKey: `scenario:${stepId}`,
+          directionId: direction.id,
+          userExpectation: step.userExpectation ?? null,
+        });
+        state.actionId = result.created[0].id;
+      }
+      state.log.push({
+        step: stepId,
+        type: "choose",
+        outcome: direction ? "chosen" : "no_direction",
+        directionId: direction?.id ?? null,
+      });
+    } else if (step.type === "outcome") {
+      if (state.actionId)
+        store.recordOutcome({
+          idempotencyKey: `scenario:${stepId}`,
+          actionId: state.actionId,
+          text: step.text,
+          verdicts: null,
+        });
+      state.log.push({
+        step: stepId,
+        type: "outcome",
+        outcome: state.actionId ? "recorded" : "no_action",
+      });
     } else if (step.type === "analyze") {
       const snapshot = store.snapshot();
       const focus = [
+        ...snapshot.goals.map((goal) => ({ kind: "goal", id: goal.id })),
         ...snapshot.events.map((event) => ({ kind: "event", id: event.id })),
         ...snapshot.hypotheses
           .filter((hypothesis) => hypothesis.status !== "superseded")
@@ -564,6 +611,8 @@ function summary(runDirArgument) {
         question: question.question,
         status: question.status,
       })),
+      directions: snapshot.directions ?? [],
+      actions: snapshot.actions ?? [],
     };
     scenarios.push(result);
     lines.push("", `## ${scenario.id}`, "");
@@ -583,6 +632,26 @@ function summary(runDirArgument) {
       );
     for (const question of result.questions)
       lines.push(`- ? ${question.question} — ${question.status}`);
+    // BRIEF-005 : directions et actions.
+    const memberName = (member) =>
+      member.kind === "self" ? "moi" : person(member.personId);
+    for (const direction of snapshot.directions ?? []) {
+      const lever = snapshot.hypotheses.find(
+        (item) => item.id === direction.lever.hypothesisId,
+      );
+      lines.push(
+        `- → **direction** [${direction.status}] ${direction.lever.kind}${lever ? ` (actionne ${lever.depth} « ${lever.statement} »)` : ""} — ${direction.title} : ${direction.action} ; effort ${direction.effort} ; conditions : ${direction.conditions} ; limites : ${direction.limits} ; signaux : ${direction.signals.join(" | ")} ; si échec : ${direction.learnsIfFails} ; prédictions : ${direction.predictions
+          .map(
+            (prediction) =>
+              `${memberName(prediction.actor)} [${prediction.phase}${prediction.horizonDays ? `, ${prediction.horizonDays} j` : ""}] ${prediction.response}`,
+          )
+          .join(" | ")}`,
+      );
+    }
+    for (const action of snapshot.actions ?? [])
+      lines.push(
+        `- ⇒ **action** [${action.status}] attente figée le ${action.expectationRecordedAt}${action.outcome ? ` ; résultat : ${action.outcome.text}` : ""}`,
+      );
     lines.push(
       `- ${result.claims.length} claims (${result.claims
         .map(

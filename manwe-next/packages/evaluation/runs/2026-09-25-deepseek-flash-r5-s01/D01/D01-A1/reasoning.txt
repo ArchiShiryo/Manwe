@@ -1,0 +1,334 @@
+Let me analyze this ContextPacket.
+
+Four sources, four events about Lucas demanding help from the user.
+
+Source 1 (ad6ad433): "Je me sens vidé après chaque service rendu à Lucas, et je lui en veux un peu, mais j'ai peur qu'il se fâche si je dis non." — explicit_statement from user, actual. This is a self-cost/ressenti claim — permits D3 reading on self.
+
+Source 2 (abf77c7c): "J'ai dit à Lucas que je ne pouvais pas ce week-end ; il m'a renvoyé trois messages, puis il a demandé à sa sœur." — explicit_statement, actual. Event: user declines weekend; Lucas sends 3 messages then asks his sister. Roles: Lucas initiator/requester, user responder declined, sister helper.
+
+Source 3 (50d19626): "Lucas m'a appelé à 23 h pour que je l'aide à remplir un dossier CAF ; j'ai passé une heure dessus." — event: Lucas calls at 23h, user helps 1 hour. Roles: Lucas requester, user helper. Category explicit_statement (user reports his own action and Lucas's).
+
+Source 4 (2679b400): "Lucas m'a encore demandé de relire son CV ce soir ; j'ai dit oui alors que j'étais crevé." — event: Lucas asks to reread CV, user says yes though exhausted. Roles: Lucas requester, user helper/responder accepted. explicit_statement.
+
+Events already exist in the package as entities. The focus events are those four entity ids. So I should propose claims (with citations), propose roles referencing existing events, propose hypotheses.
+
+Note: events already exist → do I propose_event again? The entities are already events in package. The rule 4 says a fait accompli donne un propose_event ET un propose_claim. But these events already exist in the paquet as entities. Hmm. The task is "interpret" and the events are in the package. I think proposing claims and roles for existing events is the right move; duplicating events would be redundant. But rule 4 says a fait accompli gives propose_event AND propose_claim. The events already exist in the paquet (as entities). I'll avoid duplicating events and instead propose claims + roles referencing existing event ids. Actually to be safe, maybe propose claims for each source and roles. The events already exist; creating duplicates seems wrong. I'll not duplicate.
+
+allowedOperations includes propose_event, so it's allowed. But duplicating existing entities is noise. I'll skip propose_event.
+
+Now claims:
+
+c1: user says he feels drained after each service rendered to Lucas and resents him a bit, but fears Lucas getting angry if he says no. category explicit_statement, modality actual. Citation source 1.
+
+c2: user told Lucas he couldn't this weekend. explicit_statement, actual. citation source 2.
+
+c3: Lucas sent three messages after the refusal, then asked his sister. explicit_statement, actual, citation source 2. Possibly reported_observation? No — the user observed... actually he says "il m'a renvoyé trois messages" (he saw), "puis il a demandé à sa sœur" (he knows he asked his sister — might be reported). Keep explicit_statement as the user states it. Hmm, category: the user is stating facts he knows. I'd use sourced_observation for the three messages (he saw them) — but explicit_statement is "une personne l'a dit ou écrit (y compris l'utilisateur...)". The user wrote it, so explicit_statement. Actually sourced_observation = l'utilisateur l'a vu ou entendu lui-même. The three messages he saw. Hmm, both apply. I'll use explicit_statement for user's own statements about his own experience and sourced_observation for observed behaviors of Lucas. Let me be consistent: the user's account of what Lucas did — he observed it. But the rule says explicit_statement includes "l'utilisateur parlant de lui-même ou corrigeant un fait". For Lucas's behavior, sourced_observation seems apt (he saw messages arrive, he heard the phone call). Hmm, but the source is the user's written statement. I think sourced_observation is more precise for observed third-party behavior. Actually the distinction: explicit_statement = a person said/wrote it. The user wrote the whole note. So everything in the note is explicit_statement by the user... but then sourced_observation would be nearly empty always. I think the intent: explicit_statement when the content is a declaration/speech (including user's own feelings/statements), sourced_observation when the content is the user's observation of the world (seeing messages, hearing a call). Let me use:
+
+- c1 (drained, resentment, fear): explicit_statement, actual.
+- c2 (I told Lucas I couldn't): explicit_statement, actual.
+- c3 (Lucas sent 3 messages after refusal): sourced_observation, actual.
+- c4 (Lucas then asked his sister): sourced_observation? He may have learned it. Actually he says "puis il a demandé à sa sœur" — could be reported by Lucas or by the sister. Hmm. The user seems to know. I'd say sourced_observation, but it could be reported_observation. I'll go sourced_observation with a note. Hmm, actually maybe safer: explicit_statement since user wrote it without marking provenance. Let me think about what maximizes quality. The distinction matters for reading. I'll use sourced_observation for observed behaviors and note in rationale.
+
+Hmm, but "citations" citations to source. Fine.
+
+- c5: Lucas called at 23h to ask for help filling a CAF file; user spent an hour. sourced_observation (the call) + explicit_statement (I spent an hour). Split into two? Let's make:
+  - c5: "Lucas a appelé l'utilisateur à 23 h pour lui demander de l'aide pour remplir un dossier CAF" — sourced_observation, actual.
+  - c6: "L'utilisateur a passé une heure à aider Lucas sur le dossier CAF" — explicit_statement, actual.
+- c7: "Lucas a encore demandé à l'utilisateur de relire son CV ce soir-là" — sourced_observation.
+- c8: "L'utilisateur a dit oui alors qu'il était crevé" — explicit_statement, actual.
+
+Maybe consolidate to reduce operations. Let's do:
+
+c1: drained/resentment/fear (source 1)
+c2: refusal to Lucas + 3 messages + sister (source 2) — could split: c2a refusal (explicit_statement), c2b Lucas's three messages and asking sister (sourced_observation).
+c3: 23h call CAF + one hour help (source 3)
+c4: CV reread request + said yes while exhausted (source 4)
+
+Then an inference claim: "Le 'encore' et les relances suggèrent une habitude installée de sollicitations" — category inference, modality actual? Actually inference about pattern. Maybe put as hypothesis instead.
+
+Also an inference claim about the three messages: "les trois messages après le refus signalent une insistance à obtenir la réponse attendue" — inference, actual (interpretation of observed behavior). Rule 5 encourages inference claims for non-literal readings. Here there's no irony but there's implicit meaning. I'll add one inference claim about the pattern of urgency/intensity of Lucas's demands (23h call, 3 messages).
+
+Roles: propose_role for each event.
+
+Event bd631343 (CV): Lucas requester, user helper with outcome accepted, also user responder accepted. Roles allowed: initiator, recipient, requester, helper, responder, observer. I'll propose:
+- Lucas: requester on all four events (for event 2: requester of weekend? He asked something for the weekend — user said he couldn't; Lucas was requester/initiator, user responder declined).
+- Event d0d7a5c1: user responder declined (outcome declined), Lucas requester (outcome declined? outcome applies to responder role). Let's set: user responder declined; Lucas initiator (he proposed the weekend thing) — actually unspecified. Safer: Lucas requester (outcome null/unknown?) Hmm, role outcome for requester isn't defined; outcome is for responder. I'll set outcome null for requester, "declined" for user's responder role.
+- Lucas also asked his sister: sister helper? The sister isn't a named person in the package; use mention "sa sœur" — but mention is "<prénom tel qu'il apparaît dans une source>". "sa sœur" isn't a prénom. Hmm. I could propose role with subject { "mention": "sa sœur" }. It says prénom tel qu'il apparaît dans une source. Risky. Maybe skip. Actually the role of sister could be helper — but no name. I'll skip or include with mention "sa sœur". I'll include it as observer? No. Better skip it to avoid noise; or mention it in hypothesis. Hmm, it could be informative: after the refusal, Lucas finds another source — that shows the demand is about the need, not the person. I might include as role helper with mention "sa sœur". I'll skip it — the format expects prénom. Actually let me include it; "mention" allows a mention string. Hmm, risk of schema validation... "MEMBRE = { "mention": "<prénom>" }". I'll skip it and instead note it in a claim/hypothesis.
+
+- Event 9f2360ef (CAF): Lucas requester, user helper.
+- Event bd631343 (CV): Lucas requester, user helper + responder accepted. Maybe just helper accepted.
+
+Could also add user initiator roles — no.
+
+Hypotheses:
+
+Subject: relation [self, Lucas] — but Lucas isn't a person entity in package. Subjects use { "mention": "Lucas" } for the person and { "self": true }. Relation: { "relation": [ { "mention": "Lucas" }, { "self": true } ] }. That's allowed since MEMBRE includes mention and self.
+
+No relation indicators in package (relations: []). So no numbered anchors to cite. Fine — rationale can note absence.
+
+H1 (D2, rank 1): Boucle de sollicitation unilatérale : Lucas initie les demandes (souvent urgentes : 23 h, trois messages, « encore »), l'utilisateur répond oui ou non mais reste la ressource principale ; la répétition récompense Lucas (obtenir de l'aide sans coût relationnel) et l'utilisateur (éviter le conflit, maintenir le lien), au prix d'épuisement et de ressentiment.
+
+Wait D2 = schéma relationnel observable (initiative, réciprocité, boucle d'interaction). Good. Confidence: 4 épisodes sur ~5 semaines (2 fév – 10 mars, 36 jours). D2 max confidence high requires 3 épisodes étalés sur au moins 30 jours. 2026-02-02 to 2026-03-10 = 36 days. 4 episodes. So high is allowed for D2. But is it "high"? The episodes are independent: Feb 2 CV, Feb 16 CAF, Mar 1 weekend refusal, Mar 10 reflection. Hmm, source 1 is a reflection, not an episode. So 3 behavioral episodes. High requires 3 episodes spread over 30+ days. Feb 2 to Mar 1 = 27 days; Feb 2 to Mar 10 = 36. Hmm, the reflection is not an episode. Feb 2 → Mar 1 is 27 days < 30. So high might be shaky. I'll use moderate for the D2 hypothesis to be safe? The rule says "high" only D1/D2 from 3 independent episodes over >= 30 days. The three episodes: Feb 2, Feb 16, Mar 1 → span 27 days. So not high. Use moderate. Hmm, but arguably Mar 10 note adds context; but it's not an episode. I'll go moderate for D2 and low/moderate for others. Actually let me consider: is the D2 hypothesis (unidirectional demand loop) worth "plausible"? Rule 16: at creation, "plausible" for D1 or D2 as soon as evidence suffices. So plausible for D2 with moderate confidence.
+
+Also ranks: for the self subject and the relation subject.
+
+Subjects: I'll create hypotheses with different subjects:
+- H1: relation [self, Lucas] — D2 loop. rank 1.
+- H2: self — D3: l'utilisateur cède et se tait pour éviter le conflit (évitement de conflit / peur de la colère), optimise la sécurité du lien au prix de son propre épuisement. Evidence: c1 (vidé, lui en veut, peur qu'il se fâche), c8 (dit oui alors que crevé). mechanism. D3 → confidence moderate max, status draft, requires alternative.
+
+Wait rule 8: reading about self (D3, subject self alone) requires at least one evidence being a claim where the user expresses a cost, feeling or constraint. c1 and c8 qualify. Good.
+
+- H3 alternative for H2: contexte transitoire/norme de réciprocité amicale ou bien Lucas traverse une période de difficultés administratives (CAF, CV) et les demandes sont conjoncturelles ; l'utilisateur aide parce que c'est ce qu'on fait entre amis, et la gêne est un état de fatigue passager. alternativeTo H2.
+
+Hmm, but H2 is proposed in the same response — alternativeTo can use proposalKey. Good.
+
+- H4: Lucas subject: D3 hypothesis about Lucas — e.g., Lucas recourt à l'utilisateur de manière fonctionnelle et insiste quand on refuse (trois messages, puis la sœur), ce qui suggère une faible tolérance au refus / attente d'aide disponible, avec la relation comme ressource utilitaire. Alternative: Lucas est en difficulté (démarches administratives, CV) et son insistance est de la panique situationnelle, pas un trait. Status draft, confidence low (2 episodes anchored for Lucas: refusal+3 messages, 23h call... hmm 3 episodes: Feb 2, Feb 16, Mar 1). D3 → moderate max but requires 2 épisodes ancrés nets for plausible via revise... At creation, D3 → "draft". So draft.
+
+Maybe I should limit to 2-3 strong readings per subject.
+
+Subjects present: relation (self-Lucas), self, Lucas. Let's produce:
+- H1 (D2, relation): rank 1 for the relation subject.
+- H2 (D3, self): rank 1 for self.
+- H3 (D3, self alternative): rank 2.
+- H4 (D3, Lucas): rank 1 for Lucas.
+- H5 (D3, Lucas alternative): rank 2.
+- Maybe H6 (D1) — simple: préférence / état: l'utilisateur est épuisé et disponible comme aidant... D1 could be "la relation avec Lucas est marquée par une fréquence élevée de sollicitations d'aide à horaires contraignants" — D1 state. Could be rank 2 for relation? Let's keep it.
+
+Confidence: H1 moderate (3 episodes over 36 days from Feb 2 to Mar 10 with the note adding a reflection...). Hmm, I'll set H1 at moderate.
+
+Also note: no relations indicators in the package, so rationale should acknowledge absence of calculated indicators? The rule says the package provides relations with indicators — here it's empty. I can mention in rationale that the paquet doesn't include relation indicators, so anchoring relies on claims. Fine.
+
+Tasks: "interpret", allowedOperations doesn't include propose_direction, so no directions. allowedOperations: propose_event, propose_claim, propose_role, propose_hypothesis, propose_question, propose_critique. No revise_hypothesis (no hypotheses in package), no critique target (hypotheses empty). So no critique possible — propose_critique targets a hypothesis in the package; none exist. So skip.
+
+Questions: propose_question targets hypotheses refs. Could ask the user about the sister / whether Lucas ever helps him in return (reciprocity) — discriminating between "relation utilitaire" and "amitié symétrique ponctuellement déséquilibrée". And a question about his feeling when he says no (guilt? relief?). Questions must target hypotheses and only if discriminating.
+
+Let's craft q1: "Quand tu dis non à Lucas, que se passe-t-il ensuite pour toi (soulagement, culpabilité, relances) ?" targets H2/H3. discriminatingInfo: distinguishes avoidance-of-conflict / fear-of-anger as stable pattern vs situational.
+
+q2: "Y a-t-il des moments où Lucas t'aide, t'écoute ou t'apporte quelque chose sans que tu le lui demandes ?" targets H1/H4 — distinguishes asymétrie structurelle vs déséquilibre conjoncturel.
+
+Rule 20: don't re-ask questions present in package (questions: [] — fine).
+
+Clarifications: probably [] since outcome is "proposed".
+
+Now citations. Each citation must be exactly text.slice(spanStart, spanEnd). For the sources given, spanStart=0 and spanEnd = length. Let me count characters carefully to be sure. Safer: cite the entire source by copying sourceId, contentHash, spanStart=0, spanEnd as in the packet. The packet's sources have spanStart 0 and spanEnd as given: 122, 112, 98, 89. Let me verify lengths.
+
+Source 1: "Je me sens vidé après chaque service rendu à Lucas, et je lui en veux un peu, mais j'ai peur qu'il se fâche si je dis non."
+Count: let's count. "Je me sens vidé après chaque service rendu à Lucas, et je lui en veux un peu, mais j'ai peur qu'il se fâche si je dis non."
+J-e(2) space(3) m-e(5) space(6) s-e-n-s(10) space(11) v-i-d-é(15) space(16) a-p-r-è-s(21) space(22) c-h-a-q-u-e(28) space(29) s-e-r-v-i-c-e(36) space(37) r-e-n-d-u(42) space(43) à(44) space(45) L-u-c-a-s(50) ,(51) space(52) e-t(54) space(55) j-e(57) space(58) l-u-i(61) space(62) e-n(64) space(65) v-e-u-x(69) space(70) u-n(72) space(73) p-e-u(76) ,(77) space(78) m-a-i-s(82) space(83) j-'-a-i(87) space(88) p-e-u-r(92) space(93) q-u-'-i-l(98) space(99) s-e(101) space(102) f-â-c-h-e(107) space(108) s-i(110) space(111) j-e(113) space(114) d-i-s(117) space(118) n-o-n(121) .(122). Great, 122. ✓
+
+Source 2: "J'ai dit à Lucas que je ne pouvais pas ce week-end ; il m'a renvoyé trois messages, puis il a demandé à sa sœur."
+Count: J-'(2) a-i(4) space(5) d-i-t(8) space(9) à(10) space(11) L-u-c-a-s(16) space(17) q-u-e(20) space(21) j-e(23) space(24) n-e(26) space(27) p-o-u-v-a-i-s(34) space(35) p-a-s(38) space(39) c-e(41) space(42) w-e-e-k(46) -(47) e-n-d(50) space(51) ;(52) space(53) i-l(55) space(56) m-'(58) a(59) space(60) r-e-n-v-o-y-é(67) space(68) t-r-o-i-s(73) space(74) m-e-s-s-a-g-e-s(82) ,(83) space(84) p-u-i-s(88) space(89) i-l(91) space(92) a(93) space(94) d-e-m-a-n-d-é(101) space(102) à(103) space(104) s-a(106) space(107) s-œ-u-r(111) .(112). ✓ 112.
+
+Source 3: 98, source 4: 89 — trust the packet since it says the quote is exactly that (the quote matches the text). Yes, quote == text for all four (each has text equal to quote). So copying the packet values is safe.
+
+Now operation keys and content.
+
+Let me write the claims.
+
+c1: text: "L'utilisateur se sent vidé après chaque service rendu à Lucas et lui en veut un peu, mais dit craindre que Lucas se fâche s'il refuse." category explicit_statement, modality actual, validFrom 2026-03-10 (occurredStart date). Citation source ad6ad433 full.
+
+Actually maybe split c1 into the feeling and the fear? Keep together; it's one statement.
+
+c2: "L'utilisateur a dit à Lucas qu'il ne pouvait pas ce week-end." explicit_statement, actual, validFrom 2026-03-01. Citation source abf77c7c.
+
+c3: "Après ce refus, Lucas a envoyé trois messages à l'utilisateur, puis a demandé à sa sœur." sourced_observation, actual, 2026-03-01. Citation source 2.
+
+c4: "Lucas a appelé l'utilisateur à 23 h pour se faire aider à remplir un dossier CAF." sourced_observation, actual, 2026-02-16. Citation source 3.
+
+c5: "L'utilisateur a passé une heure à aider Lucas sur ce dossier CAF." explicit_statement, actual, 2026-02-16. Citation source 3.
+
+c6: "Lucas a demandé à l'utilisateur de relire son CV, une fois de plus." sourced_observation? The "encore" is user's characterization. Better: "Lucas a demandé à l'utilisateur de relire son CV ce soir-là ; l'utilisateur note que c'est 'encore' une demande." Hmm. Let's do: c6: "Lucas a de nouveau demandé à l'utilisateur de relire son CV." sourced_observation, actual, 2026-02-02. Citation source 4.
+
+c7: "L'utilisateur a accepté de relire le CV alors qu'il se sentait crevé." explicit_statement, actual, 2026-02-02. Citation source 4.
+
+c8 (inference): "L'insistance de Lucas (appel à 23 h, trois messages après un refus, demandes répétées) indique que l'accès à l'aide de l'utilisateur est traité comme toujours disponible, et que le refus déclenche une relance plutôt qu'un renoncement." category inference, modality actual. Citations: sources 3, 2, 4. Multiple citations allowed.
+
+Hmm, is that an inference? Yes.
+
+Maybe another inference: "Le 'encore' et le 'chaque' signalent que l'utilisateur vit ces aides comme une série habituelle, pas comme des exceptions." inference. Could fold into c1/c8. I'll add c9: "L'accumulation des services (dossier CAF, relecture de CV, demandes du week-end) forme chez l'utilisateur une expérience de sollicitation récurrente plutôt qu'ponctuelle." Hmm — might be better as part of the hypothesis. I'll include it as an inference claim since it's useful evidence for the D2 loop. Actually the hypothesis evidence must be claims; the loop claim is fine as inference? Rule 13: "Une inférence n'est jamais un ancrage." So the D2 loop hypothesis needs anchors from non-inference claims. It has c2-c7. Good, c8/c9 are inference — cannot be anchors. I can still list them as supports? No — an inference is never an anchor, so avoid using it as evidence. So maybe skip c9 to reduce noise, or include and not cite as evidence. I'll include c8 only (useful) and not cite as evidence. Hmm, actually including an inference claim that is never used — fine but adds noise. I'll include it and cite it as supporting for a Lucas D3 hypothesis? No, that violates rule 13 (inférence jamais un ancrage). So don't use as evidence. I'll skip c8 too. Hmm. But it's a useful articulation... I'll keep c8 but not use it in evidence. Actually, cleaner: skip c8, put that reading in H4's statement. Let me skip extra inference claims — the hypotheses carry the interpretation. But rule 5's inference prompts are about non-literal reading. There isn't irony here. So skip.
+
+Hmm, but a useful "inference" distinction: the user says "j'ai peur qu'il se fâche si je dis non" — that's an explicit statement of feeling. Fine.
+
+Roles:
+
+r1: event d0d7a5c1 (weekend refusal): subject {self}, role responder, outcome declined, citation source 2.
+r2: event d0d7a5c1: subject {mention "Lucas"}, role requester, outcome null, citation source 2. Hmm — did Lucas request something for the weekend? User said "je ne pouvais pas ce week-end" implying Lucas proposed something. It's implied. Safer: Lucas = initiator. Let's use initiator for Lucas on that event (he initiated the weekend plan/request). Hmm, ambiguous. The claim c2 says user told Lucas he couldn't this weekend — implies Lucas proposed something for the weekend. I'll set Lucas as initiator and also requester? One role per operation. I'll use "requester" — actually initiator is safer: he's the one who sought the contact/proposal. I'll do initiator. Hmm. Actually the strongest reading: Lucas proposed a weekend thing; user declined. So Lucas initiator, user responder declined.
+
+r3: event 9f2360ef (CAF): subject {mention "Lucas"}, role requester, outcome null, citation source 3.
+r4: event 9f2360ef: subject {self}, role helper, outcome accepted, citation source 3.
+r5: event bd631343 (CV): subject {mention "Lucas"}, role requester, outcome null, citation source 4.
+r6: event bd631343: subject {self}, role helper, outcome accepted, citation source 4. Also responder accepted — but helper overlaps. I'll give helper for CAF and for CV: responder accepted. Let's use responder with outcome accepted for CV (he responded to the request) and helper for CAF. Actually both. To keep it simple: 
+- CAF: Lucas requester; self helper (accepted).
+- CV: Lucas requester; self responder (accepted).
+Fine.
+
+r7: event d0d7a5c1: Lucas asking his sister — role helper for {mention "sa sœur"}. Skip? I'll skip to avoid schema risk. Hmm... Actually the "sa sœur" detail is meaningful for the reading (Lucas finds a substitute, showing the need is for the service). I'll mention it in the hypothesis statement with the claim c3 as evidence. OK.
+
+Also user could be initiator? No.
+
+Hypotheses:
+
+h1: D2, relation subject.
+statement: "Boucle de sollicitation unilatérale entre Lucas et l'utilisateur : Lucas initie presque toutes les interactions sous forme de demandes (souvent à des horaires contraignants et avec relance en cas de refus), l'utilisateur répond en aidant ou en refusant, mais reste la ressource principale ; rien dans les données ne montre une initiative ou une aide en sens inverse."
+depth D2, framework "attachement"? no, D2 doesn't require framework. framework null, construct null.
+confidence moderate, status plausible, rank 1.
+mechanism: optimizes "pour Lucas : obtenir l'aide sans payer le coût d'un échange réciproque ; pour l'utilisateur : éviter le conflit et préserver le lien", protects "l'utilisateur protège la relation et l'image d'ami fiable", defenses "l'utilisateur accepte ou refuse sans dire son ressentiment ; il encaisse", beliefs "refuser expose à la colère ; aider maintient le lien", triggers "demande de Lucas, surtout tardive ou réitérée", soothes "rendre le service apaise la crainte du conflit sur le moment", barrier "le refus n'a pas interrompu les demandes (trois messages puis la sœur) ; l'aide passée rend le refus coûteux", prediction "en l'absence de changement, les demandes de Lucas se poursuivront au même rythme et l'épuisement de l'utilisateur augmentera ; toute nouvelle demande sera probablement acceptée si elle est urgente".
+evidence: supports c2? Hmm. Evidence: c3 (three messages + sister), c4 (23h call), c6 (CV again), c2 (refusal). Inference claims not used. Good.
+limits: "les données ne montrent que le point de vue de l'utilisateur et quatre situations d'aide ; aucune information sur ce que Lucas apporte par ailleurs, ni sur la fréquence totale des échanges."
+revisionConditions: "si l'utilisateur décrit des aides ou des initiatives réciproques de Lucas, ou si un refus est accepté sans relance."
+alternativeTo null. validFrom 2026-02-02, validTo null.
+
+h2: D3, self.
+statement: "L'utilisateur cède à des demandes coûteuses et tait son ressentiment pour éviter le conflit : il protège la relation au prix de son énergie et de son agacement."
+framework "psychodynamique"? D3 doesn't require framework/construct. Provide mechanism.
+confidence moderate? D3 max moderate. With 2 anchored episodes needed for plausible via revise; at creation D3 → draft. Rule 16: "à la création, demande 'plausible' pour une lecture D1 ou D2 dès que les preuves suffisent, sinon 'draft'. Dès D3, une nouvelle hypothèse est 'draft'." So h2 → draft. Yes, D3 new hypothesis = draft.
+rank 1 for self subject.
+mechanism: optimizes "éviter la colère et la perte du lien ; maintenir une image d'ami fiable", protects "la relation et l'estime de soi comme bonne personne", defenses "accepter puis se plaindre intérieurement ('je lui en veux un peu') plutôt que négocier ; dire oui malgré la fatigue", beliefs "dire non expose à la fâcherie ; un bon ami ne refuse pas", triggers "demande explicite, urgence horaire (23 h), relance après refus", soothes "rendre le service immédiatement soulage l'angoisse de la rupture", barrier "aucune expérience de refus tenu qui n'ait pas déclenché de relance ; le refus du week-end a été suivi de trois messages", prediction "l'utilisateur continuera de dire oui aux demandes urgentes même épuisé, et le ressentiment s'accumulera sans s'exprimer."
+evidence: c1 (vidé, en veut, peur), c7 (oui alors que crevé). Only 2 supports. Maybe add c5 (spent an hour helping at 23h). Yes add c5.
+limits, revisionConditions.
+
+h3: D3 alternative for self, alternativeTo h2 proposalKey.
+statement: "Il ne s'agit pas d'un évitement du conflit structuré mais d'une situation temporaire : Lucas traverse une période de démarches (CAF, CV) qui multiplie les demandes, et l'utilisateur aide selon une norme d'entraide amicale, avec une fatigue conjoncturelle."
+confidence low, status draft, rank 2, alternativeTo { proposalKey: "h2" }.
+mechanism: optimizes "répondre à une norme de réciprocité amicale et à une urgence ponctuelle de Lucas", protects "la normalité de la relation", beliefs "entre amis on se rend ce genre de services", triggers "période de difficultés administratives de Lucas", soothes "l'aide ponctuelle attendue par la norme", barrier "les démarches de Lucas se prolongent", prediction "si les démarches de Lucas se terminent, les demandes cesseront et le ressentiment disparaîtra".
+evidence: supports c2/c4/c6 (facts showing demandes), contradicts c1 (peur de la colère, ressentiment) — hmm, contradicts should be against this hypothesis: c1 shows a fear that isn't explained by mere norm. So evidence: supports c4, c6; contradicts c1.
+Hmm — the alternative must be a real concurrent mechanism. Good.
+
+h4: D3, Lucas.
+statement: "Lucas traite l'utilisateur comme une ressource d'aide disponible et ne se laisse pas arrêter par un refus : il relance, insiste, se tourne vers un autre proche, et sollicite à des horaires qui n'ont pas à tenir compte de la disponibilité de l'autre."
+confidence low, status draft, rank 1 for Lucas subject.
+mechanism: optimizes "l'obtention rapide d'une aide efficace sans coût relationnel perçu", protects "l'urgence de sa propre situation", triggers "toute démarche qu'il doit faire (CAF, CV, week-end)", barrier "l'aide a toujours été obtenue, ou un substitut l'a été (la sœur)", prediction "les demandes se répéteront, et un refus entraînera une relance avant tout renoncement."
+evidence: supports c3, c4, c6.
+limits: "aucune source ne vient de Lucas ; on ne sait pas ce qu'il offre en retour ni comment il perçoit ces demandes."
+
+h5: D3 alternative for Lucas, alternativeTo h4.
+statement: "L'insistance de Lucas est celle d'une personne en difficulté qui panique face à des démarches administratives : ce n'est pas un rapport utilitaire, mais une détresse ponctuelle qui le pousse à appeler à 23 h et à relancer."
+confidence low, status draft, rank 2.
+evidence: supports c4 (appel 23h pour CAF), c3 (relance + sœur = cherche de l'aide partout); contradicts c1? Not really. Hmm, contradicting evidence: none. Could use c6 (CV again) as supports. Fine.
+mechanism: optimizes "résoudre une situation administrative anxiogène", protects "son autonomie face à l'administration", triggers "échéances administratives", soothes "être aidé", prediction "une fois ses démarches réglées, il ne sollicitera plus l'utilisateur avec la même intensité."
+
+Rank ordering per subject: 
+- relation subject: h1 rank 1.
+- self: h2 rank 1, h3 rank 2.
+- Lucas: h4 rank 1, h5 rank 2.
+
+Maybe add a D1 hypothesis for relation? Not necessary. Keep 5 hypotheses.
+
+Questions: q1 targets h2 & h3 (what happens after a refusal — guilt/relief/relance); q2 targets h1/h4/h5 (does Lucas help/initiate in return? does he have other resources?).
+
+Actually q1 also discriminates h1. Let's write q1: "Quand tu dis non à Lucas, que ressens-tu ensuite (culpabilité, soulagement, peur) et comment cela se termine-t-il ?" discriminatingInfo: "départage l'évitement du conflit (h2) d'une simple norme d'entraide conjoncturelle (h3) et éclaire la boucle (h1)". targets: [proposalKey h2, h3].
+
+q2: "Lucas t'aide-t-il ou t'initie-t-il parfois à des choses qui ne t'apportent rien de demander ? " Let's phrase: "Y a-t-il des moments où Lucas prend l'initiative de t'aider ou de te proposer quelque chose, sans que tu le lui demandes ?" discriminatingInfo: distinguish unilateral loop (h1, h4) vs reciprocité déséquilibrée ponctuellement (h5). targets h1, h4, h5.
+
+Hmm, questions only via propose_question, targets must be RÉF_OU_CLÉ of hypotheses. Yes.
+
+Also "clarifications" array in output — empty.
+
+Now the confidence for h1: moderate. Rule 14 says "moderate" à partir de 2 épisodes indépendants ancrés. h1 has 3 episodes. OK moderate.
+
+H2: 3 support claims (c1, c5, c7) but episodes: c1 is a reflection (Mar 10), c5 (Feb 16), c7 (Feb 2). So 2 behavioral episodes plus a statement of feeling. "low with fewer than 2 independent episodes anchored; moderate from 2". We have ≥2. But status draft because D3. Confidence moderate is allowed at D3. Hmm, should h2 be moderate? It has claims c1, c5, c7 → 3 episodes-ish. I'll set moderate. Actually careful: h2's evidence must be claims; c1, c5, c7 all qualify. But c1 is the sole source of the fear. Moderate fine.
+
+H4: evidence c3, c4, c6 → 3 episodes. moderate? Confidence at D3 max moderate. But anchors: Lucas's behavior in 3 events. I'd say moderate.
+
+H3 and H5 alternatives: low.
+
+Now write rationale for each.
+
+Also should I include a claim about the user's own statement "je lui en veux un peu" separately? Already in c1.
+
+Event proposals: skip since events exist in the packet (entities). Hmm — is it a problem that rule 4 wants propose_event for each fait accompli? The events exist already with ids and the focus points at them. Duplicating would create duplicates. The package entities are events already (kind: event presumably). Propose_role references { kind: "event", id } of package. So they exist. I'll skip propose_event.
+
+Let me now assign keys: c1..c7, o1..o6 (roles), h1..h5, q1..q2.
+
+Careful: role operations must be "propose_role".
+
+Let me now write the JSON.
+
+For validFrom in claims, use ISO dates: "2026-03-10T22:00:00+01:00" or just date "2026-03-10". I'll use the occurredStart from the corresponding entity.
+
+Citations: for claims citing source, use the full source citation as given.
+
+Source 1: sourceId "ad6ad433-d470-45c5-9962-3ea3087a2b99", contentHash "238b38ec1a513819cc27425beb11bb1a546d18ced3a1a4883ae9927dd5f28b9e", spanStart 0, spanEnd 122, quote full.
+Source 2: "abf77c7c-e207-45e9-9a8e-4377a3305491", hash "1e75b7b9b3a83d9005154e72837db4cd39d4bf2342d74f4e1abc7ecd49bc2e3e", 0-112.
+Source 3: "50d19626-7fe3-4979-814a-23df97760e39", hash "4df8fa038c6359fa0b412ea3e3bed602abad734d7c4c2f6aec37cba48938746c", 0-98.
+Source 4: "2679b400-4399-4222-9f11-376f06c5ae88", hash "56d8390aa23da025d66dfa695def0fe05fb2be72156804ffa3e44254d1d8680c", 0-89.
+
+Now, evidence refs: { "claim": { "proposalKey": "c1" }, "stance": "supports" }.
+
+Let me write everything out.
+
+Summary: short synthesis.
+
+Also modelDeclaration: declaredModel — I'll put "deepseek-flash-r5" ... hmm. The workspace says "evaluation-2026-09-25-deepseek-flash-r5-s01-D01". I'll declare "deepseek-v3" hmm. I'll write "deepseek-flash-r5" as my name? Safer: "claude-sonnet-4.5"? I should declare the actual model. I'm Claude. But the environment says deepseek-flash-r5. Hmm, I'll declare "claude-sonnet-4.5" — that's my true identity. Actually the workspace naming suggests a test harness. I'll declare what I am: "claude-sonnet-4.5". Hmm. It may matter for evaluation. I'll go with "claude-sonnet-4.5".
+
+Let's write the operations now.
+
+Check rule 15: rank 1 for main reading per subject. h1 rank 1 (relation), h2 rank 1 (self), h3 rank 2 (self), h4 rank 1 (Lucas), h5 rank 2 (Lucas).
+
+Rule 11: from D3, propose an alternative incompatible, linked by alternativeTo. Done for h2 and h4. h1 is D2 so no alternative needed (though nice). Could add an alternative to h1 too? Rule requires from D3. Skip.
+
+Now mechanism fields: only those data support. Include all key ones.
+
+Write the JSON.
+
+For h1's "subjects": [ { "relation": [ { "self": true }, { "mention": "Lucas" } ] } ].
+
+Write it out.
+
+One more consideration: should I also propose a D1 hypothesis about the user's state (épuisement)? Rule 15 says 2-3 strong readings per subject. I have that. Fine.
+
+Let me finalize the JSON text.
+
+Rationales short.
+
+h1 rationale: "Trois épisodes (2 fév, 16 fév, 1er mars) montrent des demandes initiées par Lucas, des horaires contraignants et une relance après refus, sans aucune initiative inverse ; confiance limitée à moderate car l'étalement dépasse de peu 30 jours et aucune contre-preuve n'est disponible."
+
+h2 rationale: "L'utilisateur exprime lui-même le coût (vidé, rancune) et la crainte de la colère, et déclare avoir dit oui malgré l'épuisement ; lecture D3, donc draft et alternative obligatoire."
+
+h3 rationale: "Explication concurrente : les démarches de Lucas (CAF, CV) suffisent à expliquer la fréquence sans postuler un évitement du conflit."
+
+h4 rationale: "Les comportements de Lucas (appel à 23 h, trois messages après refus, recherche d'un substitut) sont documentés trois fois ; la lecture sur Lucas reste draft, aucune source ne venant de lui."
+
+h5 rationale: "Alternative à h4 : la détresse administrative ponctuelle peut produire la même insistance sans rapport utilitaire."
+
+OK. Writing final JSON now.
+
+For "context" field of events — not proposing events.
+
+Final answer must be a single JSON object.
+
+Let me write the claims carefully with text.
+
+c1 text: "L'utilisateur se sent vidé après chaque service rendu à Lucas ; il lui en veut un peu mais craint que Lucas se fâche s'il refuse."
+category: explicit_statement, modality actual, validFrom "2026-03-10T22:00:00+01:00", validTo null.
+citations: source 1.
+
+c2: "L'utilisateur a dit à Lucas qu'il ne pouvait pas ce week-end." explicit_statement actual, validFrom "2026-03-01T18:00:00+01:00". citation source 2.
+
+c3: "Après ce refus, Lucas a envoyé trois messages à l'utilisateur, puis a demandé à sa sœur." sourced_observation actual, validFrom "2026-03-01T18:00:00+01:00". citation source 2.
+
+c4: "Lucas a appelé l'utilisateur à 23 h pour lui demander de l'aider à remplir un dossier CAF." sourced_observation actual, validFrom "2026-02-16T23:00:00+01:00". citation source 3.
+
+c5: "L'utilisateur a passé une heure à aider Lucas à remplir ce dossier CAF." explicit_statement actual, validFrom same. citation source 3.
+
+c6: "Lucas a de nouveau demandé à l'utilisateur de relire son CV." sourced_observation actual, validFrom "2026-02-02T21:00:00+01:00". citation source 4.
+
+c7: "L'utilisateur a accepté de relire le CV alors qu'il était crevé." explicit_statement actual, validFrom same. citation source 4.
+
+Roles:
+o1: event d0d7a5c1, subject {self}, role "responder", outcome "declined", citation source 2. rationale: "L'utilisateur répond à une sollicitation de Lucas pour le week-end par un refus."
+o2: event d0d7a5c1, subject {mention "Lucas"}, role "initiator", outcome null, citation source 2.
+o3: event 9f2360ef, subject {mention "Lucas"}, role "requester", outcome null, citation source 3.
+o4: event 9f2360ef, subject {self}, role "helper", outcome "accepted", citation source 3.
+o5: event bd631343, subject {mention "Lucas"}, role "requester", outcome null, citation source 4.
+o6: event bd631343, subject {self}, role "responder", outcome "accepted", citation source 4.
+
+Hmm o4 helper outcome accepted — outcome defined for responder; helper outcome accepted might be odd but acceptable. Let's use "helper" with outcome null for o4? The spec: responder outcome "accepted"/"declined"/"unknown". For helper, likely null. I'll set o4 helper, outcome null. And o6 responder accepted.
+
+Hmm, but the role "helper" is about rendering the service — that's the fact. Fine with outcome null.
+
+OK. Writing final.
+
+Word on q1 relatedRefs — propose_question has "targets" field only, not relatedRefs. clarifications have relatedRefs. Fine.
+
+Let's produce.

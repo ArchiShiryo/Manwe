@@ -29,7 +29,8 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 | R3, moteur de révision  | **Validé en mode automatique** (DeepSeek V4.1-Flash, prompt v4, contrat 1.3) : [RAPPORT-004](./rapports/RAPPORT-004.md), après [RAPPORT-003](./rapports/RAPPORT-003.md)                                                                                           |
 | IA-A, raccordement auto | IA-A.0, IA-A.2, IA-A.3 et IA-A.4 faits : fournisseur DeepSeek dans l'application, erreurs typées, un appel réel validé (D-023, à confirmer) ; parcours IA-A.5 validé ([RAPPORT-009](./rapports/RAPPORT-009.md)) ; restent IA-A.1 (Windows) et les cas R5 d'IA-A.5 |
 | R4, graphe vivant       | **Validé** : relations et rôles ([RAPPORT-006](./rapports/RAPPORT-006.md)), prompt v6 ([RAPPORT-007](./rapports/RAPPORT-007.md)), graphe, preuves, synthèse, resynchronisation et registre ([RAPPORT-008](./rapports/RAPPORT-008.md))                             |
-| R5 et suivants          | À faire                                                                                                                                                                                                                                                           |
+| R5, expérience complète | R5.5 et R5.5b validés (directions, boucle d'action, [RAPPORT-010](./rapports/RAPPORT-010.md)) ; le reste de R5 et l'interface des directions sont à faire                                                                                                         |
+| R6 et suivants          | À faire                                                                                                                                                                                                                                                           |
 
 **BRIEF-004** (relation comme objet, rôles d'épisode cités, indicateurs relationnels, contrat 1.4) est validé par le lot R4-S02 ([RAPPORT-006](./rapports/RAPPORT-006.md)), après l'échec partiel de R4-S01 ([RAPPORT-005](./rapports/RAPPORT-005.md)) corrigé par D-021.
 
@@ -72,7 +73,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 ```sh
 cd manwe-next
 npm ci
-npm test            # 94 tests au 25 septembre 2026
+npm test            # 98 tests au 25 septembre 2026
 npm run typecheck
 npm run dev         # interface http://127.0.0.1:5180, service :5181
 

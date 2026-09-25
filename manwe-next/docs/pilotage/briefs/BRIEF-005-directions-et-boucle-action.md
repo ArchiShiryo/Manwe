@@ -7,6 +7,7 @@ Lot de contrôle : **R5-S01**, attentes scellées avant tout code (`scelles/R5-S
 ## Objectif
 
 Passer de la lecture à l'action. Pour un objectif de l'utilisateur, MANWË propose :
+
 - au plus deux directions d'action ;
 - l'option de ne rien entreprendre.
 
@@ -63,6 +64,7 @@ Chaque direction nomme le levier qu'elle actionne dans le modèle et prédit la 
 ## Validation
 
 Lot R5-S01 (4 scénarios), joué automatiquement avec DeepSeek V4.1-Flash. Seuil :
+
 - aucun interdit violé ;
 - au moins 75 % des points [L] ;
 - 100 % des points [B] exercés.

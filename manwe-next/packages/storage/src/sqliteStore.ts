@@ -1680,8 +1680,14 @@ export class SqliteMemoryStore {
         }
     }
     for (const hypothesis of packetHypotheses.hypotheses)
-      for (const subject of hypothesis.subjects)
+      for (const subject of hypothesis.subjects) {
         if (subject.kind === "person") selectedPersonIds.add(subject.personId);
+        // Les membres d'une relation sujet sont aussi nommables (RAPPORT-010).
+        if (subject.kind === "relation")
+          for (const member of subject.members)
+            if (member.kind === "person")
+              selectedPersonIds.add(member.personId);
+      }
     const createdAt = nowIso();
     const expiresAt =
       command.expiresAt ??

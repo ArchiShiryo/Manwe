@@ -591,6 +591,19 @@ function subjectInput(value: unknown): HypothesisSubjectInput {
 
 function memberInput(value: unknown): MemberInput {
   const input = object(value, "subject");
+  // RAPPORT-010 : le paquet décrit les membres sous la forme
+  // { kind: "self" } ou { kind: "person", personId }. Le modèle recopie
+  // parfois cette forme ; elle est sans ambiguïté, on la normalise.
+  if (input.kind === "self" && Object.keys(input).length === 1)
+    return { self: true };
+  if (input.kind === "person") {
+    const id = input.personId ?? input.id;
+    const extra = Object.keys(input).filter(
+      (key) => !["kind", "personId", "id"].includes(key),
+    );
+    if (typeof id === "string" && id && !extra.length)
+      return { person: { kind: "person", id } };
+  }
   const keys = Object.keys(input);
   if (keys.length !== 1)
     throw new DomainError(

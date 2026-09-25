@@ -352,3 +352,38 @@ test("BRIEF-005 · boucle d'action : attente figée, résultat citable, lecture 
       /déjà enregistré/,
     );
   }));
+
+test("RAPPORT-010 · un sujet recopié du format du paquet est normalisé", () =>
+  withStore((store) => {
+    const { hypothesisId, goalId } = setup(store);
+    const packet = explorePacket(store, goalId, hypothesisId);
+    const personId = store.snapshot().persons[0].id;
+    const op = direction("d1", goalId, hypothesisId);
+    op.payload.predictions = [
+      {
+        actor: { kind: "self" },
+        response: "Je culpabilise un peu.",
+        phase: "immediate",
+        horizonDays: null,
+      },
+      {
+        actor: { kind: "person", personId },
+        response: "Il insiste.",
+        phase: "transitional",
+        horizonDays: 7,
+      },
+    ];
+    const { preview, result } = respond(store, packet, [op]);
+    assert.equal(result?.status, "applied", JSON.stringify(preview.errors));
+    const stored = store
+      .snapshot()
+      .directions[0].predictions.map((item) => item.actor);
+    assert.deepEqual(stored, [{ kind: "self" }, { kind: "person", personId }]);
+    const packet2 = explorePacket(store, goalId, hypothesisId);
+    const bad = direction("d2", goalId, hypothesisId);
+    bad.payload.predictions[0].actor = { kind: "person", personId, extra: 1 };
+    assert.throws(
+      () => store.receiveAnalysis(proposal(packet2, [bad])),
+      /invalid_subject|Un sujet/,
+    );
+  }));
