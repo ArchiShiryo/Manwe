@@ -35,6 +35,7 @@ import {
   type TargetKind,
   type WorkspaceSnapshot,
   parseImportedEvents,
+  parseCaptureCommand,
 } from "../../domain/src/memory.ts";
 import {
   COGNITION_MAX_BYTES,
@@ -215,6 +216,15 @@ export class SqliteMemoryStore {
         new URL("./migrations/013_described_persons.sql", import.meta.url),
       );
       this.database.exec(readFileSync(personsMigrationPath, "utf8"));
+    }
+    const conversationMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 14")
+      .get();
+    if (!conversationMigration) {
+      const conversationMigrationPath = fileURLToPath(
+        new URL("./migrations/014_conversation.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(conversationMigrationPath, "utf8"));
     }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
@@ -2142,6 +2152,146 @@ export class SqliteMemoryStore {
     return null;
   }
 
+  /** R5.8 : la conversation du lieu, dans l'ordre. */
+  conversation(limit = 200) {
+    return (
+      this.database
+        .prepare(
+          "SELECT * FROM (SELECT * FROM conversation_turns WHERE workspace_id = ? ORDER BY created_at DESC, id DESC LIMIT ?) ORDER BY created_at, id",
+        )
+        .all(this.workspaceId, limit) as SqlRow[]
+    ).map((row) => ({
+      id: String(row.id),
+      role: String(row.role) as "user" | "agent",
+      text: String(row.text),
+      sourceId: row.source_id ? String(row.source_id) : null,
+      gap: row.gap ? String(row.gap) : null,
+      motive: row.motive_json
+        ? (JSON.parse(String(row.motive_json)) as EntityRef[])
+        : [],
+      createdAt: String(row.created_at),
+    }));
+  }
+
+  /**
+   * Un tour de conversation. Le message de l'utilisateur devient d'abord une
+   * note (capture) : il est citable et l'agent l'analysera seul.
+   */
+  addConversationTurn(turn: {
+    idempotencyKey: string;
+    role: "user" | "agent";
+    text: string;
+    gap?: string | null;
+    motive?: EntityRef[];
+  }) {
+    const existing = this.database
+      .prepare(
+        "SELECT id FROM conversation_turns WHERE workspace_id = ? AND id = ?",
+      )
+      .get(this.workspaceId, turn.idempotencyKey) as SqlRow | undefined;
+    if (existing)
+      return this.conversation().find(
+        (item) => item.id === turn.idempotencyKey,
+      )!;
+    const text = turn.text.trim();
+    if (!text) throw new DomainError("empty_message", "Le message est vide.");
+    let sourceId: string | null = null;
+    if (turn.role === "user") {
+      const result = this.capture(
+        parseCaptureCommand({
+          idempotencyKey: `conversation:${turn.idempotencyKey}`,
+          text,
+        }),
+      );
+      sourceId =
+        result.created.find((ref) => ref.kind === "source")?.id ?? null;
+    }
+    this.database
+      .prepare(
+        "INSERT INTO conversation_turns(id, workspace_id, role, text, source_id, gap, motive_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        turn.idempotencyKey,
+        this.workspaceId,
+        turn.role,
+        text,
+        sourceId,
+        turn.gap ?? null,
+        turn.motive?.length ? JSON.stringify(turn.motive) : null,
+        nowIso(),
+      );
+    return this.conversation().find((item) => item.id === turn.idempotencyKey)!;
+  }
+
+  /**
+   * R5.8 : un état compact de la mémoire pour l'agent de conversation, avec
+   * ses creux (milieux, personnes, périodes, lectures peu appuyées).
+   */
+  interviewDigest() {
+    const snapshot = this.snapshot();
+    const dates = snapshot.events
+      .map((event) => event.occurredStart ?? event.createdAt)
+      .filter(Boolean)
+      .sort();
+    const contexts = new Map<string, number>();
+    for (const event of snapshot.events)
+      contexts.set(
+        event.context ?? "non précisé",
+        (contexts.get(event.context ?? "non précisé") ?? 0) + 1,
+      );
+    const episodesOf = (personId: string) =>
+      new Set(
+        snapshot.roles
+          .filter(
+            (role) =>
+              role.subject.kind === "person" &&
+              role.subject.personId === personId,
+          )
+          .map((role) => role.eventId),
+      ).size;
+    const name = (id: string | null) =>
+      id
+        ? (snapshot.persons.find((p) => p.id === id)?.displayName ?? null)
+        : null;
+    return {
+      notes: snapshot.sources.length,
+      period: dates.length
+        ? { from: dates[0], to: dates[dates.length - 1] }
+        : null,
+      contexts: [...contexts.entries()].map(([context, count]) => ({
+        context,
+        count,
+      })),
+      persons: snapshot.persons.map((person) => ({
+        id: person.id,
+        name: person.displayName,
+        description: person.description,
+        relatedTo: name(person.relatedPersonId),
+        relationLabel: person.relationLabel,
+        episodes: episodesOf(person.id),
+      })),
+      readings: snapshot.hypotheses
+        .filter((item) => item.status !== "superseded")
+        .map((item) => ({
+          id: item.id,
+          statement: item.statement,
+          depth: item.depth,
+          status: item.status,
+          supports: item.evidence.filter(
+            (evidence) =>
+              evidence.stance === "supports" &&
+              evidence.supersededRevision === null,
+          ).length,
+        })),
+      openQuestions: snapshot.questions
+        .filter((question) => question.status === "open")
+        .map((question) => ({ id: question.id, question: question.question })),
+      goal:
+        snapshot.goals.find((goal) => goal.confirmedByUser && !goal.dismissed)
+          ?.text ?? null,
+    };
+  }
+
   /** Tailles (caractères JSON) du dernier paquet préparé, complet et de travail. */
   lastPacketSizes: { working: number; full: number } | null = null;
 
@@ -2733,11 +2883,15 @@ export class SqliteMemoryStore {
    * erreur lisible au modèle au lieu d'interrompre l'analyse.
    */
   queryMemory(requestId: string, name: string, args: Record<string, unknown>) {
-    const request = this.database
-      .prepare(
-        "SELECT id FROM analysis_requests WHERE workspace_id = ? AND id = ?",
-      )
-      .get(this.workspaceId, requestId);
+    // R5.8 : l'agent de conversation lit la mémoire de la même façon ; ses
+    // requêtes sont journalisées sous « conversation:<tour> ».
+    const request = requestId.startsWith("conversation:")
+      ? true
+      : this.database
+          .prepare(
+            "SELECT id FROM analysis_requests WHERE workspace_id = ? AND id = ?",
+          )
+          .get(this.workspaceId, requestId);
     if (!request)
       throw new DomainError(
         "analysis_request_not_found",

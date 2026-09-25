@@ -31,6 +31,7 @@ import {
   type AgentOptions,
   type ProviderConfig,
 } from "./analystProvider.ts";
+import { Interviewer } from "./interviewer.ts";
 
 const JSON_LIMIT = 64 * 1024;
 
@@ -91,6 +92,7 @@ export async function startManweServer(options: ServerOptions) {
     null,
     options.agent ?? {},
   );
+  const interviewer = new Interviewer(store, options.analyst ?? null);
   const sessionToken = randomBytes(32).toString("base64url");
   const rate = new Map<string, number[]>();
 
@@ -188,6 +190,36 @@ export async function startManweServer(options: ServerOptions) {
       }
       if (pathname === "/api/analyses/automatic" && request.method === "GET") {
         json(response, 200, automatic.describe());
+        return;
+      }
+      // R5.8 : la conversation du lieu.
+      if (pathname === "/api/conversation" && request.method === "GET") {
+        json(response, 200, interviewer.state());
+        return;
+      }
+      if (pathname === "/api/conversation/open" && request.method === "POST") {
+        json(response, 200, interviewer.open());
+        return;
+      }
+      if (
+        pathname === "/api/conversation/messages" &&
+        request.method === "POST"
+      ) {
+        const body = (await readJson(request)) as Record<string, unknown>;
+        const key = body?.idempotencyKey;
+        const text = body?.text;
+        if (typeof key !== "string" || key.length < 8 || key.length > 80)
+          throw new DomainError(
+            "invalid_idempotency_key",
+            "Clé d’idempotence invalide.",
+          );
+        if (typeof text !== "string" || !text.trim() || text.length > 20_000)
+          throw new DomainError(
+            "invalid_message",
+            "Message vide ou trop long (20 000 caractères au plus).",
+          );
+        json(response, 201, interviewer.say(key, text));
+        automatic.nudge();
         return;
       }
       // D-028 : ce que fait l'agent, ou ce qu'il a fait en dernier ; lu à
