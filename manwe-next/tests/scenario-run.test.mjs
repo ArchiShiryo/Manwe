@@ -48,6 +48,12 @@ function answer(packet, operations) {
   });
 }
 
+const withInterfaceArtifact = (json) =>
+  json.replace(
+    '"Réponse simulée."',
+    '"Réponse simulée. :chatgpt-content-reference{index="0"}"',
+  );
+
 test("le harnais multi-étapes enchaîne analyses, annotations et réponses, puis reprend depuis les copies versionnées", () => {
   const directory = mkdtempSync(join(tmpdir(), "manwe-scenario-"));
   const runDir = join(directory, `run-${randomUUID()}`);
@@ -223,7 +229,7 @@ test("le harnais multi-étapes enchaîne analyses, annotations et réponses, pui
   }
 });
 
-test("une analyse rejetée reste en attente de sa seconde tentative, puis le reçu garde les deux essais", () => {
+test("une analyse rejetée reste en attente de sa seconde tentative ; l’artefact d’interface est retiré ; le reçu garde les deux essais", () => {
   const directory = mkdtempSync(join(tmpdir(), "manwe-scenario-"));
   const runDir = join(directory, `run-${randomUUID()}`);
   const qaDir = join(process.cwd(), ".qa", basename(runDir));
@@ -284,19 +290,22 @@ test("une analyse rejetée reste en attente de sa seconde tentative, puis le re�
     assert.match(execute("advance", runDir), /T2-A1 rejetée/);
     assert.equal(read(join(runDir, "T2", "state.json")).pending, "T2-A1");
     const source = packet.sources[0];
+    // La seconde tentative porte l'artefact d'interface de ChatGPT.
     writeFileSync(
       join(stepDir, "proposal.retry.raw.json"),
-      answer(packet, [
-        claim([
-          {
-            sourceId: source.sourceId,
-            contentHash: source.contentHash,
-            spanStart: source.spanStart,
-            spanEnd: source.spanEnd,
-            quote: source.text,
-          },
+      withInterfaceArtifact(
+        answer(packet, [
+          claim([
+            {
+              sourceId: source.sourceId,
+              contentHash: source.contentHash,
+              spanStart: source.spanStart,
+              spanEnd: source.spanEnd,
+              quote: source.text,
+            },
+          ]),
         ]),
-      ]),
+      ),
       "utf8",
     );
     assert.match(execute("advance", runDir), /T2 : terminé/);
@@ -306,6 +315,9 @@ test("une analyse rejetée reste en attente de sa seconde tentative, puis le re�
       receipt.attempts.map((attempt) => attempt.status),
       ["rejected", "applied"],
     );
+    assert.deepEqual(receipt.attempts[1].normalized, [
+      "chatgpt-content-reference",
+    ]);
   } finally {
     rmSync(directory, { recursive: true, force: true });
     rmSync(qaDir, { recursive: true, force: true });

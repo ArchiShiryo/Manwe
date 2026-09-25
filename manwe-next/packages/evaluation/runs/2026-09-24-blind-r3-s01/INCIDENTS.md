@@ -30,3 +30,9 @@ Ce journal liste les corrections du harnais et du moteur faites pendant l'évalu
 - **Symptôme.** Les deux tentatives de S04-A2 sont rejetées pour `invalid_citation`. Les deux fois, le modèle propose une claim « l'utilisateur a annulé le week-end » avec `"citations": []`.
 - **Cause.** Un défaut du moteur, pas une erreur du modèle. La correction factuelle de l'utilisateur (« c'est moi qui ai annulé le week-end à la mer, pas Inès ») n'existe que comme annotation. Elle ne figure pas parmi les `sources` du paquet, donc aucune citation exacte n'est possible. À l'inverse, une réponse à une question crée bien une source et un événement.
 - **Décision.** Le moteur n'est pas modifié pendant le run. S04-A2 est notée comme rejetée, avec cette cause. La correction est reportée à BRIEF-003 : une correction factuelle créera une source citable, comme une réponse.
+
+## 5. Artefact d'interface ChatGPT : correction du harnais (25 septembre 2026)
+
+- **Symptôme.** La seconde tentative de S08-A2, obtenue dans une conversation neuve avec le texte collé, contient à nouveau `:chatgpt-content-reference{index="0"}` à la fin de son résumé. L'artefact est donc systématique ; il ne dépend pas du modèle.
+- **Correction.** Le harnais retire ce seul marqueur, connu, avant de lire la réponse. Les fichiers bruts restent intacts, et le reçu indique `"normalized": ["chatgpt-content-reference"]`. Un test couvre ce cas.
+- **Reprise.** Les tentatives sont lues dans l'ordre : la première réponse de S08-A2, désormais lisible, a été appliquée. La seconde tentative reste archivée sans avoir été utilisée.

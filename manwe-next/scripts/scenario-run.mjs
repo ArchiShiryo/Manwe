@@ -57,6 +57,13 @@ function safeId(value, label) {
   return value;
 }
 
+// L'interface de ChatGPT insère parfois « :chatgpt-content-reference{index="0"} »
+// dans le texte copié ; ses guillemets non échappés rendent le JSON invalide.
+// On retire ce seul marqueur, connu, avant lecture ; le fichier brut reste intact
+// et le reçu signale la normalisation.
+const INTERFACE_ARTIFACT = /\s*:chatgpt-content-reference\{index="\d+"\}/g;
+const stripInterfaceArtifacts = (text) => text.replace(INTERFACE_ARTIFACT, "");
+
 function normalizeError(error) {
   if (error instanceof DomainError)
     return { code: error.code, message: error.message };
@@ -217,10 +224,14 @@ function applyPending(runDir, scenario, state, store) {
     if (!existsSync(path)) continue;
     if (attempts.length && attempts.at(-1).status !== "rejected") break;
     const errors = [];
+    const normalized = [];
     let preview = null;
     let result = null;
     try {
-      preview = store.receiveAnalysis(JSON.parse(readFileSync(path, "utf8")));
+      const text = readFileSync(path, "utf8");
+      const cleaned = stripInterfaceArtifacts(text);
+      if (cleaned !== text) normalized.push("chatgpt-content-reference");
+      preview = store.receiveAnalysis(JSON.parse(cleaned));
       errors.push(...preview.errors);
       if (preview.status === "ready_for_review")
         result = store.applyAnalysis(preview.responseId);
@@ -234,6 +245,7 @@ function applyPending(runDir, scenario, state, store) {
         preview?.status ??
         (errors.length ? "rejected" : "received"),
       errors,
+      ...(normalized.length ? { normalized } : {}),
       createdIds: result?.createdIds ?? [],
       changedIds: result?.changedIds ?? [],
     });
