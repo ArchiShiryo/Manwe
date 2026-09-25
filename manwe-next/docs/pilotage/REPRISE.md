@@ -33,7 +33,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **BRIEF-004 livré** (relation comme objet, rôles d'épisode cités, indicateurs relationnels, contrat 1.4, prompt v5) mais **pas encore validé** : sur le lot R4-S01, R01 et R03 sont justes, mais R02 a été perdu à cause d'erreurs de format du modèle ([RAPPORT-005](./rapports/RAPPORT-005.md)). La correction est faite (D-021 : seconde tentative informée de l'erreur).
 
-**Prochaine étape** : (les relations et leurs indicateurs s'affichent dans l'inspecteur depuis le 25 septembre) formaliser la lecture stratégique de la relation (R4.0e) ; puis le registre ontologique (R4.0d) et le graphe R4. Surveiller la sur-lecture de l'utilisateur ([RAPPORT-006](./rapports/RAPPORT-006.md)). La pull request [ArchiShiryo/Manwe#1](https://github.com/ArchiShiryo/Manwe/pull/1) attend d'être fusionnée dans `main`.
+**Prochaine étape** : (les relations et leurs indicateurs s'affichent dans l'inspecteur depuis le 25 septembre) formaliser la lecture stratégique de la relation (R4.0e) ; puis le registre ontologique (R4.0d) et le graphe R4. La sur-lecture de l'utilisateur est corrigée par le prompt v6 ([RAPPORT-007](./rapports/RAPPORT-007.md)). La pull request [ArchiShiryo/Manwe#1](https://github.com/ArchiShiryo/Manwe/pull/1) attend d'être fusionnée dans `main`.
 
 **Méthode à conserver pour chaque lot** :
 

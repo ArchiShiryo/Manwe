@@ -1,0 +1,164 @@
+Let me construct the response carefully. Three sources, three events, claims, roles, hypotheses.
+
+Dates:
+- U02-1: 2026-05-05 — Élise demande hébergement une semaine ; user dit oui alors qu'il avait besoin de calme, s'en veut.
+- U02-2: 2026-05-26 — Élise demande encore de prêter la voiture ; user n'a pas osé refuser, mal dormi.
+- U02-3: 2026-06-14 — user a enfin refusé un service à Élise, culpabilité toute la journée.
+
+Claims:
+c1: explicit_statement actual — user said yes to hosting Élise a week though needing calm, felt guilt. (from ba3cd...)
+c2: explicit_statement actual — Élise asked again to borrow car; user didn't dare refuse, slept badly.
+c3: explicit_statement actual — user finally refused a service to Élise, felt guilty all day.
+c4: inference — user's difficulty refusing seems to protect the relationship at cost of own needs/guilt. Or reading: refusal cost is guilt, which maintains compliance.
+c5: explicit_statement actual — user needed calm (validFrom 2026-05-05).
+
+Events:
+e1: 2026-05-05 Élise demande hébergement; user accepts.
+e2: 2026-05-26 Élise demande prêt de voiture; user ne refuse pas.
+e3: 2026-06-14 user refuse un service à Élise, culpabilité.
+
+Roles:
+r1: e1 subject Élise role requester
+r2: e1 subject self role responder outcome accepted
+r3: e2 Élise requester
+r4: e2 self responder outcome accepted (didn't dare refuse → accepted)
+r5: e3 Élise requester
+r6: e3 self responder outcome declined
+
+Hypotheses:
+h1 D2 relation [self, Élise] — asymétrie de réciprocité: Élise demande, user cède; répétition. rank 1.
+h2 D3 self — motif: éviter le conflit/l'abandon, sacrifice de soi, culpabilité comme régulateur; mechanism with optimizes/protects/defenses/beliefs/triggers/soothes/barrier/prediction. Must not include "believes". draft, moderate? Evidence: 3 episodes with costs expressed by user → confidence moderate at D3 max. Status draft (D3 new).
+h3 alternative D3 — contexte/état transitoire: fatigue ou période chargée, ou norme d'amitié: Élise traverse une période difficile (sans emploi? logement?) ce qui rend l'aide normale; alternativeTo h2. Actually mechanism concurrent: la relation est asymétrique par circonstance (Élise en difficulté temporaire), pas par un pattern interne du user. That's a good alternative.
+h4 D4 — self: style d'attachement / fonctionnement complaisant. Framework "attachement", construct "attachement anxieux / complaisance". D3+ requires alternative. Given D4 requires 3 episodes over 30 days — dates 05-05 to 06-14 = 40 days, 3 episodes. But D4 status new → draft. rank 2 maybe. Alternative to h4: h3? Must link alternative. Let me provide alternative as h3 (contextual) — but h3 is alternativeTo h2. Could h3 also be alternativeTo h4? alternativeTo is single. I could make a separate alternative h5 for h4, e.g., "la charge de la relation s'explique par la situation d'Élise et par une norme d'hospitalité, non par une organisation durable". Hmm, simpler: keep h4 with alternative h3 referenced (alternativeTo h3? no, alternativeTo is the ref of hypothesis this one is alternative to). meaning h4 is alternative to h3? Confusing. Let me just add a critique operation for existing hypotheses? No existing hypotheses in package (hypotheses: []). Rule 17 says critique is for hypotheses already in package. Package has none, so no critique needed.
+
+For D4 hypothesis h4, need alternative incompatible: I'll make h5 as alternative to h4 (a group-norm / relationship-specific explanation) — but h3 already covers that. Alternatively make h4's alternative be h3 by setting h4's alternativeTo to h3. Meaning: h4 proposes a durable organization; h3 is the rival account. Setting alternativeTo on h4 pointing to h3 means h4 is an alternative to h3 — that's acceptable-ish. Better: I'll just have h3 (contextual situational) and h4 (durable self-organization), each with alternativeTo pointing to the other? Only one can. Hmm — rule says relate them via alternativeTo. I'll set h3.alternativeTo = h4? Then h4 must exist; but h4 comes later in array — keys fine as proposalKey.
+
+Simplest: 
+- h1 D2 relational rank 1, confidence moderate.
+- h2 D3 self rank 1, alternativeTo h3.
+- h3 D3 alternative (situation/norme), rank 2, alternativeTo h2? That would create mutual. Better: h3.alternativeTo = h2 (h3 is alternative to h2) and h2.alternativeTo = h3 — mutual might be weird. Just set h3.alternativeTo = h2 and h2.alternativeTo = null. Hmm but rule 11 says "Relie-la par alternativeTo, dans la même réponse si elle n'existe pas déjà." The alternative relates itself to the primary. So h3 (the alternative) gets alternativeTo = h2. Fine.
+- h4 D4 self durable, with a distinct alternative h5 (D4 or D3?). To keep it simple, maybe skip D4 to avoid clutter? But instructions say formulate all depths data permits. D4 requires framework and construct. I'll include h4 with framework "attachement", construct "attachement anxieux / compliance". Actually with only 3 episodes all with Élise, overgeneralization risk. But D4 requires evidence across multiple relations/contexts — here only one relation. So better: keep D4 as draft low confidence, or omit. I think proposing D4 with clear limits is fine but the "multiple relations" criterion is weak. I'll include it as draft, confidence low, with alternative h5 (situational/instrumental explanation: user helps because Élise gives something back — statut, lien valorisant). Hmm the alternative must be a real competing mechanism.
+
+Alternative for h4: "le comportement est propre à la relation avec Élise (rôle historique, dette, amitié ancienne), pas un style général". But that's the same as h3 which is D3 for the self. Alternatively, for h4, an alternative could be h2 (D3 situational-self motive) — no, that's a lower-level version.
+
+Let me set: h4 (D4, self) alternativeTo h5; h5 (D4, contexte social / rôle d'aidant attendu dans l'entourage = norme de groupe D5?). Hmm D5 group. Could do h5 D5: norme de groupe — dans leur cercle, on ne refuse pas un ami; l'aide est une norme, et la culpabilité signale l'écart à la norme. That's a real competing mechanism and D5. Good. h5 alternativeTo h4? Again direction. Set h5.alternativeTo = h4 (h5 is alternative to h4). Wait, but h4 also needs alternative: it has h5. AlternativeTo field on h4 could be h5 too, mutual reference—the format allows refs, direction ambiguous. I'll set h5.alternativeTo = h4 and leave h4.alternativeTo null. Hmm but then h4 (durable) lacks a declared alternative link... The alternative h5 declares it's alternative to h4, which is fine.
+
+Actually to be safe and clean, I'll set h4.alternativeTo = h5 and h5.alternativeTo = h4? Risky. I'll set only the alternative ones: h3.alternativeTo = h2, h5.alternativeTo = h4.
+
+Evidence for hypotheses: use proposalKey claims and event-based claims.
+
+Also include questions? Rule 20: only if discriminating. A question could discriminate h2 vs h3: "Comment Élise réagit-elle quand tu refuses — que se passe-t-il ensuite ?" Hmm. Or ask about feelings. Rule 8: a reading about user requires evidence with user-expressed cost — we have plenty ("je m'en suis voulu", "je me suis senti coupable", "mal dormi", "j'avais besoin de calme"). Good.
+
+Question: "Qu'as-tu ressenti après avoir refusé, et comment Élise a-t-elle réagi ?" — targets h2/h3, discriminates whether refusing is safe (which indicates fear of relational rupture) vs situational. I'll add one question. Note existing questions: [] so no repeats.
+
+Claims list — each claim needs citations with exact offsets. Sources have spanStart 0, spanEnd = length. I'll cite the whole source (spanStart 0, spanEnd = given, quote = full text). Safe.
+
+Source 1: spanEnd 83, quote "J'ai enfin refusé un service à Élise et je me suis senti coupable toute la journée." Let me count: that's the given text; use as-is.
+
+Source 2: spanEnd 94. Source 3: spanEnd 116.
+
+Claims:
+c1: "Élise a demandé à l'utilisateur de l'héberger une semaine" — explicit_statement, actual, validFrom 2026-05-05. citation source3.
+c2: "L'utilisateur a accepté d'héberger Élise une semaine alors qu'il avait besoin de calme" — explicit_statement actual.
+c3: "L'utilisateur s'en est voulu après avoir accepté" — explicit_statement actual.
+c4: "Élise a demandé à l'utilisateur de lui prêter sa voiture" — explicit_statement actual, validFrom 2026-05-26.
+c5: "L'utilisateur n'a pas osé refuser le prêt de la voiture" (→ il a cédé) — explicit_statement actual.
+c6: "L'utilisateur a mal dormi après avoir cédé" — explicit_statement actual.
+c7: "L'utilisateur a refusé un service à Élise le 14 juin" — explicit_statement actual.
+c8: "L'utilisateur s'est senti coupable toute la journée après son refus" — explicit_statement actual.
+c9: inference — "La demande d'Élise est récurrente (« encore »), ce qui suggère une habitude de sollicitation dans la relation." Actually "encore" also in source 3? "Élise m'a encore demandé" yes in U02-2. And U02-3 "enfin refusé" implies prior pattern. c9: inference actual: "la sollicitation d'Élise s'inscrit dans une répétition, et le refus y fait exceptionnel".
+c10: inference: "la culpabilité et l'insomnie fonctionnent comme un coût anticipé qui rend le refus plus coûteux que l'aide" — this is inference, use as evidence for h2.
+
+Roles: for events e1, e2, e3.
+
+Let me write events:
+e1 title "Élise demande à être hébergée" text from source3, category explicit_statement, occurredStart 2026-05-05T12:00:00-03:00, precision day, context "Amis".
+e2: Élise demande le prêt de la voiture; occurredStart 2026-05-26T12:00:00-03:00, context "Amis".
+e3: refus d'un service à Élise; 2026-06-14T12:00:00-03:00.
+
+Roles:
+o1: e1 Élise requester, outcome null, citation source3.
+o2: e1 self responder accepted.
+o3: e2 Élise requester.
+o4: e2 self responder accepted (n'a pas osé refuser = a cédé).
+o5: e3 Élise requester — well, in U02-3 it says "refusé un service à Élise" — no explicit request mentioned but a service implies a request. Careful: rule 6, don't add acts absent. The text says "refusé un service à Élise" — the request is implied by "refusé un service"? I'd rather not propose requester role for e3; instead self responder declined with the service request... Hmm. The role "responder" needs a request. I'll propose for e3: self responder outcome declined (the note says he refused). And Élise role requester — cautious: A "service" refused implies a solicitation; but strictly the note says "refusé un service à Élise", so a request likely existed. I'll mark it as a separate claim inference? To be safe, I'll add role responder only, with rationale that the refusal responds to a solicitation implied. Hmm, propose_role for requester with citation—the citation quote doesn't state a request. I'll skip requester for e3 and mention in limits.
+
+Relations: package relations is [] (empty), so no indicators to cite.
+
+Hypotheses details:
+
+h1: D2, relation [self, Élise], statement: "La relation avec Élise fonctionne sur une asymétrie stable : Élise initie les demandes, l'utilisateur répond en accédant, et le refus (14 juin) est l'exception qui produit un coût émotionnel — indice que la compliance est le régime par défaut." confidence moderate (3 episodes over 40 days, but D2 allows high with 3 episodes over 30 days... rule 14: high only in D1/D2, from 3 episodes spread over ≥30 days with counter-evidence deduced. Dates: 05-05, 05-26, 06-14 → spans 40 days, 3 episodes. So "high" would be allowed. But counter-evidence? The refusal is a counter-example to the pure compliance pattern. I'll set moderate to be safe... Actually the anchor indicators are absent (relations empty). I'll set moderate. Hmm, D2 high is allowed. Given no relations indicators and one counter-example, moderate seems more defensible. I'll go moderate.
+
+mechanism for h1 (relational): optimizes "la continuité du lien et l'évitement du conflit et de la culpabilité du refus"; protects "l'image de quelqu'un de fiable/généreux et la relation"; defenses "l'anticipation du malaise (culpabilité, insomnie) rend le coût du refus supérieur au coût de l'aide"; beliefs "refuser un ami met le lien en danger"; triggers "demande explicite d'Élise"; soothes "accéder à la demande soulage immédiatement l'angoisse"; barrier "chaque cession réduit l'écart de coût perçu et rend la suivante plus facile à justifier ; le refus isolé n'a pas réorganisé la relation"; prediction "Élise redemandera un service important dans les semaines qui suivent et l'utilisateur hésitera à refuser, sauf s'il prépare un refus ; si la cession continue, la fatigue et le ressentiment augmenteront".
+
+h2: D3, self, mechanism with beliefs etc. Statement: "L'utilisateur optimise la préservation du lien au prix de ses propres besoins : céder évite un conflit et une culpabilité anticipée, mais produit culpabilité et insomnie quand il refuse — la culpabilité stabilise la compliance." Confidence moderate, status draft, rank 1, alternativeTo h3.
+
+h3: D3 alternative: "Ce n'est pas un motif de l'utilisateur mais la situation d'Élise (période de difficulté : logement, transport) et la norme d'amitié du groupe qui expliquent les cessions ; la culpabilité après refus signale simplement l'écart à une norme d'entraide, pas une dynamique d'attachement." draft, low/moderate → needs 2 episodes for D3 plausible; as new D3 is draft anyway. confidence moderate? For alternatives, keep low or moderate. I'll say moderate with 3 episodes... Actually rule 14: moderate from 2 independent episodes. Yes → moderate. Evidence: c1, c4, c7 supports. And contradicts? Hmm, a claim that user "avait besoin de calme" — supports h3? It supports that the cost is real. I'll put c7 (refus) as contradicts for h3 (refusal shows capacity to say no, weakening purely situational/normative). Fine.
+
+h4: D4 self, framework "attachement", construct "attachement anxieux / complaisance compulsive (non clinique)", statement: "Au-delà de la relation avec Élise, l'utilisateur présente un style de complaisance où l'évitement du conflit et la peur de la rupture priment, la culpabilité servant de régulateur." confidence low, status draft, rank 2, alternativeTo null (h5 points to it). Evidence c2, c3, c6, c8 supports; c7 contradicts? The refusal with continuing guilt — hmm contradictory to durable pattern; yes c7 supports partial. I'd say c7 supports h4 actually (guilt even when refusing = anxiety regulation). Let's use c9 (inference) - no, inferences aren't anchors. Use c1,c2,c3,c5,c6,c8,c10 supports (c10 is inference, allowed? rule 13: "Une inférence n'est jamais un ancrage." So inferent claims cannot be anchors; avoid using c10 as evidence. Only explicit_statement/sourced_observation claims as evidence. Right—rule: evidence must be claims, and inference never an anchor. So h2/h3 evidence must be explicit statements. I'll keep c9/c10 only as interpretive claims (they're fine to exist), and not as evidence.
+
+Hmm, but for h2 (D3 self), evidence must be explicit statements where user expresses cost — c3, c6, c8, plus c2/c5. Fine.
+
+h5: D5 group/social norm, alternativeTo h4: "La culpabilité et la cession relèvent d'une norme d'entraide du groupe d'amis : ne pas aider coûte le statut de bon ami." framework "sociologie du don / norme de réciprocité"? Let's set framework "sociologie du don", construct "norme de réciprocité et dette morale". confidence low, status draft, rank 3? Subjects {self:true} or relation? Subject: {self:true} with group... Subject must be member; I'll use {self:true}.
+
+Wait—h4 rules: D4 needs 3 anchored episodes over ≥30 days for plausible, but new hypotheses are draft anyway. Fine, draft + low confidence.
+
+Critique operations: none required since no existing hypotheses in package. Rule 17: critique applies to hypotheses already present. Skip.
+
+Questions: q1 "Comment Élise a-t-elle réagi au refus du 14 juin, et qu'as-tu ressenti les jours suivants ?" targets h2, h3. discriminatingInfo: "si Élise accepte le refus sans conséquence, l'hypothèse motivationnelle centrée sur la peur de la rupture s'affaiblit au profit d'un coût interne (culpabilité auto-imposée) ou d'une norme ; si elle insiste ou boude, l'apprentissage de coût relationnel se confirme."
+
+Summary short.
+
+Let me write claims with proper citations. Citations must be exact text.slice. I'll cite the full source each time (spanStart 0, spanEnd as given, quote as given).
+
+Now careful: claim text vs quote. Fine.
+
+Proposed claims list:
+c-key names: cl1...cl9.
+
+Let me define:
+cl1: "Élise a demandé à l'utilisateur de l'héberger une semaine." explicit_statement, actual, validFrom 2026-05-05T12:00:00-03:00, citation s3.
+cl2: "L'utilisateur a dit oui à Élise alors qu'il avait besoin de calme." explicit_statement actual. same citation.
+cl3: "L'utilisateur s'en est voulu après avoir accepté." explicit_statement actual. same citation.
+cl4: "Élise a demandé à l'utilisateur de lui prêter sa voiture." explicit_statement actual, validFrom 2026-05-26. citation s2.
+cl5: "L'utilisateur n'a pas osé refuser ; il a cédé." explicit_statement actual. s2.
+cl6: "L'utilisateur a mal dormi." explicit_statement actual. s2.
+cl7: "L'utilisateur a refusé un service à Élise." explicit_statement actual, validFrom 2026-06-14. s1.
+cl8: "L'utilisateur s'est senti coupable toute la journée après ce refus." explicit_statement actual. s1.
+cl9: inference: "Les sollicitations d'Élise sont récurrentes (« encore », « enfin ») : la cession est le régime habituel et le refus une exception." inference, actual. citation s2 & s1? Citations array can hold multiple. I'll cite s1 and s2.
+
+Note: c9 inference is not an evidence anchor, but can be cited... no, evidence must be claims that are anchors (non-inference). Fine.
+
+Events: e1, e2, e3 as described, category explicit_statement.
+
+Roles with citations.
+
+Now the mechanism fields allowed: optimizes, protects, defenses, beliefs, triggers, soothes, barrier, prediction. Not "believes". Good.
+
+Write JSON now.
+
+Evidence refs use {"proposalKey": "cl2"} etc.
+
+For h1 evidence: cl1 supports, cl2 supports, cl4 supports, cl5 supports, cl7 contradicts(? relation pattern) — cl7 (refusal) contradicts the pure compliance pattern → stance "contradicts". cl8 supports (cost of refusal). Good.
+
+h2 evidence: cl3, cl6, cl8 supports; cl7 contradicts.
+
+h3 evidence: cl1, cl4, cl5 supports; cl7 contradicts.
+
+h4 evidence: cl3, cl6, cl8 supports; cl7 contradicts (he did refuse).
+
+h5 evidence: cl3, cl8 supports; cl7 contradicts? Actually h5 (norm) is supported by guilt after refusal. cl7 supports h5 too. Hmm, use cl3, cl8 supports, cl5 supports, no contradict... need at least one supports — fine.
+
+Ranks: per subject. Subject self → h2 rank1, h4 rank2, h3? h3 subject is self too (it's about the user's behavior explained by situation). Hmm h3's subject: {self:true} plus mention Élise? It could be subject relation [self, Élise] since it's about the situation of Élise. I'll make h3 subjects: [{self:true}] and rank 3 under self. Actually h3's alternative framing concerns both. Keep {self:true} with rank 2 and h4 rank 3? Ranking: main reading h2 (complaisance), then h3 (situation/norme d'Élise), then h4 (durable). Hmm, D4 vs D3 ranking. I'd rank h4 rank 3 given weak evidence base (single relation). Yes: h2 rank1, h3 rank2, h4 rank3.
+
+h1 subject relation [self, Élise], rank 1 (only one for that subject... maybe also rank1).
+
+h5 subject: {self:true}, rank null.
+
+Question q1 with targets.
+
+Summary: short.
+
+modelDeclaration declaredModel: "deepseek-flash" maybe. Use "deepseek-v3"? The workspace says deepseek-flash-r4. I'll put "deepseek-flash".
+
+Write it.
