@@ -110,6 +110,9 @@ const CONFIDENCE_LABELS: Record<string, string> = {
   high: "élevée",
 };
 
+/** Même libellé sur toutes les surfaces pour un élément corrigé (R4). */
+export const CORRECTED_LABEL = "corrigé par vous";
+
 const REASON_LABELS = {
   supports: "soutient",
   contradicts: "contredit",
@@ -205,7 +208,7 @@ function DetailActions({
                 <span className={`reason-${reason.kind}`}>
                   {REASON_LABELS[reason.kind]}
                 </span>
-                {reason.contested && <span>corrigé par vous</span>}
+                {reason.contested && <span>{CORRECTED_LABEL}</span>}
               </div>
               <p>{reason.label}</p>
               {reason.excerpts.map((excerpt, position) => (
@@ -468,7 +471,7 @@ export function WorldGraph({
       }}
     >
       <div className="world-graph-toolbar">
-        <div className="segmented" aria-label="Centrer le graphe">
+        <div className="segmented" role="group" aria-label="Centrer le graphe">
           {shortcuts.map((item) => (
             <button
               key={`${item.focus.kind}:${item.focus.id}`}
@@ -483,7 +486,7 @@ export function WorldGraph({
             </button>
           ))}
         </div>
-        <div className="segmented" aria-label="Niveau de détail">
+        <div className="segmented" role="group" aria-label="Niveau de détail">
           <button
             className={level === "essential" ? "active" : ""}
             aria-pressed={level === "essential"}
@@ -585,7 +588,7 @@ export function WorldGraph({
               return (
                 <g
                   key={node.id}
-                  className={`world-node world-node-${node.kind} world-node-${node.style} ${node.id === centerId ? "is-focus" : ""} ${node.id === selected ? "is-selected" : ""}`}
+                  className={`world-node world-node-${node.kind} world-node-${node.style} ${node.id === centerId ? "is-focus" : ""} ${node.id === selected ? "is-selected" : ""} ${node.meta.contested ? "is-contested" : ""}`}
                   style={{ transform: `translate(${node.x}px, ${node.y}px)` }}
                   role="button"
                   tabIndex={0}
@@ -654,6 +657,7 @@ export function WorldGraph({
           <div className="eyebrow">
             {KIND_LABELS[detail.kind].toUpperCase()} ·{" "}
             {STYLE_LABELS[detail.style]}
+            {detail.meta.contested ? ` · ${CORRECTED_LABEL.toUpperCase()}` : ""}
           </div>
           <p>{detail.label}</p>
           {detail.kind === "hypothesis" && (

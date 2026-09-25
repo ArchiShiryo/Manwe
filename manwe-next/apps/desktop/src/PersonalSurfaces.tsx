@@ -30,7 +30,7 @@ import type {
 } from "../../../packages/cognition/src/contract.ts";
 import { MemoryApiError, memoryApi, type MemoryStatus } from "./memoryApi.ts";
 import { syncLabels, type ConnectionState } from "./syncLabels.ts";
-import { WorldGraph } from "./WorldGraph.tsx";
+import { CORRECTED_LABEL, WorldGraph } from "./WorldGraph.tsx";
 import analystPrompt from "../../../packages/cognition/prompts/analyst-v6.md?raw";
 import {
   claimModalityLabels,
@@ -481,10 +481,16 @@ function PersonalClaimInspector({ snapshot }: { snapshot: WorkspaceSnapshot }) {
               <span>
                 {informationCategoryLabels[claim.category]} ·{" "}
                 {claimModalityLabels[claim.modality]}
+                {claim.contestedRevision !== null &&
+                  ` · ${CORRECTED_LABEL} (révision ${claim.contestedRevision})`}
               </span>
               <time>{dateLabel(claim.createdAt, true)}</time>
             </div>
-            <p>{claim.text}</p>
+            <p
+              className={claim.contestedRevision !== null ? "is-contested" : ""}
+            >
+              {claim.text}
+            </p>
           </article>
         ))}
       </div>
@@ -718,7 +724,7 @@ function PersonalHypothesisInspector({
                       {informationCategoryLabels[found.category]} ·{" "}
                       {claimModalityLabels[found.modality]}
                       {found.contestedRevision !== null &&
-                        " · contesté par toi"}
+                        ` · ${CORRECTED_LABEL}`}
                     </span>
                     <details>
                       <summary>{found.text}</summary>
