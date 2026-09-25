@@ -1,6 +1,6 @@
 # Couche ontologique de MANWË
 
-Note de pilotage du 25 septembre 2026, rédigée à partir d'une discussion avec l'utilisateur. Décisions associées : D-012 à D-016 de [PILOTAGE.md](./PILOTAGE.md).
+Note de pilotage du 25 septembre 2026, rédigée à partir d'une discussion avec l'utilisateur. Décisions associées : D-012 à D-018 de [PILOTAGE.md](./PILOTAGE.md).
 
 ## Question posée
 
@@ -8,7 +8,7 @@ Faut-il une couche ontologique « à la Palantir » pour rendre la donnée actio
 
 ## Réponse
 
-**MANWË en contient déjà le cœur. Il lui manque en revanche la partie qui rend la donnée actionnable.**
+**MANWË en contient déjà le cœur. Il lui manque en revanche la partie qui rend la donnée actionnable et prédictive.**
 
 L'Ontologie de Palantir repose sur trois éléments :
 
@@ -78,6 +78,18 @@ Pour Palantir, « actionnable » signifie qu'une action change quelque chose hor
 Ces objets ferment la boucle : on anticipe, on agit, on observe, puis on compare la prédiction à la réalité et on révise.
 
 Aucune action n'est exécutée sans consentement explicite. L'envoi de messages reste une fonction future (roadmap §20).
+
+### 6. Modèle stratégique des acteurs (D-017)
+
+Chaque acteur, qu'il s'agisse d'une personne, de l'utilisateur, d'une relation ou d'un groupe, reçoit des objets déclarés :
+
+- ce qu'il optimise, avec ses valeurs sacrées ;
+- les croyances sous lesquelles son comportement est optimal ;
+- la barrière qui le maintient dans son équilibre ;
+- les leviers ;
+- les prédictions de réponse à une perturbation.
+
+Ce sont des hypothèses comme les autres. C'est la couche qui rend l'ontologie prédictive, et elle sert la finalité de MANWË : trouver un chemin (D-018). Voir [MODELE-STRATEGIQUE.md](./MODELE-STRATEGIQUE.md).
 
 ## Ce que nous ne faisons pas
 

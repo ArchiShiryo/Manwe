@@ -1,6 +1,6 @@
 # MANWË Roadmap de reconstruction
 
-Version 1.3 du 24 septembre 2026 : mode développement à capacité maximale et nouveau pilotage (voir [PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md), décisions D-006 et D-010). Version 1.2 du 23 septembre 2026. Cadrage initial et adaptation : Astra. Reprise de la réalisation et rôle de LLM provisoire : Sol, conformément à la décision utilisateur du 14 septembre. Validation de l'utilité et des choix d'expérience : utilisateur.
+Version 1.4 du 25 septembre 2026 : finalité prédictive et modèle stratégique au centre (D-017, D-018, [MODELE-STRATEGIQUE.md](./manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md)). Version 1.3 du 24 septembre 2026 : mode développement à capacité maximale et nouveau pilotage (voir [PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md), décisions D-006 et D-010). Version 1.2 du 23 septembre 2026. Cadrage initial et adaptation : Astra. Reprise de la réalisation et rôle de LLM provisoire : Sol, conformément à la décision utilisateur du 14 septembre. Validation de l'utilité et des choix d'expérience : utilisateur.
 
 Nous reconstruisons le socle fonctionnel de MANWË à côté du prototype existant. Le premier résultat attendu est une application personnelle capable de conserver une situation sociale, de proposer une interprétation sourcée, de recevoir une correction et de représenter durablement cette révision dans le texte, le graphe et l'inspecteur.
 
@@ -12,8 +12,10 @@ Cette roadmap organise l'exécution de la vision V3.0. Elle modifie l'ordre de c
 
 R2 est validé en mode assisté. Le moteur de révision R3 est livré : hypothèses de toutes profondeurs, preuves pour et contre, épisodes indépendants, passe critique, effets des annotations, questions. L'évaluation à l'aveugle R3-S01 est en cours. Le pilotage est assuré par Claude, qui code aussi en l'absence de l'exécutant (D-011).
 
-Décisions structurantes issues des essais et des échanges avec l'utilisateur ([PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md), [ONTOLOGIE.md](./manwe-next/docs/pilotage/ONTOLOGIE.md)) :
+Décisions structurantes issues des essais et des échanges avec l'utilisateur ([PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md), [ONTOLOGIE.md](./manwe-next/docs/pilotage/ONTOLOGIE.md), [MODELE-STRATEGIQUE.md](./manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md)) :
 
+- **Finalité** : modéliser le monde de l'individu, prédire, trouver les leviers, tracer un chemin. Le diagnostic n'est pas le but (D-018).
+- **Modèle stratégique, principe central** : le joueur est rationnel, c'est le jeu qui ne l'est pas. Chaque comportement est lu comme la meilleure solution trouvée par un système, souvent un minimum local, aux échelles intrapersonnelle, relationnelle et de groupe. Pour chaque acteur : ce qu'il optimise, ses croyances, la barrière qui le maintient, le jeu avec les autres, ses réponses prédites (D-017).
 - **La relation devient un objet à part entière** (D-012). C'est un manque de la reconstruction par rapport à la spécification §11.
 - **Rôles souples** : extraits par épisode, et au niveau de la relation seulement sous forme d'hypothèse. Le timing n'est pas exigé (D-013).
 - **Registre ontologique unique** sur le modèle de l'Ontologie Palantir, dont découle le graphe R4 (D-014).
@@ -35,6 +37,8 @@ Le mode retenu est **assisté**, par échange explicite de fichiers JSON : aucun
 Documents de reprise : [handoff pour Sol](./manwe-next/docs/HANDOFF_SOL.md), [décision d'architecture](./manwe-next/docs/decisions/0001-sol-assisted-cognition.md), [contrat cognitif v1 à implémenter](./manwe-next/docs/contracts/COGNITION_V1.md). Ce sont des spécifications de construction, pas l'annonce de fonctions déjà branchées.
 
 ## 1 Le résultat que nous voulons prouver
+
+La finalité de MANWË est de modéliser le monde dans lequel évolue l'individu, de prédire comment il répondra, d'identifier les leviers et de tracer un chemin. Le diagnostic n'est pas le but : beaucoup de personnes sont détruites faute d'avoir vu un chemin, et c'est ce manque que la prothèse doit combler (D-018). Le moteur de cette prédiction est le modèle stratégique : le joueur est rationnel, c'est le jeu qui ne l'est pas (D-017, [MODELE-STRATEGIQUE.md](./manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md)).
 
 La question de validation est : « MANWË m'aide-t-il à comprendre une situation, à distinguer ce qui est établi de ce qui est supposé, et à corriger une représentation qui continue de tenir compte de mes corrections demain ? »
 
@@ -256,7 +260,7 @@ Objectif : transformer les événements en hypothèses inspectables et révisabl
 - [x] R3.6 Invalider les conclusions dépendantes lorsqu'une preuve est corrigée ou retirée ; créer une demande de réanalyse limitée à la partie affectée. En mode assisté, conserver « à réexaminer » jusqu'à l'import validé d'une nouvelle réponse de Sol ; ne pas feindre un recalcul automatique. (Preuve : test R3-2, réanalyse ciblée vérifiée dans l'UI ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [x] R3.7 Contrôler la version de départ des propositions ; rejeter ou réexaminer un résultat devenu obsolète pendant une correction. (Preuve : test R3-4 ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [x] R3.8 Produire les questions ouvertes à partir des alternatives, avec possibilité de ne pas répondre et sans relance identique systématique. (Preuve : test R3-8 ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
-- [ ] R3.9 Faire conclure le moteur : lecture principale classée par sujet et par relation, alternatives qui sont de vrais mécanismes concurrents, « plausible » possible dès la première analyse en D1 et D2, confiance plafonnée avec avertissement au lieu d'un rejet global (D-015, prompt v4).
+- [ ] R3.9 Faire conclure le moteur : lecture principale classée par sujet et par relation, structure stratégique des hypothèses profondes (D-017), alternatives qui sont de vrais mécanismes concurrents, « plausible » possible dès la première analyse en D1 et D2, confiance plafonnée avec avertissement au lieu d'un rejet global (D-015, prompt v4).
 
 Passage : une contre-preuve peut affaiblir une hypothèse ; une correction conserve son effet après une nouvelle session ; « je suis d'accord » n'ajoute aucun épisode de preuve ; une réponse tardive ne restaure pas une conclusion invalidée.
 
@@ -270,6 +274,7 @@ Objectif : faire des trois surfaces visuelles des représentations cohérentes d
 - [ ] R4.0b Extraire les participants et leurs rôles par épisode, avec citation et correction en un geste ; le rôle relationnel reste une hypothèse agrégée (D-013).
 - [ ] R4.0c Calculer des indicateurs relationnels déterministes (part des initiatives, réciprocité, fréquence, délais explicites, contre-exemples) utilisables comme ancrages citables.
 - [ ] R4.0d Déclarer le registre ontologique unique d'où découlent le prompt, le paquet, les contrôles et le graphe ; un test vérifie leur cohérence (D-014).
+- [ ] R4.0e Lecture stratégique (D-017) : les hypothèses D3 à D5 portent une structure facultative (gain optimisé, croyances, coût payé, barrière, prédiction de perturbation) ; la relation et le groupe reçoivent leur lecture d'interdépendance (gains et pertes de chacun, dépendance, comportements récompensés par la répétition, équilibre).
 - [ ] R4.1 Définir `FocusContext` et `GraphProjection` avec identifiants métier et révision canonique ; retirer les branches conditionnelles propres à Marc.
 - [ ] R4.2 Construire les projections d'une personne, d'une relation, d'une hypothèse et d'une question. Limiter le nombre d'objets utiles affichés.
 - [ ] R4.3 Réintroduire styles, formes, inspecteur et navigation du prototype comme composants alimentés par des données.
@@ -289,7 +294,7 @@ Objectif : valider le parcours cognitif de la vision, avec de vraies transitions
 - [ ] R5.2 Montrer au maximum deux hypothèses concurrentes et une question utile à la situation active.
 - [ ] R5.3 Permettre la correction sur une preuve, la réponse à une question et l'inspection de la révision produite.
 - [ ] R5.4 Faire émerger un problème et un objectif de la conversation ; rendre leur formulation modifiable immédiatement.
-- [ ] R5.5 Produire deux directions qualitatives liées aux données : hypothèses, conditions, effort, limites, signaux à observer et possibilité de ne rien entreprendre.
+- [ ] R5.5 Produire deux directions qualitatives liées aux données : hypothèses, conditions, effort, limites, signaux à observer et possibilité de ne rien entreprendre. Chaque direction nomme le levier qu'elle actionne dans le modèle stratégique et la réponse prédite des acteurs, y compris la phase transitoire (D-017).
 - [ ] R5.5b Boucler l'action : action proposée validée par l'utilisateur, attente enregistrée avant l'essai, résultat observé, comparaison entre prédiction et réalité, puis révision des hypothèses concernées (D-016).
 - [ ] R5.6 Rejouer le parcours avec un autre groupe et d'autres noms, sans modifier le code, le contrat ni le prompt pour le scénario. Sol produit de nouvelles propositions à partir du seul paquet de contexte autorisé ; ne pas recopier les réponses attendues du corpus.
 - [ ] R5.7 Effectuer une démonstration utilisateur et noter les incompréhensions ainsi que les corrections nécessaires.
@@ -366,6 +371,7 @@ Objectif : relier compréhension, objectifs et décisions personnelles sans surc
 - Faire apparaître le Counselor au bon moment ou à la demande, avec « pourquoi maintenant ? » et retours utile, inutile, déjà su.
 - Séparer confiance dans une hypothèse et pertinence d'une action fondée sur elle ; prendre en compte coût d'erreur et réversibilité.
 - Enregistrer les attentes avant l'événement suivant, puis comparer résultats et alternatives sans réécrire a posteriori la prédiction.
+- Simuler à partir des modèles stratégiques (D-017) : pour chaque piste, prévoir la réponse de chaque acteur selon ce qu'il optimise, y compris l'escalade ou le test transitoire avant un nouvel équilibre ; privilégier les pistes qui abaissent la barrière plutôt que de la forcer ; mesurer la calibration des prédictions dans le temps.
 - Introduire un SelfModel fondé d'abord sur les préférences et limites exprimées par l'utilisateur ; suivre la charge ressentie et la fréquence d'assistance souhaitée.
 - Réduire les interventions répétitives lorsque l'utilisateur signale leur faible utilité ou maîtrise déjà la situation.
 
@@ -375,14 +381,15 @@ Passage : les options sont explicables à partir de données actuelles ; les ré
 
 Ces axes restent dans la vision. Ils disposent de prérequis et d'une validation propre ; ils ne bloquent pas une première version utile.
 
-| Axe                                     | Prérequis                                                                                                 | Preuve à obtenir avant extension                                                                             |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Needs, Values, Motives et mentalisation | Modèles relationnels sourcés, alternatives et historique suffisant                                        | Gain de compréhension ou de discrimination face à une explication contextuelle simple                        |
-| Formulations psychodynamiques D4        | Produites dès R3 (D-006) ; promotion exigeant récurrence, épisodes indépendants, critique, falsifiabilité | Gain démontré et possibilité de réfutation ; la sophistication du récit ne suffit pas à passer « plausible » |
-| Social Field et niches relationnelles   | Identités fiables, groupes et relations suivis dans le temps                                              | Fonctions ou dépendances observables, alternatives et comparaisons présence/absence                          |
-| Simulation de transformations du groupe | Modèles temporels et prévisions évaluées                                                                  | Scénarios conditionnels confrontables aux événements suivants                                                |
-| Mobile et autres terminaux              | Backend stable, authentification, politique de partage et synchronisation                                 | Même mémoire et mêmes corrections sur les terminaux, conflits gérés                                          |
-| Inférence locale                        | Adaptateur fournisseur stable et matériel évalué                                                          | Qualité, coût opérationnel et latence suffisants sur le même corpus                                          |
+| Axe                                          | Prérequis                                                                                                 | Preuve à obtenir avant extension                                                                                      |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Needs, Values, Motives et mentalisation      | Modèles relationnels sourcés, alternatives et historique suffisant                                        | Gain de compréhension ou de discrimination face à une explication contextuelle simple                                 |
+| Formulations psychodynamiques D4             | Produites dès R3 (D-006) ; promotion exigeant récurrence, épisodes indépendants, critique, falsifiabilité | Gain démontré et possibilité de réfutation ; la sophistication du récit ne suffit pas à passer « plausible »          |
+| Social Field et niches relationnelles        | Identités fiables, groupes et relations suivis dans le temps                                              | Fonctions ou dépendances observables, alternatives et comparaisons présence/absence                                   |
+| Modèle stratégique de grande échelle (D-017) | Modèles stratégiques personnels et relationnels calibrés                                                  | Prédictions de groupe (normes, rôles, statuts, sacrifices, valeurs sacrées) meilleures qu'une explication descriptive |
+| Simulation de transformations du groupe      | Modèles temporels et prévisions évaluées                                                                  | Scénarios conditionnels confrontables aux événements suivants                                                         |
+| Mobile et autres terminaux                   | Backend stable, authentification, politique de partage et synchronisation                                 | Même mémoire et mêmes corrections sur les terminaux, conflits gérés                                                   |
+| Inférence locale                             | Adaptateur fournisseur stable et matériel évalué                                                          | Qualité, coût opérationnel et latence suffisants sur le même corpus                                                   |
 
 Le seuil de trois épisodes pour D4 vient de la spécification V3.0 : c'est une règle produit envisagée, pas une validation scientifique automatique. L'implémentation des cadres psychologiques exigera une revue critique de leurs usages et des évaluations adaptées. La numérotation D5 du document maître regroupe aussi groupe et planification ; elle n'oblige pas à construire D4 avant de proposer un objectif simple à R5.
 
@@ -496,6 +503,7 @@ Le lot suivant ferme le parcours R2 : exporter un contexte de cette mémoire, re
 | 2026-09-14 | Sol assure la réalisation et le rôle de LLM assisté provisoire                                   | Décision utilisateur ; construire le parcours sans attendre le raccordement automatique                       |
 | 2026-09-14 | Contrat fournisseur commun, import JSON et validation transactionnelle                           | Changer de fournisseur sans réécrire le domaine ni permettre un contournement de la mémoire                   |
 | 2026-09-14 | R2 à R5 évaluables en mode assisté, IA-A obligatoire avant R6                                    | Distinguer analyse réelle assistée, simulation et automatisation sans perdre les exigences d'intégration      |
+| 2026-09-25 | Finalité prédictive et modèle stratégique au centre (D-017, D-018)                               | Le diagnostic ne donne pas de chemin ; un modèle prédictif du jeu en cours en donne un                        |
 
 ## 22 Références et suivi documentaire
 
