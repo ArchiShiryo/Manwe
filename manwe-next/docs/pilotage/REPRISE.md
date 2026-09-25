@@ -52,7 +52,9 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **R5.4 codé, lot R5-S02 non validé** ([RAPPORT-011](./rapports/RAPPORT-011.md)) : l'objectif émerge de la conversation (`propose_goal`, contrat 1.6, prompt v8), et s'adopte, se reformule ou s'écarte sur l'écran Intentions. P02 (volley) passe tout ; P01 (colocation) perd trois analyses sur des citations mal recopiées.
 
-**Prochaine étape** : faire trancher D-025 par l'utilisateur (application partielle, sujets de groupe, taille des paquets), puis sceller et jouer R5-S03 (R5.1, R5.4, R5.6), puis R5.7 (démonstration à l'utilisateur). À confirmer aussi : D-023 et D-024.
+**BRIEF-006 codé, lot R5-S03 non validé** ([RAPPORT-012](./rapports/RAPPORT-012.md)) : mémoire de travail (D-026), requêtes libres du modèle en lecture seule (D-023), sujets de groupe et application partielle (D-025), pas de plafond de directions (D-024). Aucune analyse perdue, 9/9 [L], 3/4 [B] : les paquets A2–A5 ne baissent que de 23,4 % contre 40 % attendus, car les lectures et les directions ne sont pas encore allégées.
+
+**Prochaine étape** : alléger les lectures et les directions non choisies dans la mémoire de travail (détail servi par `get_hypothesis`), mesurer la réduction sur un même état, faire choisir au harnais la direction cohérente avec le résultat, puis sceller et jouer R5-S04, puis R5.7 (démonstration à l'utilisateur). Corpus de téléréalité (D-022) : saison 1 de Survivor en sous-titres bruts dans `manwe-next/.qa/corpus/survivor/` (ignoré par git, jamais commité).
 
 **Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
 
