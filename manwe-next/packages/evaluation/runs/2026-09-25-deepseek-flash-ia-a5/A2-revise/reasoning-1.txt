@@ -1,0 +1,515 @@
+Let me analyze this ContextPacket.
+
+Task: revise. Focus on 5 events, 4 hypotheses.
+
+The new material: annotation (context) from user: "Précision : l'an dernier, Chloé m'a aidé trois jours à déménager et m'a souvent dépanné. Depuis janvier, elle traverse un divorce difficile."
+
+This is a user annotation (explicit_statement from user) that adds crucial context: Chloé helped the user last year for three days moving and often helped out. Since January she's going through a difficult divorce.
+
+This directly contradicts/undermines hypothesis 703040db (asymmetry D2, plausible, needsReview "context", reviewReason "context", reviewSinceRevision 6, revision 2) — the annotation states that Chloé has been a helper in the past, and that she's under strain (divorce) since January. This supports hypothesis ca50338e (contextual period of constraints for Chloé).
+
+Also hypothesis 651fe1d6 (D3 provider position for the user) — the annotation doesn't directly address user's cost, but it weakens "user avoids being requester because he got a refusal" — since Chloé helped him for 3 days last year. Actually it weakens the claim that the user avoids the requester position.
+
+Also b9b709df (ordinary friendship) — the annotation supports it somewhat (Chloé helps too; but that's about Chloé's help not user's).
+
+Key: Rule 19 — an hypothesis with needsReview and reviewReason "disagreement" can only be revised by proposing an alternative, adding a counter-evidence, or making it "superseded". Here reviewReason is "context", not "disagreement". So we can revise normally.
+
+Wait — 703040db has reviewReason "context". So we can revise it. The annotation is the context that triggered the review. Let's revise it: the annotation provides counter-evidence (Chloé helped user 3 days last year; she's in divorce since January). So we should add contradicting evidence claims and revise status.
+
+Let me plan the operations.
+
+First, propose claims from the annotation (source 2ab24bea...):
+
+Claim A: "L'an dernier, Chloé a aidé l'utilisateur trois jours à déménager et l'a souvent dépanné." — category explicit_statement, modality actual. Hmm — is this a "fait accompli"? Yes, it's a past fact the user states. Rule 4: un fait accompli donne un propose_event ET un propose_claim. So I should propose an event too? The annotation is an event entity already in the packet (1b05a675-...). Hmm, the event exists as "Annotation (context)" with category unclassified_note. The claim should be proposed. Should I propose an event for "Chloé a aidé l'utilisateur trois jours à déménager l'an dernier"? That's a described event. It might be reasonable but the temporal precision is vague ("l'an dernier"). I'd say propose a claim is enough; but rule 4 says a fait accompli gives event + claim. Hmm. But the annotation is an entity of type event already. Actually the annotation entity exists as an existing event (id 1b05a675). Its category is "unclassified_note" and title "Annotation (context)". The packet does not allow "revise_event". Hmm, allowed operations don't include revise_event. I can propose a claim citing the source. I could also propose an event for the past help, but it's not in the "focus" events and it's an event described with vague date. I think I'll propose a claim only, or possibly also an event. Let me be pragmatic: propose claims; also propose an event for the past help episode? There's a risk of duplication with the existing annotation event. I'll just propose claims.
+
+Actually let's think: the packet's existing claims are four. The annotation is meant to be converted into claims. I'll propose:
+
+c1: "L'an dernier, Chloé a aidé l'utilisateur pendant trois jours pour son déménagement et l'a souvent dépanné." category: explicit_statement, modality: actual, validFrom null (or "2025-..." unknown), validTo null.
+
+c2: "Depuis janvier 2026, Chloé traverse un divorce difficile." category: explicit_statement, modality: actual, validFrom "2026-01-01" approx? Hmm, maybe validFrom null with a note... I'll set validFrom "2026-01-01T00:00:00-03:00"? That's inventing precision. Better null. Actually the modality is actual. validFrom null.
+
+Also could add an inference claim: c3: "La disponibilité de l'utilisateur en février-mars 2026 coïncide avec une période de difficulté de Chloé (divorce depuis janvier), ce qui rend le déséquilibre apparent dépendant du contexte." category inference, modality actual? Hmm, inference claims - modality actual.
+
+Better keep it focused.
+
+Now the roles: existing roles cover the four episodes. The new annotation describes Chloé as helper in the past (déménagement three days). Should I propose a role? Rule R1: for each episode, extract roles. The annotation mentions Chloé helping user's moving last year. Could propose role helper for Chloé in event... which event? The annotation event 1b05a675. Hmm, that event is the annotation itself, not the past help. Proposing a role on the annotation event would be odd but its text does describe an episode. Hmm. Roles attach to events. The annotation event text includes the help description. I could propose role: event 1b05a675, subject Chloé, role helper, outcome accepted. And subject self, role requester? The user says "m'a aidé trois jours à déménager" — that implies he was the one being helped; whether he asked is not stated. So helper role for Chloé is supported; requester for self is not explicit ("m'a aidé" implies he accepted help; a role "recipient"). Hmm.
+
+Is it useful? The relation indicators would then be updated. But indicators are computed by system from roles. The packet's relation indicators show help: self 3, Chloé 0. Adding a role would rebalance. I think it's legitimate and useful to propose role helper for Chloé on the annotation event. But is the annotation event an "episode"? It's categorized as unclassified_note with context "Annotation de l'utilisateur". Proposing roles on it might be weird. Hmm. Risk of malformed. I think it's fine to propose; the citation is available.
+
+Actually, I worry: the system may reject roles on non-episode events. But roles already reference events b00abe62 etc. which are "unclassified_note" category. So the annotation event is similar. I'll propose the helper role with caution. Hmm, but the annotation event's occurredStart is null; the help was "l'an dernier". Let me consider: I could instead propose an event for the past help episode with approximate date "2025" and then attach roles. That seems cleaner and satisfies rule 4 (fait accompli → event + claim). Let's do:
+
+e1: propose_event: title "Chloé a aidé l'utilisateur trois jours à déménager (l'an dernier)", category explicit_statement, occurredStart null, occurredEnd null, temporalPrecision "approximate"... hmm, with null dates and precision approximate is odd. Maybe temporalPrecision "unknown". Actually "l'an dernier" = 2025, relative to 2026. I could set occurredStart "2025-01-01"? Too invented. I'll use temporalPrecision "unknown" with null dates. Hmm, maybe "approximate" with occurredStart null is contradictory. Use "unknown".
+
+Then roles: o: event e1, subject Chloé, helper, outcome accepted. And subject self, recipient? "recipient" role is defined as "reçoit la proposition". Hmm, the role list: initiator, recipient, requester, helper, responder, observer. For the moving help: Chloé = helper; user = ? Not requester explicitly. Could be recipient? Recipient = receives the proposal. Hmm. Maybe skip user role, just Chloé helper, or add self as requester? The user said "Chloé m'a aidé trois jours à déménager" — that's help rendered, likely in the context of the user's moving, meaning the user needed help. Whether he asked is unstated. I'll add only helper for Chloé to be safe. Actually adding a self role... The relation indicator "help" counts helper roles. Adding Chloé's helper role makes indicators balanced. I'll add just that one.
+
+Hmm, but should I attach it to the existing annotation event 1b05a675 instead? The annotation event exists in packet, and focus includes it. Given focus includes it, maybe the intended handling is claims referencing it. Roles on it... I'll go with proposing a new event e1 for the past help. Hmm, but the annotation also includes the divorce info, which is not an event (a state).
+
+Actually wait. Consider: the annotation event 1b05a675 is "Annotation (context)" created at revision 6, its text is the user's precision. Was it already processed? Claims don't include anything from it. The questions list contains the question about Chloé's constraints period (96ad0eb9 and 2b1b3794) — those were generated previously. The annotation appears to be the user's answer to question 2b1b3794 ("Les demandes de Chloé correspondent-elles à une période de contraintes pour elle...") plus extra info about her having helped before. Actually the answer to that question: since January she's going through a divorce → constraints. And she helped three days last year + often helped.
+
+Q2 (96ad0eb9) about ressenti in canceling cinema — not answered.
+
+So the annotation is context/answer. The system flagged h (703040db) needsReview "context" since revision 6.
+
+Now my job: revise hypotheses with the new evidence.
+
+Plan of operations:
+
+1. c1 claim: Chloé a aidé l'utilisateur trois jours à déménager l'an dernier et l'a souvent dépanné. explicit_statement, actual.
+2. c2 claim: Depuis janvier 2026, Chloé traverse un divorce difficile. explicit_statement, actual.
+3. e1 event: the past help (maybe). And role o1: Chloé helper.
+
+Hmm, is the moving help "l'an dernier" an event? Yes. But it's a repeat of "souvent dépanné". I'll propose the event with temporalPrecision unknown and give roles. Actually maybe simpler: skip the event and just use claims as evidence for revising hypotheses. Rule 4 says "Un fait accompli donne un propose_event ET un propose_claim qui porte sa provenance." Strictly, the past help is a fait accompli. I'll include the event + role. That seems aligned with the rules. But given it's described in the annotation event already (which is an entity in packet)... The annotation entity is about "Annotation (context)", i.e., the act of annotating; its text contains the content. Hmm, actually events in this system hold text. The annotation event was created to hold the user's precision text. Adding a separate event for the moving help is a duplication risk but reasonable as it describes a distinct episode.
+
+I'll include it. Let's be careful with citations.
+
+Citation format: {sourceId, contentHash, spanStart, spanEnd, quote}. Source 2ab24bea-1546-4f89-80d3-38dd2fce8233, contentHash 995cc894da88de8062b79371d951524beb59a02a2826fcf99309c3c20e9281db, span 0-140 quote full text.
+
+Full text: "Précision : l'an dernier, Chloé m'a aidé trois jours à déménager et m'a souvent dépanné. Depuis janvier, elle traverse un divorce difficile."
+
+Let me count: is that 140 chars? I'll just cite the whole source as given (spanStart 0, spanEnd 140, quote as given). That's safe per instructions.
+
+Sub-spans: risky. Use full source citation.
+
+4. revise_hypothesis for 703040db (D2 asymmetry, plausible, rank 1, needsReview context, revision 2). Add contradicting evidence: c1 (Chloé helped), c2 (divorce). Given counter-evidence now equals support? Status: "contradicted" requires as many anchored counter-evidence as favorable. There are 4 supports. So "contradicted" isn't warranted. But the annotation is precisely the reason for review. I think revise to "draft" with confidence "low", and add contradicting evidence. Also add the alternativeTo? ca50338e is already an alternative (alternativeTo 703040db). Good — the alternative exists.
+
+Hmm, but revision of a needsReview hypothesis with reviewReason "context": rule 19 applies only to "disagreement". So no restriction. The annotation is the context; revising with added counter-evidence and lowering to draft seems right.
+
+Actually, should it become "superseded"? The annotation says Chloé helped last year for 3 days moving AND often helped (dépanné). It doesn't establish that asymmetry didn't exist in Feb–Mar 2026 — she's in divorce since January. So the asymmetry in the observed window is real but the interpretation "stable pattern" is weakened. The relation was historically reciprocal. Hmm — the annotation says "l'an dernier, Chloé m'a aidé trois jours à déménager" — wait, whose déménagement? "m'a aidé trois jours à déménager" = helped me move. Interesting: the user asked Chloé for help with his déménagement on 15 March 2026 and she declined. And last year she helped him move for three days. So the user's own moving recurs! Possibly the March 2026 request relates to a new move.
+
+So evidence: Chloé has been a helper → counters "no reciprocity observed". Status of 703040db: I'll revise to "draft", confidence "moderate"? Rule 14: confidence for D2 moderate at 2+ episodes; high needs 3 episodes over 30 days with counter-evidence accounted. Here the hypothesis has 4 supports but now 2 contradicts. Since revise, "plausible" requires net anchored episodes (favorable minus contrary) ≥ 2 for D2. Net = 4 - 2 = 2? Hmm, rule 16: "plausible" exige, en épisodes ancrés nets (favorables moins contraires), 2 pour D2. So net 2 could still be plausible. But the contradiction is significant — the claim "sans réciprocité observée" is directly falsified by the annotation. Hmm. The statement says "sans réciprocité observée — sa seule demande a été refusée". Now we know she helped a lot historically. I'd revise to draft with confidence low, rank maybe 1 still? Or rank 2?
+
+Let's think about ranking. The focus hypotheses:
+- 651fe1d6 D3 provider (rank 1, draft)
+- 703040db D2 asymmetry relation (rank 1, plausible)
+- b9b709df D3 ordinary friendship (rank 2, draft)
+- ca50338e D2 contextual period (rank 2, draft)
+
+With the new annotation (Chloé helped extensively before; she's in divorce since January), ca50338e gains strong support. I should revise ca50338e too: add supporting evidence (c1, c2), and promote? "plausible" requires 2 net anchored episodes for D2 + critique pass. ca50338e has 3 supports. Adding c1, c2 → 5 supports, 0 contradicts. But it's a draft alternative; promoting requires rule 17 (critique pass for D3+)? Rule 17 says "Dès D3, une hypothèse ne devient plausible qu'après une passe critique". ca50338e is D2, so no critique needed. Rule 16: plausible requires net anchored episodes ≥2 for D2 and confidence... For revise to plausible: 2 net episodes and confidence at least low? The confidence would be "moderate" (2+ episodes). Hmm.
+
+But wait — the annotation says she's in divorce since January, and the demands span Feb–March. It also says she helped "l'an dernier" and "souvent dépanné" — the reciprocity existed before. Hmm, note that ca50338e's statement is about a period of constraints rather than a stable relational schema, exactly what the annotation supports.
+
+So: I could revise ca50338e to plausible, rank 1 for the relation subject? And 703040db to draft, rank 2. Hmm but 703040db is the D2 relation hypothesis with rank 1 and it's "needsReview: context". Under rule 19 (not applicable, since reason is context) we can revise.
+
+Let me consider what's most defensible: The annotation directly answers the open question 2b1b3794: the demands coincide with a period of constraints ("Depuis janvier, elle traverse un divorce difficile"). So the contextual hypothesis (ca50338e) becomes the leading relation reading, and the asymmetry hypothesis should be downgraded. Also "l'an dernier, Chloé m'a aidé trois jours à déménager et m'a souvent dépanné" adds counter-evidence to "no reciprocity".
+
+Decision:
+- revise 703040db → status "draft", confidence "low", rank 2, addEvidence: c1 contradicts, c2 contradicts? Is c2 (divorce) contradicting the asymmetry claim? It supports the contextual reading and undermines the "stable schema" characterization. Yes, add as contradicts.
+- revise ca50338e → status "plausible", confidence "moderate", rank 1, addEvidence: c1 supports, c2 supports.
+
+Hmm, but careful: is c1 (Chloé helped last year) supporting ca50338e? ca50338e's prediction: when constraints fall, demands cease and she helps in turn. c1 shows she does help — supports. Yes.
+
+Also the D3 hypotheses:
+- 651fe1d6 (provider position of user, rank 1, draft, D3). New evidence: Chloé has been a helper historically — this weakens the mechanism "avoiding the requester position where he got a refusal" (he did get help before; his request on 15 March was one instance). Also c1 counters "he formulates few personal requests" — actually he did ask for help. So add c1 as contradicts. Should we revise this hypothesis? Rule 17: D3 doesn't become plausible without critique, but it's already draft. We can revise to keep draft with added contradicting evidence, or propose a critique. Task is "revise". Hmm.
+
+Rule 16 revise: "plausible" requires net anchored episodes ≥2 for D3 plus active alternative plus critique pass. 651fe1d6 currently has 3 supports, 0 contradicts. Adding c1 as contradicting → net 2. It's currently draft, and to promote we'd need a critique pass (k) then revise. Hmm, do I want to promote to plausible? The instruction in the prompt (system) says "Une hypothèse D3 ne devient plausible qu'après une passe critique suivie d'un revise_hypothesis, qui peut figurer dans la même réponse que la critique." I could do that: propose_critique on 651fe1d6 then revise to plausible. But is promotion warranted? The provider-position reading of the user is based on 3 episodes, all within 49 days, in a single relationship, and now the annotation shows reciprocity historically — it weakens it substantially. Also rule 8: user readings from D3 require a claim where the user expresses a cost... but here we're revising an existing hypothesis, not creating new. Still, evidence-wise, the user never expresses a ressenti. I'd keep it draft and add the contradicting evidence. Hmm, but the user's annotation is itself explicit_statement which shows he did ask for help (a personal request) — that contradicts "formule peu de demandes personnelles".
+
+Alright: revise 651fe1d6: status draft, confidence low, rank 1, addEvidence c1 contradicts, c2 contradicts? c2 (divorce) — does it contradict the provider reading? Partially: it means the user's giving responds to Chloé's difficult period rather than to his own need to be necessary — a simpler explanation. Yes, c2 contradicts.
+
+- b9b709df (ordinary friendship, D3, draft, rank 2, alternativeTo 651fe1d6). New evidence: c1 supports (reciprocity, ordinary friendship), c2 supports (context). Should we revise it? Yes: addEvidence c1 supports, c2 supports, and maybe promote to plausible? Rule 17: D3 → plausible requires critique pass + alternative + 2 net episodes. b9b709df has 3 supports; with c1, c2 → 5. It has an active alternative (651fe1d6 via alternativeTo). To promote to plausible I'd need a critique pass (propose_critique) then revise. Hmm, that's a lot. But is it warranted? The user still hasn't expressed any ressenti. The ordinary-friendship reading is "not testable in state" per its limits. Promoting it to rank 1... Hmm.
+
+Let me think about what the analyst should do overall. The outcome should be "proposed" with a set of operations.
+
+Also: should I propose a new hypothesis? E.g., D2 relation reading "relation d'entraide réciproque historiquement, où l'utilisateur a été aidé (3 jours de déménagement l'an dernier) et où il aide aujourd'hui pendant une période difficile de Chloé (divorce)". That's arguably a new hypothesis, or it's ca50338e. ca50338e covers "period of constraints" but not the reciprocity history. Hmm. Maybe a new D2 hypothesis: "La relation est une entraide réciproque, actuellement déséquilibrée par la crise de Chloé." But that's very close to ca50338e. Rule 15 says 2-3 strong readings per subject. Adding an overlapping hypothesis risks "alternative_not_distinct". Better to use ca50338e, whose statement mentions "la disponibilité ponctuelle d'un ami proche". Hmm, its statement is about constraints of Chloé; the reciprocity info is new. I could revise its statement? No — revise_hypothesis doesn't allow statement change. So maybe propose a new hypothesis h_new D2 covering reciprocity: "L'échange avec Chloé est une entraide réciproque installée (elle a aidé l'utilisateur trois jours l'an dernier et le dépanne souvent), actuellement asymétrique parce que Chloé traverse un divorce ; l'aide de l'utilisateur depuis février est une réponse à cette passe difficile plus qu'un trait relationnel stable." And mark alternativeTo 703040db. Rank 1 for relation? Then ca50338e rank 2 as alternative? Hmm, that creates three competing readings on the same relation.
+
+Let me keep it manageable: I'll revise the four focus hypotheses with new evidence, propose a critique for the D3 ones that we want to move, and answer/close the open question? Questions: Q 2b1b3794 is now answered by the annotation (Chloé is in divorce since January → constraints period). We should not re-ask it. Rule 20: ne repose jamais une question présente dans le paquet. We could note in the revise rationale... but the question status remains open in the packet; we don't have an operation to answer questions. So just don't re-ask.
+
+Q 96ad0eb9 (ressenti about cancelling cinema) is still open and still discriminating between 651fe1d6 and b9b709df. We shouldn't re-ask it. Hmm — rule 20 says never re-ask a question present in the packet, whatever its status. So I must not re-ask that. So no new question? Maybe a new question on something else: e.g., "Chloé t'a-t-elle aidé depuis janvier malgré son divorce ?" Hmm — that discriminates between asymmetry hypothesis and reciprocity. Actually a good discriminating question: "Depuis février, as-tu demandé autre chose à Chloé (hors déménagement) et comment a-t-elle répondu ?" Hmm, that also relates to the known open question about constraints.
+
+Maybe: "Chloé a-t-elle continué à te dépanner depuis janvier, ou son aide s'est-elle arrêtée avec son divorce ?" That discriminates the asymmetry vs. reciprocity/context readings. It's not present in the packet. Good candidate.
+
+But rule 20: pose a question only if it discriminates hypotheses. Yes, it does: 703040db vs ca50338e.
+
+OK, now also consider whether to add new claims of inference: e.g., "La disponibilité de l'utilisateur envers Chloé coïncide avec le divorce de Chloé depuis janvier" — that's an inference from user's own statements (she's in divorce since January, he helps since February). It can be an inference-category claim. Maybe useful as evidence for ca50338e. Let me add c3 as inference.
+
+Hmm, careful: rule 13 says "Une inférence n'est jamais un ancrage" — evidence should be anchored claims. So using an inference claim as evidence is bad. Better not to propose inference claims as evidence. I could propose an inference claim but not use it as evidence. Maybe skip.
+
+Now let's plan the final operations list:
+
+1. c1 propose_claim: Chloé a aidé l'utilisateur trois jours pour son déménagement l'an dernier et l'a souvent dépanné. (explicit_statement, actual, validFrom null... hmm, "l'an dernier" → maybe validFrom null; validTo null).
+2. c2 propose_claim: Depuis janvier 2026, Chloé traverse un divorce difficile. (explicit_statement, actual, validFrom "2026-01-01T00:00:00-03:00"? I'd rather null. Hmm, the system's temporal handling: I'll set validFrom null and state in text "depuis janvier 2026"). Actually setting validFrom "2026-01-01" gives precision, could be seen as inventing. I'll use null.
+
+Hmm — but a claim about a fact (Chloé's divorce) is a state; modality actual. Fine.
+
+3. e1 propose_event: past help episode? Let me decide. The user's déménagement help from Chloé (three days last year). I'll propose it as an event with temporalPrecision "unknown" and occurredStart null. And role o1: Chloé helper, outcome accepted, on e1. Hmm, is proposing an event with no date useful? It anchors the role and reciprocity. I think it's fine. But risk: the annotation already is an event containing this. Duplication might cause "same episode counted twice" — rule 13 says two accounts of the same fact count as one episode. The annotation event 1b05a675 is an annotation, distinct.
+
+Hmm, alternatively attach the role to the existing event 1b05a675 (annotation). Roles require citations, which we have. Hmm which is better? The role "helper" for Chloé in the annotation event would make the relation indicator count help from Chloé = 1. That's the goal either way.
+
+I'll go with proposing a new event e1 (cleaner: an episode of helping). Actually... the guidance in rule 8: "La forme des notes ... n'en tire aucune hypothèse". Fine.
+
+Let me reconsider: is the past help an "episode"? Yes: "l'an dernier, Chloé m'a aidé trois jours à déménager".
+
+OK.
+
+4. o1 propose_role: event e1 (proposalKey), subject Chloé (person f459b310), role helper, outcome accepted.
+Maybe also o2: subject self, role requester? Not stated that he asked. Skip. Hmm, but the relation indicator "help: self 3" vs Chloé 0. With o1, Chloé gets 1. Good.
+
+5. k1 propose_critique on 651fe1d6 (D3 provider): findings: 
+ - ignored_evidence: the annotation shows Chloé a aidé l'utilisateur trois jours l'an dernier et le dépanne souvent — le récit "sans réciprocité / éviter la position de demandeur" ignore cette réciprocité historique (claims c1).
+ - simpler_explanation: la disponibilité de l'utilisateur depuis février coïncide avec le divorce de Chloé depuis janvier — un contexte suffit à expliquer l'aide sans supposer une position de pourvoyeur (claims c2).
+ - overgeneralization: conclure à une position stable à partir d'une seule relation, quatre épisodes, 49 jours, sans ressenti exprimé.
+ 
+ Hmm, c2 is a proposalKey claim. That's allowed ({proposalKey}).
+
+6. k2 propose_critique on b9b709df? Hmm — do we need? If I want to promote b9b709df to plausible I need a critique. Do I want? Let me think about rank ordering for the "self"-subjected D3 hypotheses: 651fe1d6 (rank1 draft) vs b9b709df (rank2 draft alternative). The new annotation supports the ordinary-friendship reading (reciprocity exists) but the user's own costs aren't expressed. Actually the annotation is the user clarifying facts in defense of Chloé — that itself is interesting: the user adds context that excuses Chloé. That's a mild indicator for the relationship reading (he protects the image of Chloé / the relationship). Hmm, that's an inference about the user; but rule 8 requires a claim where user expresses cost/ressenti/constraint for a self-reading. The annotation expresses a fact, not a ressenti. So no new self-reading. Ok.
+
+Rather than promote b9b709df, maybe I should keep 651fe1d6 as rank 1 draft but with contradicting evidence, and b9b709df rank... hmm. Which is really the leading self reading? Data: 3 episodes of helping including one with personal sacrifice (annulling cinema), one refusal of his request. The user himself provides exculpatory context (Chloé helped before, she's in divorce) — which is consistent with both "ordinary friendship" and "he protects the relationship". I'd keep 651fe1d6 rank 1 (draft) but lower confidence to low, and 651fe1d6 vs b9b709df remains.
+
+Alternatively revise b9b709df to plausible with critique. That's a lot of ops and the "not testable" limit argues against promotion. Hmm. But the annotation does add two supports to b9b709df. Rule 16 for revise→plausible: D3 needs 2 net anchored episodes + active alternative + critique pass. Could do: critique + revise to plausible, rank 2 (since 651fe1d6 stays rank1?). But if b9b709df becomes plausible and 651fe1d6 stays draft, then rank should flip — the plausible one should be the main reading. Hmm, that's a big call: is "amitié ordinaire" the main reading of the user? The rule set warns strongly against over-reading the user (rule 8). Given no ressenti expressed, the parsimonious reading is indeed tentative. But both are D3 drafts.
+
+Hmm. I think a defensible approach: keep both as drafts, add evidence; do the critique pass on 651fe1d6 (the rank-1 reading) to justify its downgrade... Actually a critique is for a hypothesis already in the packet, and findings weaken it. Then can I revise 651fe1d6 to... status draft (stays draft) with lowered confidence and added contradicts. Fine.
+
+Should I also critique b9b709df? Its finding would be "overgeneralization: 'amitié ordinaire' généralise depuis trois services rendus sans aucun ressenti exprimé". If I later want to promote, I'd need a critique first. Let me promote b9b709df to plausible with a critique that finds its limits. Hmm, but does a critique that says "no ressenti expressed, so the reading is an untestable default" support promoting? The critique must be honest. Findings: "simpler_explanation"? For b9b709df the simpler explanation is... it IS the simpler explanation. Finding could be "ignored_evidence": the refusal on 15 March (f47fdbbc) and the cancelled cinema show the user pays costs and receives a refusal — the ordinary-friendship reading ignores that the only recorded personal request was refused, which is an asymmetry. That's a genuine finding (ignored_evidence). Then revise to plausible with that contradicting evidence added → net 3-1=2 → plausible ok. But then it too has contradicting evidence. Hmm.
+
+I worry about overcomplicating. Let me consider the overall "outcome": proposed, with ~12 operations. That's fine.
+
+Let me reconsider whether to promote anything to plausible. Given the annotation is the user's answer to the open question, the contextual D2 hypothesis (ca50338e) is the clear winner. Promoting it to plausible/rank1 for the relation seems right and well-supported (2+ episodes net, D2 doesn't need critique). Yes, do it.
+
+For the asymmetry hypothesis 703040db: downgrade to draft, rank 2, confidence low, add 2 contradicts. Rule 16: to set "draft" from "plausible" — status values allowed: draft/plausible/contradicted/superseded. Setting draft is a demotion; allowed? The rule lists what each status requires; demotion to draft should be fine.
+
+Hmm, wait: could I instead set 703040db to "contradicted"? Requires as many anchored counter-evidence as favorable: 4 supports vs 2 contradicts → no. So draft.
+
+Now, the D3 hypotheses. Given the annotation, the provider reading (651fe1d6) loses ground. Its core mechanism claim ("sans avoir à occuper la position de demandeur, où il a essuyé un refus") is undermined by c1 (he was helped before; and he did ask, and got refused once, in a period where she's in divorce). I'll do a critique + revise (draft, low confidence, rank... hmm).
+
+Ranking for subject self: 651fe1d6 rank 1 vs b9b709df rank 2 currently. Should I swap? If I don't promote b9b709df, I could still give 651fe1d6 rank 1. But my critique says the alternative is simpler. Hmm, honestly with the new context, "amitié ordinaire + contexte difficile de Chloé" is the most parsimonious reading for the user's behavior. But b9b709df as stated is about the user's availability being ordinary friendship — and its prediction "l'utilisateur refusera sans difficulté une prochaine demande" is testable.
+
+Decision: promote b9b709df? Its evidence: 3 supports; add c1 supports (reciprocity → ordinary friendship), c2 supports (context). Contradicts: f47fdbbc? Hmm, is the refusal contradicting "ordinary friendship"? Not really — being refused help once is compatible with ordinary friendship. Hmm, in its current evidence, b9b709df already lists f47fdbbc as supports (odd, but it's a "the user asked like a normal friend" reading). Hmm.
+
+Honestly, I think the cleanest: keep 651fe1d6 as rank 1 draft (the user's pattern of giving is the most salient thing in the packet, and it's about him), with added contradicts and a critique; keep b9b709df draft rank 2 with added supports. Don't promote either — because for D3, plausible requires critique + revise, and the data (no ressenti) doesn't justify elevating either. That's defensible and conservative-in-the-right-way. Rule: "Dès D3, la confiance ne dépasse jamais moderate" — I'll set low for both.
+
+Hmm, but then ranks: 651fe1d6 rank 1, b9b709df rank 2, unchanged. But the new annotation clearly weakens 651fe1d6 relative to b9b709df... Swap ranks? If both are drafts, rank 1 means "lecture principale". I think with the new context, the honest main reading for the user's giving is ambiguous. Given rule 8 (don't over-read the user), I lean to making b9b709df rank 1 and 651fe1d6 rank 2? Hmm, that's a strong statement too: b9b709df is essentially the null/ordinary reading with no positive evidence of its own... but the packet itself framed b9b709df as the alternative to 651fe1d6.
+
+Hmm. Let me think about what the ideal analyst does. The user's annotation: he defends Chloé, explains her constraints, and adds that she helped him a lot before. This is the user answering a question. It weakens both "asymmetry" and "provider position". The provider-position reading had rank 1 as "lecture principale" for self. After the annotation, the reading "il donne en réponse à une passe difficile de Chloé" is more contextual.
+
+I'll keep 651fe1d6 rank 1 but confidence low and add contradicts — no, hmm. Actually, since I'm doing a critique showing 651fe1d6 has real weaknesses (ignored evidence, simpler explanation), keeping it rank 1 while critiquing it is odd but acceptable: rank reflects relative ordering among competing readings, and it can still be the strongest of two weak readings... but if the critique says the contextual explanation is simpler, then the alternative should be rank 1.
+
+Let me just decide: I'll make the D3 self-subject ranking: 651fe1d6 rank 1 remains (it's the only reading that explains the sacrifice — annulling cinema — plus the refusal's effect), b9b709df rank 2. And I'll note in the revise rationale for 651fe1d6 that its confidence drops to low and evidence of reciprocity is added.
+
+Hmm, but the critique finding "simpler_explanation" attached to 651fe1d6 while keeping rank 1... The critique is on the hypothesis; the revise then keeps it draft with lower confidence. Rank 1 among self-readings—fine.
+
+Alternatively I skip the critique entirely for 651fe1d6 and just add contradicting evidence via revise. Rule 17 requires a critique only if promoting to plausible. Since I'm not promoting, no critique strictly needed. But the task is "revise" and doing a critical pass is valuable. Including a critique is allowed anytime. I'll include one critique for 651fe1d6 (the rank-1 reading) — it strengthens the intellectual honesty. Hmm, but a critique without promotion... rule 17 says "Une critique n'est jamais une preuve" and "Dès D3, une hypothèse ne devient plausible qu'après une passe critique suivie d'un revise_hypothesis". Including both is fine.
+
+Let me also consider critiquing 703040db (the needsReview one). Its existing critique list is empty. The annotation weakens it. Adding a critique finding "ignored_evidence: the reciprocity before 2026" plus revise. Might be good. The reviewReason is "context" so revision is allowed. I'll do a critique for 703040db too — actually the revision with contradicting evidence suffices. Let me include critique for 703040db since it's the one under review, showing why it's demoted. Hmm, but with only 2 contradicts vs 4 supports it stays draft. Fine.
+
+Let me limit to: 1 critique on 703040db (or 651fe1d6). I'll do critique on 703040db (the flagged one) and on 651fe1d6. Two critiques. That's ok.
+
+Hmm, actually, let's think about whether to critique ca50338e too — it's being promoted to plausible; if it's D2, no critique needed. Its limitation: "aucune donnée sur la situation de Chloé" — now resolved by c2. Fine, no critique.
+
+Now, the relation subject for 703040db and ca50338e: both are {kind: relation, relationId...} — in my revise I don't restate subjects.
+
+Now the question. Should I ask a new question? The open Q1 (2b1b3794) is now answered by the annotation, but we can't answer it via operations. We must not re-ask it. A new question that discriminates: given the annotation, the key remaining unknown is whether Chloé's help continues / whether reciprocity resumes. E.g.: "Chloé t'a-t-elle rendu service depuis janvier malgré son divorce, ou toute l'aide a-t-elle circulé dans un seul sens depuis cette date ?" targets 703040db and ca50338e. This is somewhat close to the answer we now have... Hmm. The annotation says she helped "l'an dernier" and "souvent" (probably before). Not clear about since January.
+
+Alternative question: about the user's ressenti — but Q2 already asks that; can't re-ask. Hmm, could ask a different ressenti question: "Comment as-tu vécu le refus de Chloé le 15 mars — as-tu trouvé ça normal compte tenu de sa situation, ou cela t'a-t-il blessé ?" This is different from Q2 (about the cinema). It discriminates 651fe1d6 vs b9b709df — hmm, does it? Q2 discriminates those. A new question about the refusal's emotional impact discriminates 651fe1d6 (prediction: minimisera le coût, ne formulera pas de demande) vs b9b709df. It's not the same question as Q2, though similar in kind. Rule 20 says don't re-ask a question present in the packet. The refusal question isn't in the packet. I think it's acceptable but slightly risky as "same question re-asked". The packet's Q2 is specifically about annulling the cinema. The refusal question is a different episode. I'll ask it? Hmm.
+
+I think one new question is good. Let me pick the one with the most discriminating power given the new annotation: whether the user's help has continued since January and whether Chloé gives anything back — hmm.
+
+Actually maybe better: "Depuis que Chloé traverse son divorce, t'a-t-elle demandé de l'aide plus souvent qu'avant — et toi, lui as-tu demandé quelque chose ?" Hmm too compound.
+
+Let me pick: "Le refus de Chloé le 15 mars pour ton déménagement — l'as-tu vécu comme normal compte tenu de sa situation, ou cela t'a-t-il pesé ?" This targets 651fe1d6 and b9b709df, discriminating info: whether the user experiences a cost (which grounds D3 self-reading per rule 8). whyNow: the annotation reframes the refusal as context-dependent (divorce), so the same event can be read as normal or as a wound.
+
+Yes, that's good. It also directly addresses rule 8's requirement of a cost-expressing claim — it's the missing piece.
+
+Also should I mention the existing question 2b1b3794 is answered? No operation for that.
+
+Now, the summary.
+
+Let me now write the operations carefully.
+
+Operations list:
+
+c1: propose_claim
+text: "L'an dernier, Chloé a aidé l'utilisateur trois jours pour son déménagement et l'a souvent dépanné."
+category: explicit_statement
+modality: actual
+validFrom: null, validTo: null
+citations: [{sourceId: "2ab24bea-1546-4f89-80d3-38dd2fce8233", contentHash: "995cc894da88de8062b79371d951524beb59a02a2826fcf99309c3c20e9281db", spanStart: 0, spanEnd: 140, quote: "Précision : l'an dernier, Chloé m'a aidé trois jours à déménager et m'a souvent dépanné. Depuis janvier, elle traverse un divorce difficile."}]
+
+Hmm — should the quote be the whole source? Yes, per instructions I cite the whole source to be safe. That's acceptable ("cite la source entière"). Both c1 and c2 would cite the same full source. Fine.
+
+c2: propose_claim
+text: "Depuis janvier 2026, Chloé traverse un divorce difficile."
+category: explicit_statement
+modality: actual
+validFrom: "2026-01-01T00:00:00-03:00"? Hmm. I'll put null to avoid inventing. Actually "Depuis janvier" gives a start bound of January 2026, which is stated. Setting validFrom "2026-01-01" is a reasonable encoding of "depuis janvier". But timezone... The events use -03:00. I'll set validFrom "2026-01-01T00:00:00-03:00". Hmm, risk of being seen as invented precision. I'll go with null and text says "depuis janvier 2026". Hmm. I think providing validFrom gives better anchoring for the contextual reading. I'll use null — safer.
+
+e1: propose_event
+title: "Chloé aide l'utilisateur trois jours pour son déménagement"
+text: "L'an dernier, Chloé a aidé l'utilisateur pendant trois jours pour son déménagement et l'a souvent dépanné."
+category: explicit_statement
+occurredStart: null, occurredEnd: null, temporalPrecision: "unknown"
+context: "Amis"
+citations: full source.
+rationale: "Fait accompli rapporté par l'utilisateur dans son annotation ; « l'an dernier » ne permet pas de dater précisément."
+
+Hmm, occurredStart null with temporalPrecision unknown — acceptable.
+
+o1: propose_role
+event: {proposalKey: "e1"}
+subject: {person: {kind: "person", id: "f459b310-2323-47dc-8f93-e0e5bb2f4fba"}}
+role: "helper"
+outcome: "accepted"
+citations: full source
+
+Wait, MEMBRE format: { "person": <RÉF> } where RÉF = {kind, id}. The existing roles use subject {kind: "person", personId: "..."}. Hmm! The existing roles in the packet use "personId", but the schema in the prompt says <MEMBRE> = { "mention": ... } | { "person": <RÉF> } | { "self": true }. Conflict. The prompt's format is authoritative for output: use { "person": { "kind": "person", "id": "f459b310-..." } }. Yes, I'll follow the prompt's schema.
+
+Hmm, but for subjects in hypotheses, the existing ones use {kind: "relation", relationId, members}. In my revisions I don't set subjects.
+
+Maybe also add role o2: self as requester? Not stated he asked. Skip. Actually "m'a aidé à déménager" — he was the beneficiary. Role "requester" implies asking. Not evidenced. Skip.
+
+Now revisions.
+
+r1: revise 703040db-39c0-429f-b504-b8ede7135e9b (revision 2)
+status: draft
+confidence: low
+rank: 2
+addEvidence: [{claim: {proposalKey: "c1"}, stance: "contradicts"}, {claim: {proposalKey: "c2"}, stance: "contradicts"}]
+rationale: "L'annotation établit une réciprocité historique (trois jours d'aide au déménagement, dépannages fréquents) et une contrainte de Chloé depuis janvier : l'asymétrie observée sur quatre notes n'est plus lisible comme un schéma stable, elle est ramenée au rang de lecture seconde et reste à l'état de brouillon."
+
+r2: revise ca50338e-3353-4546-a91f-eed15ff1462a (revision 1)
+status: plausible
+confidence: moderate
+rank: 1
+addEvidence: [{claim c1 supports}, {claim c2 supports}]
+rationale: "La réponse de l'utilisateur confirme la contrainte : Chloé traverse un divorce depuis janvier 2026, période qui couvre les quatre demandes consignées ; la lecture contextuelle devient la lecture principale de la relation, l'asymétrie n'étant plus qu'une apparence liée à cette passe."
+
+Wait — is ca50338e's rank 1 for the relation? 703040db also targets the relation. Both target relation 265c8b95. So ranks must conflict: currently both rank 1 and 2. If I set ca50338e rank 1 and 703040db rank 2, that's consistent.
+
+r3: revise 651fe1d6-d2ec-4473-8415-dc753c788c58 (revision 1)
+status: draft
+confidence: low
+rank: 1? Hmm. Rank ordering across subjects: 651fe1d6 targets self, b9b709df targets self. Keep 651fe1d6 rank 1, b9b709df rank 2? Or swap? I'll keep 651fe1d6 rank 1 (the most salient pattern in the packet, though weakened) — hmm. Honestly, given the critique I'm writing, maybe swap: b9b709df rank 1... but b9b709df has no support of its own beyond the same claims, and the user's sacrifice (annulling cinema) is a real datum pointing at cost.
+
+Hmm, the annulling cinema: does b9b709df explain it? "simple arbitrage d'agenda". The user's own framing is neutral ("j'ai annulé mon cinéma pour ça"), which fits b9b709df. Honestly both fit. I'll keep the existing ranking (651fe1d6 rank 1) to avoid gratuitous flipping, and note the confidence drop. Hmm, but I'm writing a critique of 651fe1d6 saying the simpler explanation is contextual. If the alternative (b9b709df) is simpler, why keep it rank 1? 
+
+Because a critique's job is to test, and rank reflects the balance of evidence: 3 episodes of giving, one at personal cost, one refusal on the other side — the "provider" reading still accounts for more of the data than a pure default. Hmm, but the counter-evidence (reciprocity before) really damages the "avoid the requester position" mechanism...
+
+I think the honest call: keep 651fe1d6 rank 1 but confidence low and status draft, noting the alternative is now closer. Actually — alternative: I could not include a critique on 651fe1d6 and instead only add the contradicting evidence, keeping rank 1. Then critique 703040db only.
+
+Hmm. Let me decide: include a critique k1 on 651fe1d6 (findings: ignored_evidence — reciprocity history, and simpler_explanation — Chloé's divorce context) and revise r3 accordingly: status draft, confidence low, rank 1? If the critique shows a simpler explanation exists, rank 1 for 651fe1d6 is shaky but rules don't enforce consistency. Hmm. I'd rather be coherent: after critique + context, I'll rank 651fe1d6 rank 1 still? 
+
+Let me think about which is really the "main reading" the analyst should endorse for the user's own position. The user's data: he helps Chloé in ways costing him (evening, cancelled cinema), he asks rarely and got refused, and when the system flagged the asymmetry, he came back with context defending Chloé and adding that she helped him before. That last gesture is itself informative: he softens the asymmetry. Which reading does that support? It supports that the relationship is mutual and that he doesn't want the pattern read as his neediness. It's compatible with the provider reading (he keeps the relationship smooth, avoids conflict/confrontation) and with the ordinary reading.
+
+Given rule 8's caution and the absence of any expressed cost/ressenti, and given the new annotation reduces the asymmetry, I lean toward keeping 651fe1d6 as rank 1 draft but with low confidence — because it's the only reading with a mechanism that explains the personal sacrifice, whereas b9b709df is a residual/default. Yes. Final: 651fe1d6 rank 1 draft low; b9b709df rank 2 draft low.
+
+Hmm, but wait: should I revise b9b709df at all? Add c1, c2 as supports. Confidence stays low (net episodes = 3 supports +2 -? ). For a D3 draft, confidence "low" is fine (moderate requires 2 independent anchored episodes; but rule 14 says confidence moderate from 2 episodes; the system caps at moderate for D3). Should b9b709df be moderate now (5 supports)? Rule 14 says moderate at 2+ episodes. But it also is capped... "Dès D3, la confiance ne dépasse jamais moderate". So moderate is allowed. But the hypothesis limits say not testable. Hmm — I'll set b9b709df confidence "moderate"? Hmm. For revise: confidence values. Since I'm adding 2 more supporting episodes, moderate seems fine. But status draft regardless (no critique + promotion). Rule 16 for plausible in D3 needs net 2 + critique + alternative. I could do a critique for b9b709df with a finding (ignored_evidence: the personal sacrifice and the refusal), then revise to plausible, rank 2? Rank 2 with plausible status while rank-1 is draft is incoherent.
+
+Simplify: keep both draft, both low confidence (given no ressenti expressed and heavy context-dependence). Hmm, but rule 14: "low" with fewer than 2 independent annotated episodes... b9b709df has 5 supports, so low would be a self-imposed stricter choice; allowed? The rule describes what the system enforces as a ceiling, not a floor. Choosing low is a judgment call. Hmm, I'd rather set moderate for 703040db? No, 703040db gets contradicts, so low.
+
+For b9b709df: I'll set confidence "moderate"? Hmm hmm. Its supports: 84a60a27, c4b15fde, f47fdbbc + c1, c2 = 5 anchored episodes, spanning >30 days, 0 contradicts. By rule 14, moderate. But rule 14's floor concept ("low avec moins de 2 épisodes") means with ≥2 we can go moderate. I'll set moderate. Hmm, but the D3 proviso: max moderate. OK moderate.
+
+Hmm, but then b9b709df with 5 supports and moderate vs 651fe1d6 with 3 supports (now 1 contradicts → net 2) low... rank 1 for the weaker one is weird.
+
+OK let me reconsider and just flip: make b9b709df rank 1 (plausible? no, draft) and 651fe1d6 rank 2. Hmm, but then the packet's own prior rank for 651fe1d6 rank 1 gets overturned, which is a significant move requiring justification. The annotation does justify overturning: the user himself supplies the reciprocity and the constraint, making the "provider in response to a refusal" mechanism unnecessary.
+
+Hmm, but rank 1 for a hypothesis with status draft while the relation hypotheses are plausible is fine (ranks are per subject; self vs relation maybe separate subjects? The rule says "pour chaque sujet, classe tes lectures avec rank"). Subject self: 651fe1d6 and b9b709df. So ranking within self.
+
+Ugh. Let me make a final decision: I'll keep 651fe1d6 as rank 1 for self but lower its confidence to low and revise with contradicting evidence, plus critique. Reason: the packet's own framing from the last revision, and the fact that the alternative b9b709df remains explicitly untestable (no ressenti). Hmm, no — if b9b709df accumulates 5 supports and stays rank 2 while its rival has a critique, that's incoherent.
+
+OK, alternative approach: don't add c1/c2 to b9b709df as supports. Why would they support it? c1 (Chloé helped) supports "ordinary friendship" but the hypothesis is about the user's availability being ordinary. Hmm, c1 is about Chloé's behavior; it does support the reciprocal frame. Still, it's not directly about the user's availability. Maybe add only c2 (the divorce context) as a support to b9b709df? c2 explains why the user helps now (needs are real) → supports "arbitrage banal"? Hmm, c2 supports ca50338e mainly.
+
+I'll add both c1 and c2 as supports to b9b709df — no. Hmm.
+
+Let me step back and design the "story" of my answer:
+
+Story: The user's annotation (a) restores reciprocity (Chloé helped 3 days + frequent help), (b) explains the period (divorce since January). Consequence: the relational asymmetry reading (703040db) is downgraded from plausible/rank1 to draft/rank2; the contextual reading (ca50338e) is promoted to plausible/rank1. For the user-level readings, the annotation weakens 651fe1d6 (provider) since the "no reciprocity / avoidance of the requester position" premise weakens; it supports the ordinary reading b9b709df. Both remain drafts without an expressed ressenti; the useful next step is the question about the felt cost of the refusal (and the cinema question is already open).
+
+For ranks: I'll demote 651fe1d6 to rank 2 and promote b9b709df to rank 1. That's coherent with the critique. Hmm, but is it over-correcting? The user still gives a lot, with a personal sacrifice, all unremarked. b9b709df says he'd refuse without difficulty next time — untested. Both are low confidence.
+
+Alternatively: ranks unchanged, both draft. Hmm, I keep going back and forth. Let me decide based on which is more defensible to a reader: The annotation shows (i) reciprocity over time, (ii) an external reason for the current imbalance. The claim "the user takes a provider position, at the cost of personal renunciation, to secure the link and avoid the requester position" relied on the refusal as the reason he avoids asking. That premise is now weaker (he asked, and the refusal has a situational explanation; she helped him before). Also the user's own annotation shows he does occupy the requester position (he asked for help with the move) and he corrected the record — he isn't avoiding the requester position structurally. So yes, the provider reading's core mechanism is undermined. Making the ordinary reading rank 1 with low confidence seems right. But the ordinary reading also has an issue: it doesn't explain the sacrifice at all.
+
+Hmm, hmm. Compromise: rank 1 for the ordinary reading with confidence low, and note in the rationale. And 651fe1d6 rank 2 draft low with contradicts. I'll go with that. Hmm, no wait.
+
+Consider the "prediction" field of 651fe1d6: "l'utilisateur acceptera de nouvelles demandes coûteuses de Chloé, minimisera le coût dans son récit et formulera peu de demandes personnelles." The annotation itself... he did formulate a request (déménagement) and he does minimize costs (no cost mentioned in the cinema episode). Hmm, "formulera peu de demandes" — he formulated one, which fits "peu". Hmm.
+
+OK final decision: I'll swap ranks (b9b709df rank 1, 651fe1d6 rank 2) — no... 
+
+Let me use a different tie-breaker: rule 8. The system prompt emphasizes not building user-psychology readings without a cost-expressing claim from the user. The packet's 651fe1d6 is such a D3 reading built without any expressed cost — arguably it shouldn't be rank 1 anymore. Meanwhile b9b709df is the "ordinaire" baseline. Given the emphasis, I'll demote 651fe1d6 to rank 2 and set b9b709df rank 1. Both remain draft, low confidence. And I'll add a question that would resolve it (the felt cost of the refusal / the cinema one is already open). Hmm, and the existing open question 96ad0eb9 covers the ressenti about the cinema... which is the very thing needed. So actually the system already has the question pending; my new question about the refusal is complementary.
+
+Hmm, but is the refusal question distinct enough from 96ad0eb9? 96ad0eb9: "Qu'as-tu ressenti en annulant ton cinéma pour garder les enfants de Chloé — arbitrage d'agenda sans importance, ou cela t'a-t-il pesé ?" Mine: "Le refus de Chloé le 15 mars (déménagement) — normal selon toi compte tenu de son divorce, ou cela t'a-t-il pesé ?" It's the mirror question (cost given vs cost received). Distinct enough. It discriminates 651fe1d6 (which predicts the refusal matters/feeds avoidance) vs b9b709df and also ca50338e.
+
+Actually, given the annotation already provides the "context" answer to Q1, maybe my new question should target the D3 pair. Yes.
+
+Now, is proposing question q1 fine? targets: 651fe1d6 and b9b709df hypotheses refs.
+
+Now let's also double check: should I revise the relation-indicator-related claims? No.
+
+Should I propose a new hypothesis? Perhaps a D2 relation hypothesis about reciprocity being the norm and the current imbalance being the exception — that's ca50338e's extension. I'll not add a new hypothesis; instead revise ca50338e to plausible. But ca50338e's statement doesn't mention the reciprocity history ("la disponibilité ponctuelle d'un ami proche, plutôt qu'un schéma relationnel stable"). c1 (past reciprocal help) supports "plutôt qu'un schéma relationnel stable" reading? Yes: the schema isn't "user gives, Chloé takes" — it's mutual.
+
+Hmm — should I propose a new D2 hypothesis specifically about the reciprocity (which would be the real update)? Risk: it overlaps with ca50338e → "alternative_not_distinct". I'll skip; instead I could propose a new D2 hypothesis with rank... no, skip. Keep op count reasonable.
+
+Hmm, but note: 703040db's statement includes "sans réciprocité observée" — that part is now factually wrong (reciprocity observed before 2026, though not in the observed window). I can't rewrite the statement. Demoting it and adding a critique with "ignored_evidence"/"simpler_explanation" is the way.
+
+Alright, let me also decide on the critique k1 for 703040db:
+findings:
+ - kind: "ignored_evidence", detail: "L'annotation de l'utilisateur (revision 6) établit une réciprocité historique : Chloé l'a aidé trois jours pour son déménagement l'an dernier et le dépanne souvent — élément non pris en compte par l'énoncé « sans réciprocité observée »." claims: [proposalKey c1]
+ - kind: "simpler_explanation", detail: "Le divorce de Chloé depuis janvier 2026 suffit à expliquer que ses besoins dominent la période février-mars 2026, sans postuler une asymétrie structurelle." claims: [proposalKey c2]
+
+And critique k2 for 651fe1d6:
+findings:
+ - "ignored_evidence": "La même annotation montre que l'utilisateur a occupé la position de demandeur avec succès auparavant (trois jours d'aide au déménagement) ; le mécanisme « éviter la position de demandeur » ne tient plus comme structure." claims c1.
+ - "simpler_explanation": "La contrainte de Chloé (divorce depuis janvier) explique les services rendus sans supposer une position de pourvoyeur ni un besoin d'être nécessaire." claims c2.
+ - "overgeneralization": "Conclure à une position stable à partir d'une seule relation, quatre notes sur 49 jours, sans aucun ressenti exprimé par l'utilisateur." claims [] — claims may be empty? The schema says "claims": [ <RÉF_OU_CLÉ> ]. Could be empty array. Hmm, safer to include c1 or c2. For overgeneralization I'll cite c1 (the annotation that shows the breadth issue? no). Hmm, maybe cite f47fdbbc (the refusal) — no. I'll cite c2? Not apt. I'll just include the finding with claims: [ {claim proposalKey c1} ]? Eh. I'll omit the overgeneralization finding to avoid a mis-cited claims list. Or include claims: [] — the schema doesn't say minItems. I'll include claims: [] for overgeneralization. Hmm, the prompt says findings entries have "claims". I'll use [] — acceptable. Actually, to be safe, I'll cite {proposalKey: "c1"} since c1 shows the mechanism's premise is not general (the requester position was occupied). Eh, that's really the ignored_evidence. Let me just drop overgeneralization and keep two findings.
+
+Then r for 651fe1d6.
+
+Now, careful: rule 19 applies to hypotheses with needsReview reviewReason "disagreement" — 703040db has "context", so fine.
+
+Let me also double check r for 703040db: expectedRowVersion = revision 2. Yes, "revision": 2.
+ca50338e: revision 1. 651fe1d6: revision 1. b9b709df: revision 1.
+
+Now, evidence refs format: { "claim": <RÉF_OU_CLÉ>, "stance": ... }. So for existing claims: {"claim": {"kind": "claim", "id": "..."}, "stance": "supports"}.
+
+For c1: {"claim": {"proposalKey": "c1"}, "stance": "contradicts"}.
+
+Now write the revisions:
+
+r1: target 703040db, expectedRowVersion 2, status "draft", confidence "low", rank 2, addEvidence [{c1 contradicts}, {c2 contradicts}].
+
+r2: target ca50338e, expectedRowVersion 1, status "plausible", confidence "moderate", rank 1, addEvidence [{c1 supports}, {c2 supports}].
+
+Hmm — ca50338e to "plausible": rule 16 for revise to plausible: D2 needs net anchored episodes ≥2 (yes: 5 supports, 0 contradicts). And confidence... it says nothing about confidence minimum for plausible; I'll set moderate. Is "plausible" allowed for a D2 that had rank 2? Yes, since it's the alternative becoming the main reading.
+
+Hmm, one concern: ca50338e's statement says "plutôt qu'un schéma relationnel stable" — supported by c1 too. Good.
+
+r3: target 651fe1d6, expectedRowVersion 1, status "draft", confidence "low", rank 2, addEvidence [{c1 contradicts}, {c2 contradicts}].
+
+Hmm — is c2 really contradicting 651fe1d6? c2 = Chloé in divorce. It doesn't directly contradict "the user takes a provider position". It offers an alternative explanation of the help. As evidence "contradicts", it's a bit of a stretch (contradicts = undermines). Hmm. In this framework, contradicting evidence is counter-evidence for the hypothesis. An alternative explanation of the same facts is arguably counter-evidence for a mechanism claim only if the mechanism claims necessity. I'd say yes, it weakens. But to be safe, maybe add only c1 as contradicts to 651fe1d6 and mention c2 in the critique. Hmm. I'll include both for 703040db (where the statement explicitly claims a stable asymmetry, so the divorce period is counter-evidence) and for 651fe1d6 include c1 contradicts + c2 contradicts too. Hmm.
+
+Let me include c1 contradicts for 651fe1d6 and c2 contradicts as well — I think it's defensible; the critique details it.
+
+r4: target b9b709df, expectedRowVersion 1, status "draft", confidence "moderate"?, rank 1, addEvidence [{c1 supports}, {c2 supports}].
+
+Hmm, if I give rank 1 to b9b709df with confidence moderate and status draft... Rule 16: for D3 plausible needs net ≥2 + critique + alternative. b9b709df has an alternative (651fe1d6 via alternativeTo). So if I do a critique on b9b709df and then revise to plausible, it becomes rank 1 plausible. Should I? Honestly, "amitié ordinaire" as a plausible D3 reading of the user's behavior... The user has never expressed any ressenti; the data is fully compatible with ordinary friendship. I think promoting it to plausible is defensible now that the annotation supports reciprocity and context. Hmm, but its own limit says "cette lecture n'est pas testable en l'état" and its revision condition is "un ressentiment, une réticence ou un coût émotionnel rapporté". Promotion requires net 2 anchored episodes — it has 5 supports (3 existing + 2 new). Hmm, but are those "épisodes ancrés nets"? The supports: 84a60a27 (drive to airport — is that support for "ordinary friendship"? It's a service rendered, neutral), c4b15fde (credit file evening — neutral), f47fdbbc (the refusal — support? It's listed as support in the packet), plus c1, c2.
+
+I'm hesitant because 3 of its supports are the same episodes that support 651fe1d6 — the same claims can support both readings (they're not exclusive at the level of the actions, they differ in interpretation). That's a flag for "alternative_not_distinct"? No, the mechanisms are distinct.
+
+Decision: keep b9b709df as draft rank 1 low confidence? Setting rank 1 with draft while the other is draft rank 2 is fine (both drafts). Whether to promote... I'll keep both draft and set rank 1 = b9b709df (low), rank 2 = 651fe1d6 (low). Hmm, but then rule 16/14 — "low" for a hypothesis with 5 supports? Rule 14 says low with fewer than 2 independent episodes; it's a ceiling statement ("la confiance... avec moins de 2 épisodes"). Using low despite many supports isn't forbidden.
+
+Hmm, but the system might complain "confidence understated"? Unlikely to be an error.
+
+Alternatively, don't swap ranks and don't revise b9b709df at all. Fewer ops, less risk... but the annotation is real evidence for it.
+
+Final: I'll revise b9b709df: rank 1, status draft, confidence low (because no ressenti, entirely untestable, and the same episodes serve both readings), addEvidence c1 supports, c2 supports. And 651fe1d6: rank 2, draft, low, with c1/c2 contradicts, plus critique.
+
+Hmm, wait. If b9b709df becomes rank 1 for the user... The rank-1 self reading being "his availability is ordinary friendship" — that's basically saying "no pattern". Is that a useful hypothesis? Rule 11 says alternatives must be a real competing mechanism, not a mere negation. b9b709df is a real alternative mechanism (norm of mutual aid + contextual needs), so fine.
+
+Hmm, but hold on: is it really a "self" subject hypothesis? Yes, subjects: [{self: true}]. Fine.
+
+Actually... let me reconsider one more time. The prior packet revision (revision 5→6) established 651fe1d6 as rank 1 for self and b9b709df rank 2. The annotation comes as the user's correction in response to a question about Chloé's constraints (Q1 targets 703040db and ca50338e). It's primarily about the relation. Reducing the user-level reading too... The annotation does bear on the user's reading via c1 (reciprocity → he was the helped party before).
+
+I'll do the swap. It's a defensible, evidence-based revision, which is what an analyst should do.
+
+Hmm, but with rank swap and both draft... inconsistent-ish: main reading = draft. It's allowed (status draft with rank 1 exists in the packet: 651fe1d6 rank 1 draft).
+
+OK, going with it.
+
+Now, the critique on 651fe1d6 (k2) and the revise (r3). Also critique on 703040db (k1) and revise (r1).
+
+Order in operations: claims first, event, role, then critiques, then revisions, then question. Keys: c1, c2, e1, o1, k1, k2, r1..r4, q1.
+
+Wait, keys must be unique; ok.
+
+Now the question q1:
+question: "Le refus de Chloé le 15 mars, quand tu lui as demandé de t'aider à déménager : l'as-tu pris comme normal vu son divorce, ou est-ce que ça t'a pesé ?"
+targets: [{kind: "hypothesis", id: "651fe1d6-..."}, {kind: "hypothesis", id: "b9b709df-..."}]
+discriminatingInfo: "Un coût ressenti (blessure, gêne, ressentiment) ancrerait la lecture de la position coûteuse de pourvoyeur ; une absence de gêne, rapportée alors que le contexte de Chloé est connu, soutiendrait la lecture d'entraide ordinaire."
+whyNow: "L'annotation de l'utilisateur vient d'expliquer le refus par le divorce de Chloé ; ce nouvel élément change le sens possible du refus, et aucune des deux lectures D3 n'a de ressenti exprimé."
+rationale: "Départage les deux lectures concurrentes de la position de l'utilisateur ; ne reprend pas la question ouverte sur l'annulation du cinéma, qui porte sur un autre épisode."
+
+Hmm, "ne reprend pas la question ouverte..." — the rationale can say that. Fine.
+
+Also should I include a clarification in "clarifications"? clarifications is for needs_context outcome. Since outcome is "proposed", clarifications = []. Actually, can I also put the question there? The schema says clarifications can be [] and operations should be non-empty. I'll leave clarifications [].
+
+Now the summary: short.
+
+Also modelDeclaration declaredModel: I'm "Claude"? The provider is "deepseek:deepseek-flash" but I'm the model. I'll declare "claude-sonnet-4.5"? Hmm. Standard: declaredModel should be my name. I'll put "claude-sonnet-4-5". Hmm, the packet metadata says providerId deepseek — but I should declare my own model. I'll write "claude-sonnet-4.5"? Let me use "claude-sonnet-4-5". It's a free string.
+
+Now citations for the event and claims: all cite the annotation source with the full span and quote.
+
+Let me double check the annotation source span: spanStart 0, spanEnd 140, quote given. And the "text" is the same. Fine.
+
+Also for the role o1, citations required: use the same citation.
+
+Now writing rationales briefly.
+
+For c1 rationale: "Annotation de l'utilisateur (source 2ab24bea) : fait accompli rapporté par lui-même, catégorie explicit_statement."
+Hmm, rationale should be short justification.
+
+Let me also double-check the claim text wording to reflect the source: "L'an dernier, Chloé a aidé l'utilisateur trois jours pour son déménagement et l'a souvent dépanné." Good.
+
+c2: "Depuis janvier 2026, Chloé traverse un divorce difficile." Good.
+
+Now the event e1 text: "L'an dernier, Chloé a aidé l'utilisateur pendant trois jours pour son déménagement." category explicit_statement. occurredStart null, occurredEnd null, temporalPrecision "unknown", context "Amis".
+
+Hmm, one risk: proposing both an event and claims could be seen as duplicating. But rule 4 demands it.
+
+Now let me write everything out.
+
+Also should I add a role for the user in e1? Like "recipient"? The role definitions: recipient = "reçoit la proposition". Hmm, in e1 the user received help. Could add role requester? Not evidenced. I'll add only one role (Chloé helper). Hmm, but then the relation indicators: help person:1 self:3. Good enough.
+
+Actually, hmm: should I also mark the user as recipient? "recipient (reçoit la proposition)" — the user received the help offering. Eh, ambiguous. Skip.
+
+Now double check the revise evidence format: payload.addEvidence: [{ "claim": <RÉF_OU_CLÉ>, "stance": ... }]. Yes.
+
+Let me now write the final JSON.
+
+Operations:
+
+c1 propose_claim
+c2 propose_claim
+e1 propose_event
+o1 propose_role
+k1 propose_critique (703040db)
+k2 propose_critique (651fe1d6)
+r1 revise 703040db → draft, low, rank 2, +c1,c2 contradicts
+r2 revise ca50338e → plausible, moderate, rank 1, +c1,c2 supports
+r3 revise 651fe1d6 → draft, low, rank 2, +c1,c2 contradicts
+r4 revise b9b709df → draft, low, rank 1, +c1,c2 supports
+q1 propose_question
+
+Wait — hmm, r2 promoting ca50338e to plausible rank 1 while 703040db becomes draft rank 2. Consistent.
+
+But caution: rule 16 says after a user agreement, no promotion without a new episode. Here the user's annotation IS a new episode/context (revision 6). Fine.
+
+Also caution for r2: "Dès D3 une alternative active doit exister" — that's for D3. ca50338e is D2. It already has alternativeTo 703040db, and 703040db is being demoted but remains active (draft). Fine.
+
+One more consideration: should r2's rank be 1? The relation subject has two hypotheses (703040db rank 1 currently, ca50338e rank 2). After the swap: ca50338e 1, 703040db 2. Yes.
+
+Hmm, but with 703040db being flagged needsReview "context" — after my revision with added counter-evidence, does the review flag clear? Not in my control (no field). Fine.
+
+Let me write the JSON now.
+
+For the critique payload target format: { "kind": "hypothesis", "id": "..." }.
+
+Findings with claims: citation of proposalKey c1 etc.
+
+Let me write:
+
+k1:
+{"key":"k1","kind":"propose_critique","payload":{"target":{"kind":"hypothesis","id":"703040db-39c0-429f-b504-b8ede7135e9b"},"findings":[{"kind":"ignored_evidence","detail":"L'annotation de l'utilisateur (revision 6) établit une réciprocité antérieure — Chloé l'a aidé trois jours pour son déménagement l'an dernier et le dépanne souvent — que l'énoncé « sans réciprocité observée » ne prend pas en compte.","claims":[{"proposalKey":"c1"}]},{"kind":"simpler_explanation","detail":"Le divorce de Chloé depuis janvier 2026, qui couvre toute la période observée, suffit à expliquer que ses demandes dominent février-mars 2026 sans postuler une asymétrie structurelle de la relation.","claims":[{"proposalKey":"c2"}]}]},"rationale":"L'hypothèse sous revue (reviewReason context) repose sur une absence de réciprocité que l'annotation contredit et sur une asymétrie qu'une contrainte datée explique plus simplement."}
+
+k2:
+target 651fe1d6, findings:
+- ignored_evidence: "Le mécanisme « éviter la position de demandeur où il a essuyé un refus » ignore que l'utilisateur a été aidé trois jours et dépanné souvent auparavant : il a occupé cette position avec succès." claims c1.
+- simpler_explanation: "La même séquence s'explique sans motif propre à l'utilisateur par la passe difficile de Chloé depuis janvier (c2) et par une norme d'entraide amicale." claims c2.
+
+rationale: "La position de pourvoyeur perd son mécanisme central : la réciprocité antérieure et le contexte de Chloé rendent l'évitement de la position de demandeur superflu."
+
+Hmm — but I keep 651fe1d6 rank 2 draft. And I promote b9b709df rank 1 without critique — fine since it stays draft.
+
+Now r3's rationale: "Contre-preuves ajoutées (réciprocité antérieure, divorce de Chloé) ; la lecture reste un brouillon, déclassée derrière la lecture d'entraide ordinaire."
+
+r4's rationale: "L'annotation soutient la lecture d'entraide ordinaire : Chloé a elle-même aidé l'utilisateur et le déséquilibre coïncide avec sa passe difficile ; confiance maintenue basse faute de tout ressenti exprimé par l'utilisateur."
+
+Summary: "L'annotation replace les quatre épisodes dans une réciprocité ancienne et une passe difficile de Chloé (divorce depuis janvier) : la lecture contextuelle de la relation passe en rang 1, l'asymétrie passe en brouillon, et les deux lectures D3 sur l'utilisateur sont réordonnées avec l'entraide ordinaire en tête ; une question sur le coût ressenti du refus vise à départager ces deux lectures."
+
+Hmm, summary shouldn't contain affirmations absent from operations. "réordonnées" - ok.
+
+Now finalize the JSON. Ensure valid JSON, no trailing commas.
+
+One thing: "validFrom" for c1: null. OK.
+
+Let me write it.
+
+Also: the operation 'o1' payload event: {"proposalKey": "e1"} — allowed per schema: { "kind": "event", "id": ... } | { "proposalKey": "<key d'un propose_event>" }. Yes.
+
+Let me produce the output.
