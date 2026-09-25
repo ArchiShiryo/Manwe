@@ -56,7 +56,9 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **Lot R5-S04 non validé** ([RAPPORT-013](./rapports/RAPPORT-013.md)) : lectures et directions non choisies résumées (prompt v10), réduction de 48,7 % sur un même état, le modèle ouvre les lectures par `get_hypothesis` avant de proposer ses directions ; 9/9 [L], 6/8 [B] : la règle de choix par mots-clés du harnais a choisi des directions sans rapport avec le résultat.
 
-**Prochaine étape** : corriger la règle de choix du harnais (recommandation : un résultat par levier dans la fixture), sceller et jouer R5-S05, puis R5.7 (démonstration à l'utilisateur). À trancher : accepter dans le contrat qu'une référence porte `claim` et `stance` (deux rejets de format). Corpus de téléréalité (D-022) : saison 1 de Survivor en sous-titres bruts dans `manwe-next/.qa/corpus/survivor/` (ignoré par git) ; prétraitement par DeepSeek en discussion avec l'utilisateur.
+**Lot R5-S05 validé** ([RAPPORT-014](./rapports/RAPPORT-014.md)) : résultat par levier de la direction choisie ; 9/9 [L], 8/8 [B] ; paquets réduits de 49,6 %. BRIEF-006, R5.1, R5.4 et R5.6 sont validés.
+
+**Prochaine étape** : R5.7 (démonstration à l'utilisateur dans l'application). À surveiller : cinq rejets de premier essai sur dix en R5-S05, tous corrigés par la seconde tentative (bride à lever : une seule tentative). À trancher : accepter dans le contrat qu'une référence porte `claim` et `stance`. Corpus de téléréalité (D-022) : saison 1 de Survivor en sous-titres bruts dans `manwe-next/.qa/corpus/survivor/` (ignoré par git) ; prétraitement par DeepSeek et recherche d'autres corpus de groupe en discussion avec l'utilisateur.
 
 **Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
 
