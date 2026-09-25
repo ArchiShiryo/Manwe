@@ -10,7 +10,12 @@ import type {
   GraphEdge,
   GraphProjection,
 } from "../../../packages/cognition/src/projection.ts";
-import type { WorkspaceSnapshot } from "../../../packages/domain/src/memory.ts";
+import type {
+  AnnotationCommand,
+  AnnotationType,
+  WorkspaceSnapshot,
+} from "../../../packages/domain/src/memory.ts";
+import { annotationTarget, explainNode } from "./graphEvidence.ts";
 import { memoryApi } from "./memoryApi.ts";
 import {
   LAYOUT_HEIGHT,
@@ -86,7 +91,180 @@ function Edge({
   return <path d={d} className={className} />;
 }
 
-export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
+type Annotate = (
+  target: AnnotationCommand["target"],
+  text: string,
+  type: AnnotationType,
+) => Promise<boolean>;
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: "brouillon",
+  plausible: "plausible",
+  contradicted: "contredite",
+  superseded: "remplacée",
+};
+const CONFIDENCE_LABELS: Record<string, string> = {
+  low: "faible",
+  moderate: "modérée",
+  high: "élevée",
+};
+
+const REASON_LABELS = {
+  supports: "soutient",
+  contradicts: "contredit",
+  role: "rôle",
+  cites: "cité",
+} as const;
+
+/** « Pourquoi ? », « Corriger » et « Ajouter du contexte » (R4.5). */
+function DetailActions({
+  snapshot,
+  node,
+  onAnnotate,
+}: {
+  snapshot: WorkspaceSnapshot;
+  node: PlacedNode;
+  onAnnotate?: Annotate;
+}) {
+  const [panel, setPanel] = useState<"why" | "correct" | "context" | null>(
+    null,
+  );
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setPanel(null);
+    setText("");
+  }, [node.id]);
+  const reasons = explainNode(snapshot, node.id);
+  const target = annotationTarget(node.id);
+  // Une lecture ou une question se conteste ; un fait se corrige.
+  const correctionType: AnnotationType =
+    node.kind === "hypothesis" || node.kind === "question"
+      ? "disagreement"
+      : "factual_correction";
+  const canWhy = ["hypothesis", "claim", "relation"].includes(node.kind);
+  const canCorrect = !!target && !!onAnnotate && node.kind !== "question";
+  const canContext = !!target && !!onAnnotate;
+  const submit = async () => {
+    if (!target || !onAnnotate || !text.trim() || panel === "why") return;
+    setBusy(true);
+    const ok = await onAnnotate(
+      target,
+      text.trim(),
+      panel === "correct" ? correctionType : "context",
+    );
+    setBusy(false);
+    if (ok) {
+      setPanel(null);
+      setText("");
+    }
+  };
+  if (!canWhy && !canCorrect && !canContext) return null;
+  return (
+    <div className="world-graph-actions">
+      <div className="world-graph-action-row">
+        {canWhy && (
+          <button
+            className={panel === "why" ? "active" : ""}
+            aria-expanded={panel === "why"}
+            onClick={() => setPanel(panel === "why" ? null : "why")}
+          >
+            Pourquoi ?
+          </button>
+        )}
+        {canCorrect && (
+          <button
+            className={panel === "correct" ? "active" : ""}
+            aria-expanded={panel === "correct"}
+            onClick={() => setPanel(panel === "correct" ? null : "correct")}
+          >
+            {correctionType === "disagreement" ? "Contester" : "Corriger"}
+          </button>
+        )}
+        {canContext && (
+          <button
+            className={panel === "context" ? "active" : ""}
+            aria-expanded={panel === "context"}
+            onClick={() => setPanel(panel === "context" ? null : "context")}
+          >
+            Ajouter du contexte
+          </button>
+        )}
+      </div>
+      {panel === "why" && (
+        <div className="world-graph-why">
+          {reasons.length === 0 && (
+            <p className="world-graph-empty">
+              Aucun élément cité pour cet objet.
+            </p>
+          )}
+          {reasons.map((reason, index) => (
+            <article key={`${reason.kind}-${index}`}>
+              <div className="world-graph-reason-head">
+                <span className={`reason-${reason.kind}`}>
+                  {REASON_LABELS[reason.kind]}
+                </span>
+                {reason.contested && <span>corrigé par vous</span>}
+              </div>
+              <p>{reason.label}</p>
+              {reason.excerpts.map((excerpt, position) => (
+                <blockquote key={`${excerpt.sourceId}-${position}`}>
+                  « {excerpt.quote} »
+                  <cite>
+                    {excerpt.eventTitle ?? "source"}
+                    {excerpt.occurredStart
+                      ? ` · ${excerpt.occurredStart.slice(0, 10)}`
+                      : ""}
+                  </cite>
+                </blockquote>
+              ))}
+            </article>
+          ))}
+        </div>
+      )}
+      {(panel === "correct" || panel === "context") && (
+        <form
+          className="world-graph-annotate"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <textarea
+            value={text}
+            rows={3}
+            aria-label={
+              panel === "correct" ? "Votre correction" : "Contexte à ajouter"
+            }
+            placeholder={
+              panel === "correct"
+                ? correctionType === "disagreement"
+                  ? "Ce qui, selon vous, ne tient pas dans cette lecture…"
+                  : "Ce qui est inexact, et ce qui s’est vraiment passé…"
+                : "Ce que MANWË ne sait pas encore et qui change la lecture…"
+            }
+            onChange={(event) => setText(event.target.value)}
+          />
+          <small>
+            Conservé comme votre déclaration, citable ; la source d’origine
+            n’est pas modifiée.
+          </small>
+          <button type="submit" disabled={busy || !text.trim()}>
+            {busy ? "Enregistrement…" : "Conserver"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+export function WorldGraph({
+  snapshot,
+  onAnnotate,
+}: {
+  snapshot: WorkspaceSnapshot;
+  onAnnotate?: Annotate;
+}) {
   const [focus, setFocus] = useState<FocusContext>({
     kind: "self",
     id: "self",
@@ -311,9 +489,14 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
           <p>{detail.label}</p>
           {detail.kind === "hypothesis" && (
             <small>
-              D{String(detail.meta.depth)} · {String(detail.meta.status)} ·
-              confiance {String(detail.meta.confidence)}
+              {String(detail.meta.depth)} ·{" "}
+              {STATUS_LABELS[String(detail.meta.status)] ??
+                String(detail.meta.status)}{" "}
+              · confiance{" "}
+              {CONFIDENCE_LABELS[String(detail.meta.confidence)] ??
+                String(detail.meta.confidence)}
               {detail.meta.rank ? ` · rang ${String(detail.meta.rank)}` : ""}
+              {detail.meta.needsReview ? " · à réexaminer" : ""}
             </small>
           )}
           {detail.kind === "relation" && (
@@ -343,6 +526,11 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
                 );
               })}
           </ul>
+          <DetailActions
+            snapshot={snapshot}
+            node={detail}
+            onAnnotate={onAnnotate}
+          />
         </aside>
       )}
       {hidden > 0 && (

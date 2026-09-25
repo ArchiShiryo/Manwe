@@ -91,9 +91,11 @@ export function PersonalLoading() {
 export function PersonalWorld({
   snapshot,
   onMemory,
+  onAnnotate,
 }: {
   snapshot: WorkspaceSnapshot;
   onMemory: () => void;
+  onAnnotate?: MemoryProps["onAnnotate"];
 }) {
   const lastEvent = snapshot.events[0];
   return (
@@ -133,7 +135,7 @@ export function PersonalWorld({
         )}
       </div>
       {(snapshot.relations.length > 0 || snapshot.hypotheses.length > 0) && (
-        <WorldGraph snapshot={snapshot} />
+        <WorldGraph snapshot={snapshot} onAnnotate={onAnnotate} />
       )}
       <div className="personal-world-foot">
         <span>
