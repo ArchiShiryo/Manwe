@@ -62,6 +62,9 @@ export const LINK_TYPES = {
   targets: ["question", "hypothesis"],
   annotates: ["annotation", "claim|event|hypothesis|person"],
   member_of: ["person|self", "relation"],
+  // D-030 : lien connu hors épisode (« conjointe de Paul ») ou personne
+  // citée dont le lien avec l'utilisateur reste inconnu.
+  knows: ["person|self", "person|self"],
   serves: ["direction", "goal"],
   actuates: ["direction", "hypothesis"],
   enacts: ["action", "direction"],

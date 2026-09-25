@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { parseCaptureCommand } from "../packages/domain/src/memory.ts";
 import { SqliteMemoryStore } from "../packages/storage/src/sqliteStore.ts";
+import { projectGraph } from "../packages/cognition/src/projection.ts";
 
 // D-030 : toute personne citée existe, même décrite sans nom, et son
 // identité se met à jour rétrospectivement.
@@ -101,6 +102,25 @@ test("D-030 · une personne décrite sans nom existe, rattachée, puis renommée
     assert.equal(described.description, "la femme d'un ami");
     assert.equal(described.relatedPersonId, paul.id);
     assert.equal(described.relationLabel, "conjointe");
+
+    // Critère 2 du BRIEF-007 : toute personne citée apparaît dans le graphe,
+    // la personne décrite reliée à celle dont elle est la conjointe.
+    const graph = projectGraph(store.snapshot(), { kind: "self", id: "self" });
+    assert.ok(graph.nodes.some((node) => node.id === `person:${described.id}`));
+    assert.ok(graph.nodes.some((node) => node.id === `person:${paul.id}`));
+    assert.ok(
+      graph.edges.some(
+        (edge) =>
+          edge.kind === "knows" &&
+          edge.from === `person:${described.id}` &&
+          edge.to === `person:${paul.id}`,
+      ),
+    );
+    assert.equal(
+      graph.nodes.find((node) => node.id === `person:${described.id}`).meta
+        .described,
+      true,
+    );
 
     // Renommage rétroactif : l'identifiant ne change pas, l'ancienne
     // description reste pour la résolution.

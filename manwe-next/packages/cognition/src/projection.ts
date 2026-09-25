@@ -61,6 +61,8 @@ export const MAX_RELATIONS = 7;
 export const MAX_HYPOTHESES = 5;
 export const MAX_EVIDENCE = 8;
 export const MAX_EVENTS = 10;
+/** D-030 : personnes citées sans relation établie, autour du focus. */
+export const MAX_ACQUAINTANCES = 12;
 
 const nodeId = (kind: GraphNode["kind"], id: string) =>
   kind === "self" ? "self" : `${kind}:${id}`;
@@ -117,7 +119,12 @@ class Builder {
       kind: "person",
       label: person?.displayName ?? "personne inconnue",
       style: person ? "observed" : "unknown",
-      meta: { resolution: person?.resolutionStatus ?? null },
+      meta: {
+        resolution: person?.resolutionStatus ?? null,
+        // D-030 : personne décrite sans nom, et son lien connu.
+        described: Boolean(person?.description),
+        relationLabel: person?.relationLabel ?? null,
+      },
     });
     return id;
   }
@@ -253,12 +260,60 @@ function projectMember(snapshot: WorkspaceSnapshot, focus: FocusContext) {
     );
   for (const relation of builder.limit(relations, MAX_RELATIONS))
     builder.relation(relation.id);
+  acquaintances(snapshot, builder, focus);
   const hypotheses = rankHypotheses(
     snapshot.hypotheses.filter((item) => subjectTouches(item, key)),
   );
   for (const hypothesis of builder.limit(hypotheses, MAX_HYPOTHESES))
     builder.hypothesis(hypothesis);
   return builder.result(focus);
+}
+
+/**
+ * D-030 : toute personne citée apparaît. Autour de l'utilisateur, celles qui
+ * n'ont pas encore de relation établie sont reliées par un lien inconnu, ou
+ * à la personne dont elles sont décrites (« conjointe de Paul »). Autour
+ * d'une personne, ses liens décrits dans les deux sens.
+ */
+function acquaintances(
+  snapshot: WorkspaceSnapshot,
+  builder: Builder,
+  focus: FocusContext,
+) {
+  const initially = new Set(builder.nodes.keys());
+  const placed = (personId: string) =>
+    initially.has(nodeId("person", personId));
+  const focusPerson = snapshot.persons.find((item) => item.id === focus.id);
+  const candidates = snapshot.persons.filter((person) =>
+    focus.kind === "self"
+      ? !placed(person.id)
+      : person.id !== focus.id &&
+        (person.relatedPersonId === focus.id ||
+          focusPerson?.relatedPersonId === person.id),
+  );
+  for (const person of builder.limit(candidates, MAX_ACQUAINTANCES)) {
+    const node = builder.member({ kind: "person", personId: person.id });
+    const related = person.relatedPersonId
+      ? snapshot.persons.find((item) => item.id === person.relatedPersonId)
+      : undefined;
+    if (related) {
+      const relatedNode = builder.member({
+        kind: "person",
+        personId: related.id,
+      });
+      builder.edge(node, relatedNode, "knows", "reported");
+      if (focus.kind === "self" && !placed(related.id))
+        builder.edge(relatedNode, "self", "knows", "unknown");
+    } else if (focus.kind === "self")
+      builder.edge(node, "self", "knows", "unknown");
+    else
+      builder.edge(
+        builder.member({ kind: "person", personId: focus.id }),
+        node,
+        "knows",
+        "reported",
+      );
+  }
 }
 
 /** Relation : ses membres, ses épisodes avec rôles, et les lectures qui la visent. */
