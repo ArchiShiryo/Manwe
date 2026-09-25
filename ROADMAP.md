@@ -14,7 +14,8 @@ R2 est validé en mode assisté. Le moteur de révision R3 est livré : hypothè
 
 Décisions structurantes issues des essais et des échanges avec l'utilisateur ([PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md), [ONTOLOGIE.md](./manwe-next/docs/pilotage/ONTOLOGIE.md), [MODELE-STRATEGIQUE.md](./manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md)) :
 
-- **Finalité** : modéliser le monde de l'individu, prédire, trouver les leviers, tracer un chemin. Le diagnostic n'est pas le but (D-018).
+- **Finalité** : modéliser le monde de l'individu, prédire, trouver les leviers, tracer un chemin. L'étiquette diagnostique n'est pas le but (D-018).
+- **Psychodynamique fine, essentielle** : c'est elle qui situe les leviers. Formulations mécanistes (ce qui est protégé, défenses, croyances, attachement, déclencheurs, ce qui apaise, ce que cela prédit) plutôt qu'étiquettes ; besoins, motifs, valeurs et mentalisation intégrés dès R3.9 et R4.0e (D-019).
 - **Modèle stratégique, principe central** : le joueur est rationnel, c'est le jeu qui ne l'est pas. Chaque comportement est lu comme la meilleure solution trouvée par un système, souvent un minimum local, aux échelles intrapersonnelle, relationnelle et de groupe. Pour chaque acteur : ce qu'il optimise, ses croyances, la barrière qui le maintient, le jeu avec les autres, ses réponses prédites (D-017).
 - **La relation devient un objet à part entière** (D-012). C'est un manque de la reconstruction par rapport à la spécification §11.
 - **Rôles souples** : extraits par épisode, et au niveau de la relation seulement sous forme d'hypothèse. Le timing n'est pas exigé (D-013).
@@ -38,7 +39,7 @@ Documents de reprise : [handoff pour Sol](./manwe-next/docs/HANDOFF_SOL.md), [d�
 
 ## 1 Le résultat que nous voulons prouver
 
-La finalité de MANWË est de modéliser le monde dans lequel évolue l'individu, de prédire comment il répondra, d'identifier les leviers et de tracer un chemin. Le diagnostic n'est pas le but : beaucoup de personnes sont détruites faute d'avoir vu un chemin, et c'est ce manque que la prothèse doit combler (D-018). Le moteur de cette prédiction est le modèle stratégique : le joueur est rationnel, c'est le jeu qui ne l'est pas (D-017, [MODELE-STRATEGIQUE.md](./manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md)).
+La finalité de MANWË est de modéliser le monde dans lequel évolue l'individu, de prédire comment il répondra, d'identifier les leviers et de tracer un chemin. L'étiquette diagnostique n'est pas le but : beaucoup de personnes sont détruites faute d'avoir vu un chemin, et c'est ce manque que la prothèse doit combler (D-018). La profondeur, elle, est essentielle : c'est la modélisation psychodynamique fine des individus qui situe les leviers et permet d'agir (D-019). Le moteur de cette prédiction est le modèle stratégique : le joueur est rationnel, c'est le jeu qui ne l'est pas (D-017, [MODELE-STRATEGIQUE.md](./manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md)).
 
 La question de validation est : « MANWË m'aide-t-il à comprendre une situation, à distinguer ce qui est établi de ce qui est supposé, et à corriger une représentation qui continue de tenir compte de mes corrections demain ? »
 
@@ -260,7 +261,7 @@ Objectif : transformer les événements en hypothèses inspectables et révisabl
 - [x] R3.6 Invalider les conclusions dépendantes lorsqu'une preuve est corrigée ou retirée ; créer une demande de réanalyse limitée à la partie affectée. En mode assisté, conserver « à réexaminer » jusqu'à l'import validé d'une nouvelle réponse de Sol ; ne pas feindre un recalcul automatique. (Preuve : test R3-2, réanalyse ciblée vérifiée dans l'UI ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [x] R3.7 Contrôler la version de départ des propositions ; rejeter ou réexaminer un résultat devenu obsolète pendant une correction. (Preuve : test R3-4 ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [x] R3.8 Produire les questions ouvertes à partir des alternatives, avec possibilité de ne pas répondre et sans relance identique systématique. (Preuve : test R3-8 ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
-- [ ] R3.9 Faire conclure le moteur : lecture principale classée par sujet et par relation, structure stratégique des hypothèses profondes (D-017), alternatives qui sont de vrais mécanismes concurrents, « plausible » possible dès la première analyse en D1 et D2, confiance plafonnée avec avertissement au lieu d'un rejet global (D-015, prompt v4).
+- [ ] R3.9 Faire conclure le moteur : lecture principale classée par sujet et par relation, structure stratégique des hypothèses profondes (D-017), formulations psychodynamiques mécanistes plutôt qu'étiquettes (D-019), alternatives qui sont de vrais mécanismes concurrents, « plausible » possible dès la première analyse en D1 et D2, confiance plafonnée avec avertissement au lieu d'un rejet global (D-015, prompt v4).
 
 Passage : une contre-preuve peut affaiblir une hypothèse ; une correction conserve son effet après une nouvelle session ; « je suis d'accord » n'ajoute aucun épisode de preuve ; une réponse tardive ne restaure pas une conclusion invalidée.
 
@@ -274,7 +275,7 @@ Objectif : faire des trois surfaces visuelles des représentations cohérentes d
 - [ ] R4.0b Extraire les participants et leurs rôles par épisode, avec citation et correction en un geste ; le rôle relationnel reste une hypothèse agrégée (D-013).
 - [ ] R4.0c Calculer des indicateurs relationnels déterministes (part des initiatives, réciprocité, fréquence, délais explicites, contre-exemples) utilisables comme ancrages citables.
 - [ ] R4.0d Déclarer le registre ontologique unique d'où découlent le prompt, le paquet, les contrôles et le graphe ; un test vérifie leur cohérence (D-014).
-- [ ] R4.0e Lecture stratégique (D-017) : les hypothèses D3 à D5 portent une structure facultative (gain optimisé, croyances, coût payé, barrière, prédiction de perturbation) ; la relation et le groupe reçoivent leur lecture d'interdépendance (gains et pertes de chacun, dépendance, comportements récompensés par la répétition, équilibre).
+- [ ] R4.0e Lecture stratégique et psychodynamique (D-017, D-019) : chaque personne reçoit sa formulation fine (ce qu'elle protège, défenses, croyances profondes, stratégies d'attachement, déclencheurs et états, conflits internes, besoins, motifs, valeurs, ce qui l'apaise) ; les hypothèses D3 à D5 portent une structure facultative (gain optimisé, croyances, coût payé, barrière, prédiction de perturbation) ; la relation et le groupe reçoivent leur lecture d'interdépendance (gains et pertes de chacun, dépendance, comportements récompensés par la répétition, équilibre).
 - [ ] R4.1 Définir `FocusContext` et `GraphProjection` avec identifiants métier et révision canonique ; retirer les branches conditionnelles propres à Marc.
 - [ ] R4.2 Construire les projections d'une personne, d'une relation, d'une hypothèse et d'une question. Limiter le nombre d'objets utiles affichés.
 - [ ] R4.3 Réintroduire styles, formes, inspecteur et navigation du prototype comme composants alimentés par des données.
@@ -367,7 +368,7 @@ Passage : importer deux fois la même source ne double pas les événements ; co
 Objectif : relier compréhension, objectifs et décisions personnelles sans surcharger l'utilisateur.
 
 - Enrichir Problem, Goal et Path : contraintes, hypothèses, alternatives, conditions d'arrêt et résultats observés.
-- Décrire les régularités d'interaction avant d'introduire des explications motivationnelles plus profondes.
+- Relier chaque piste à la formulation psychodynamique des personnes concernées : le levier choisi dépend de ce que la personne protège et de ce qui l'apaise (D-019).
 - Faire apparaître le Counselor au bon moment ou à la demande, avec « pourquoi maintenant ? » et retours utile, inutile, déjà su.
 - Séparer confiance dans une hypothèse et pertinence d'une action fondée sur elle ; prendre en compte coût d'erreur et réversibilité.
 - Enregistrer les attentes avant l'événement suivant, puis comparer résultats et alternatives sans réécrire a posteriori la prédiction.
@@ -379,11 +380,10 @@ Passage : les options sont explicables à partir de données actuelles ; les ré
 
 ## 17 R11 Préserver les horizons avancés sans les confondre avec l'alpha
 
-Ces axes restent dans la vision. Ils disposent de prérequis et d'une validation propre ; ils ne bloquent pas une première version utile.
+Ces axes restent dans la vision. Ils disposent de prérequis et d'une validation propre ; ils ne bloquent pas une première version utile. Besoins, motifs, valeurs et mentalisation ne sont plus un horizon : ils font partie du moteur dès R3.9 et R4.0e (D-019).
 
 | Axe                                          | Prérequis                                                                                                 | Preuve à obtenir avant extension                                                                                      |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Needs, Values, Motives et mentalisation      | Modèles relationnels sourcés, alternatives et historique suffisant                                        | Gain de compréhension ou de discrimination face à une explication contextuelle simple                                 |
 | Formulations psychodynamiques D4             | Produites dès R3 (D-006) ; promotion exigeant récurrence, épisodes indépendants, critique, falsifiabilité | Gain démontré et possibilité de réfutation ; la sophistication du récit ne suffit pas à passer « plausible »          |
 | Social Field et niches relationnelles        | Identités fiables, groupes et relations suivis dans le temps                                              | Fonctions ou dépendances observables, alternatives et comparaisons présence/absence                                   |
 | Modèle stratégique de grande échelle (D-017) | Modèles stratégiques personnels et relationnels calibrés                                                  | Prédictions de groupe (normes, rôles, statuts, sacrifices, valeurs sacrées) meilleures qu'une explication descriptive |

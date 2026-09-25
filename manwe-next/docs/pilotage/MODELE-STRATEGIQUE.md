@@ -1,10 +1,10 @@
 # Modèle stratégique de MANWË
 
-Note de pilotage du 25 septembre 2026, rédigée à partir d'une discussion avec l'utilisateur. Décisions associées : D-017 et D-018 de [PILOTAGE.md](./PILOTAGE.md). Ce principe est **central** : il oriente la cognition, l'ontologie, la simulation et l'assistance.
+Note de pilotage du 25 septembre 2026, rédigée à partir d'une discussion avec l'utilisateur. Décisions associées : D-017, D-018 et D-019 de [PILOTAGE.md](./PILOTAGE.md). Ce principe est **central** : il oriente la cognition, l'ontologie, la simulation et l'assistance.
 
 ## Finalité : modéliser, prédire, trouver les leviers, tracer un chemin
 
-MANWË n'est pas un outil de diagnostic. Il peut formuler des hypothèses cliniques (D-006, D-010), mais ce n'est pas son but. Il sert à quatre choses :
+MANWË n'est pas un outil d'étiquetage diagnostique. Il formule des hypothèses cliniques (D-006, D-010), mais l'étiquette n'est pas son but. Il sert à quatre choses :
 
 1. **Modéliser le monde** dans lequel évolue l'individu : les personnes, les relations, les groupes, et l'individu lui-même.
 2. **Prédire** comment ce monde répondra à ce qui arrive et à ce que l'individu fait.
@@ -28,6 +28,34 @@ Tout comportement, même destructeur, même incompréhensible vu de l'extérieur
 Ce cadre étend la **psychiatrie computationnelle**, qui modélise des troubles comme des optimisations correctes dans un modèle du monde faussé. MANWË l'applique à grande échelle : psychodynamique personnelle, conflits intrapersonnels, relations, psychologie de groupe.
 
 Ce principe rejoint aussi l'intention du projet. Personne n'est « cassé » : chacun est dans la meilleure solution qu'il a trouvée. C'est cohérent avec le refus de traiter les personnes neuro-atypiques comme handicapées.
+
+## La psychodynamique fine : ce qui permet d'agir (D-019)
+
+Le modèle stratégique est vide sans la psychodynamique. Ce qu'une personne optimise, les croyances sous lesquelles c'est optimal et la barrière qui la retient sont décrits par sa psychodynamique. Les leviers s'y trouvent aussi.
+
+Un **diagnostic** est une étiquette ; une **formulation** est un mécanisme. « Narcissique » ne dit pas quoi faire. « Il protège une estime de soi fragile en dévalorisant quiconque la menace, et se calme quand on le valorise sur un point réel » dit quoi faire.
+
+Une formulation fine décrit :
+
+- ce que la personne protège : une image de soi, une blessure, une angoisse précise (abandon, engloutissement, humiliation, impuissance) ;
+- ses défenses, c'est-à-dire la façon dont elle évite de ressentir ce coût ;
+- ses croyances profondes (« si je demande, on me rejette ») ;
+- ses stratégies d'attachement : hyperactivation, désactivation, ou désorganisation selon le contexte ;
+- ses déclencheurs et les états par lesquels elle passe ;
+- ses conflits internes : désir et interdit, proximité et autonomie ;
+- ses besoins, ses motifs et ses valeurs, avec leurs arbitrages ;
+- ce qui l'apaise et ce qui l'escalade ;
+- ce que la formulation prédit.
+
+**La finesse décide de l'action.** Si Lucas demande sans cesse, il faut savoir pourquoi :
+
+- s'il vérifie qu'il compte, il faut lui offrir une autre preuve qu'il compte ;
+- s'il évite une angoisse d'incompétence, il faut réduire cette menace ;
+- s'il teste une limite, il faut une limite stable.
+
+Ce sont trois chemins différents. Un modèle grossier ne permet que céder ou refuser.
+
+Une étiquette (« borderline », « narcissique », « codépendance ») reste permise, mais seulement comme résumé d'une formulation qui la précède.
 
 ## Trois échelles, un même modèle
 
@@ -100,10 +128,10 @@ Un chemin enchaîne des leviers et des observations (spécification §15, D-016)
 
 ## Mise en œuvre
 
-| Étape | Contenu                                                                                                                                                       | Jalon        |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 1     | Prompt v4 : les hypothèses D3 à D5 portent leur structure stratégique facultative (gain optimisé, croyances, coût payé, barrière, prédiction de perturbation) | R3.9         |
-| 2     | Relation et groupe : lecture d'interdépendance (gains et pertes de chacun, dépendance, comportements récompensés par la répétition, équilibre)                | R4.0a, R4.0e |
-| 3     | Registre ontologique : acteurs, fonctions de gain, croyances, barrières, leviers et prédictions deviennent des types déclarés                                 | R4.0d        |
-| 4     | Leviers et chemins reliés au modèle stratégique ; prédiction enregistrée avant chaque action, puis comparée au résultat                                       | R5.5, R5.5b  |
-| 5     | Simulateur fondé sur les modèles stratégiques, avec calibration longitudinale ; extension aux groupes et aux dynamiques de grande échelle                     | R10, R11     |
+| Étape | Contenu                                                                                                                                                                                                                               | Jalon        |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 1     | Prompt v4 : formulations psychodynamiques mécanistes plutôt qu'étiquettes (D-019) ; les hypothèses D3 à D5 portent leur structure stratégique facultative (gain optimisé, croyances, coût payé, barrière, prédiction de perturbation) | R3.9         |
+| 2     | Relation et groupe : lecture d'interdépendance (gains et pertes de chacun, dépendance, comportements récompensés par la répétition, équilibre)                                                                                        | R4.0a, R4.0e |
+| 3     | Registre ontologique : acteurs, fonctions de gain, croyances, barrières, leviers et prédictions deviennent des types déclarés                                                                                                         | R4.0d        |
+| 4     | Leviers et chemins reliés au modèle stratégique ; prédiction enregistrée avant chaque action, puis comparée au résultat                                                                                                               | R5.5, R5.5b  |
+| 5     | Simulateur fondé sur les modèles stratégiques, avec calibration longitudinale ; extension aux groupes et aux dynamiques de grande échelle                                                                                             | R10, R11     |
