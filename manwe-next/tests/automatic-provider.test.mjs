@@ -112,6 +112,7 @@ test("IA-A.2 · même prompt que le harnais, proposition validée mais jamais ap
     const done = await automatic.settle(job.requestId);
     assert.equal(done.status, "ready_for_review");
     assert.equal(done.attempts.length, 1);
+    assert.equal(done.preview.telemetry.inferenceDurationMs, 5);
     assert.ok(prompts[0].startsWith(PROMPT_V6.trimEnd()), "prompt v6 intact");
     const packet = packetOf(prompts[0]);
     assert.equal(prompts[0], composePrompt(packet), "composition du harnais");

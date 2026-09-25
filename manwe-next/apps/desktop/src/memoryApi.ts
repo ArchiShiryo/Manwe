@@ -34,6 +34,21 @@ export type MemoryStatus = {
   };
 };
 
+export type AutomaticJob = {
+  requestId: string;
+  status:
+    | "running"
+    | "ready_for_review"
+    | "needs_context"
+    | "failed"
+    | "cancelled";
+  startedAt: string;
+  finishedAt: string | null;
+  attempts: { status: string; errors: { code: string; message: string }[] }[];
+  preview: AnalysisPreview | null;
+  error: { code: string; message: string } | null;
+};
+
 const API_ORIGIN = "http://127.0.0.1:5181";
 
 export class MemoryApiError extends Error {
@@ -217,6 +232,27 @@ class MemoryApi {
         method: "POST",
         body: JSON.stringify({ requestId, responseId, confirmed: true }),
       },
+    );
+  }
+
+  automaticProvider() {
+    return this.request<{
+      enabled: boolean;
+      providerId: string | null;
+      model: string | null;
+    }>("/api/analyses/automatic");
+  }
+
+  startAutomatic(task: "extract" | "interpret" | "revise" | "explore") {
+    return this.request<AutomaticJob>("/api/analyses/automatic", {
+      method: "POST",
+      body: JSON.stringify({ task }),
+    });
+  }
+
+  automaticJob(requestId: string) {
+    return this.request<AutomaticJob>(
+      `/api/analyses/automatic/${encodeURIComponent(requestId)}`,
     );
   }
 

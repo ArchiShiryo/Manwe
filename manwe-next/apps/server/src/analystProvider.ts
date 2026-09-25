@@ -376,7 +376,14 @@ export class AutomaticAnalyses {
           servedModel: call.meta.servedModel,
         });
         if (preview && preview.status !== "rejected") {
-          job.preview = preview;
+          job.preview = {
+            ...preview,
+            telemetry: {
+              ...preview.telemetry,
+              inferenceDurationMs: call.meta.latencyMs,
+              usage: call.meta.usage,
+            },
+          };
           job.status =
             preview.status === "needs_context"
               ? "needs_context"
