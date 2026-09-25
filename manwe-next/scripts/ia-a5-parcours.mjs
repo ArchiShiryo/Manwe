@@ -81,6 +81,8 @@ if (!withEnvProxy()) {
           "utf8",
         );
     },
+    // Protocole scellé d'IA-A.5 : confirmation explicite, deux essais.
+    { autoApply: false, maxAttempts: 2 },
   );
 
   const fixture = JSON.parse(

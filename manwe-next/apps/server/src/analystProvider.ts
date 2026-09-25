@@ -292,9 +292,13 @@ export function createDeepSeekCall(options: {
 
 export type AutomaticJob = {
   requestId: string;
+  task: AnalysisTask;
+  /** D-028 : pourquoi l'agent a lancé cette analyse (null si demandée). */
+  reason: string | null;
   status:
     | "running"
     | "ready_for_review"
+    | "applied"
     | "needs_context"
     | "failed"
     | "cancelled";
@@ -309,7 +313,23 @@ export type AutomaticJob = {
     queries: Array<{ name: string; args: unknown }>;
   }[];
   preview: AnalysisPreview | null;
+  /** D-028 : résultat de l'application automatique. */
+  applied: {
+    revision: number;
+    created: number;
+    changed: number;
+    warnings: { code: string; message: string }[];
+  } | null;
   error: { code: string; message: string } | null;
+};
+
+export type AgentOptions = {
+  /** D-028 : appliquer d'elle-même une analyse valide (vrai par défaut). */
+  autoApply?: boolean;
+  /** D-031 : essais au total, dont les reprises informées (3 par défaut). */
+  maxAttempts?: number;
+  /** Silence attendu après la dernière note avant d'analyser (ms). */
+  quietMs?: number;
 };
 
 /**
@@ -333,14 +353,69 @@ export class AutomaticAnalyses {
       }) => void)
     | null;
 
+  private readonly options: Required<AgentOptions>;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private again = false;
+  private lastJob: AutomaticJob | null = null;
+  /** Révision d'un échec : l'agent n'y revient pas seul avant du nouveau. */
+  private failedAt: number | null = null;
+
   constructor(
     store: SqliteMemoryStore,
     provider: ProviderConfig | null,
     onCall: AutomaticAnalyses["onCall"] = null,
+    options: AgentOptions = {},
   ) {
     this.store = store;
     this.provider = provider;
     this.onCall = onCall;
+    this.options = {
+      autoApply: options.autoApply ?? true,
+      maxAttempts: options.maxAttempts ?? 3,
+      quietMs: options.quietMs ?? 12_000,
+    };
+  }
+
+  /** Analyse en cours, sinon la dernière : l'interface la retrouve après un rechargement. */
+  current() {
+    const running = [...this.jobs.values()].find(
+      (job) => job.status === "running",
+    );
+    return {
+      job: running ?? this.lastJob,
+      scheduled: this.timer !== null,
+      next: this.provider ? this.store.agentPlan() : null,
+    };
+  }
+
+  /**
+   * D-028 : l'utilisateur a écrit, répondu ou ajouté du contexte. L'agent
+   * attend un court silence, puis lance seul l'analyse utile, s'il y en a.
+   */
+  nudge(delayMs = this.options.quietMs) {
+    if (!this.provider) return;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      this.tick();
+    }, delayMs);
+    this.timer.unref?.();
+  }
+
+  private tick() {
+    if ([...this.jobs.values()].some((job) => job.status === "running")) {
+      this.again = true;
+      return;
+    }
+    const revision = this.store.snapshot().workspace.revision;
+    if (this.failedAt === revision) return;
+    const plan = this.store.agentPlan();
+    if (!plan) return;
+    try {
+      this.start({ task: plan.task, focus: plan.focus }, plan.reason);
+    } catch {
+      // budget atteint ou fournisseur absent : l'état reste lisible par current()
+    }
   }
 
   get enabled() {
@@ -366,7 +441,10 @@ export class AutomaticAnalyses {
       : { enabled: false, providerId: null, model: null, budget: null };
   }
 
-  start(input: { task: AnalysisTask; focus?: EntityRef[] }) {
+  start(
+    input: { task: AnalysisTask; focus?: EntityRef[] },
+    reason: string | null = null,
+  ) {
     if (!this.provider)
       throw new DomainError(
         "provider_unconfigured",
@@ -397,14 +475,18 @@ export class AutomaticAnalyses {
     });
     const job: AutomaticJob = {
       requestId: packet.requestId,
+      task: input.task,
+      reason,
       status: "running",
       startedAt: new Date().toISOString(),
       finishedAt: null,
       attempts: [],
       preview: null,
+      applied: null,
       error: null,
     };
     this.jobs.set(packet.requestId, job);
+    this.lastJob = job;
     const controller = new AbortController();
     this.controllers.set(packet.requestId, controller);
     void this.run(job, packet, controller.signal);
@@ -452,7 +534,7 @@ export class AutomaticAnalyses {
     const prompt = composePrompt(packet);
     let errors: { code: string; message: string }[] = [];
     try {
-      for (let attempt = 0; attempt < 2; attempt += 1) {
+      for (let attempt = 0; attempt < this.options.maxAttempts; attempt += 1) {
         const sent = attempt ? composeRetryPrompt(prompt, errors) : prompt;
         const call = await provider.call({
           prompt: sent,
@@ -513,13 +595,24 @@ export class AutomaticAnalyses {
             preview.status === "needs_context"
               ? "needs_context"
               : "ready_for_review";
+          if (job.status === "ready_for_review" && this.options.autoApply) {
+            // D-028 : pas de confirmation ; les garde-fous sont dans le moteur.
+            const result = this.store.applyAnalysis(preview.responseId);
+            job.status = "applied";
+            job.applied = {
+              revision: result.resultRevision,
+              created: result.createdIds.length,
+              changed: result.changedIds.length,
+              warnings: result.warnings,
+            };
+          }
           return;
         }
       }
       job.status = "failed";
       job.error = {
         code: "proposal_rejected",
-        message: `Deux propositions rejetées par le validateur : ${errors.map((error) => error.code).join(", ")}.`,
+        message: `${this.options.maxAttempts} propositions rejetées par le validateur : ${errors.map((error) => error.code).join(", ")}.`,
       };
     } catch (error) {
       if (job.status === "cancelled") return;
@@ -529,8 +622,14 @@ export class AutomaticAnalyses {
           ? { code: error.code, message: error.message }
           : {
               code: "provider_error",
-              message: "Erreur inattendue du fournisseur.",
+              // DEMO-R5-7 : la vraie cause, sans la clé ni le prompt.
+              message: `Erreur inattendue du fournisseur : ${
+                error instanceof Error ? error.message : String(error)
+              }`.slice(0, 400),
             };
+      console.error(
+        `[analyse ${job.requestId}] ${job.error.code} : ${job.error.message}`,
+      );
     } finally {
       if (job.status === "running") job.status = "failed";
       job.finishedAt ??= new Date().toISOString();
@@ -543,6 +642,16 @@ export class AutomaticAnalyses {
           // déjà close (rejets enregistrés) : rien à faire
         }
       this.controllers.delete(job.requestId);
+      this.failedAt =
+        job.status === "failed"
+          ? this.store.snapshot().workspace.revision
+          : null;
+      // D-028 : une analyse en appelle parfois une autre (des notes arrivées
+      // pendant le calcul, un objectif qui attend des pistes).
+      if (this.provider && (this.again || job.status === "applied")) {
+        this.again = false;
+        this.nudge(0);
+      }
     }
   }
 }

@@ -26,7 +26,11 @@ import {
   type FocusContext,
 } from "../../../packages/cognition/src/projection.ts";
 import { buildSynthesis } from "../../../packages/cognition/src/synthesis.ts";
-import { AutomaticAnalyses, type ProviderConfig } from "./analystProvider.ts";
+import {
+  AutomaticAnalyses,
+  type AgentOptions,
+  type ProviderConfig,
+} from "./analystProvider.ts";
 
 const JSON_LIMIT = 64 * 1024;
 
@@ -38,6 +42,8 @@ type ServerOptions = {
   workspaceName?: string;
   /** Fournisseur automatique (IA-A.2) ; absent = analyse assistée seulement. */
   analyst?: ProviderConfig | null;
+  /** D-028 : réglages de l'agent autonome (application, essais, silence). */
+  agent?: AgentOptions;
 };
 
 function json(response: ServerResponse, status: number, body: unknown) {
@@ -79,7 +85,12 @@ export async function startManweServer(options: ServerOptions) {
     workspaceId,
     options.workspaceName,
   );
-  const automatic = new AutomaticAnalyses(store, options.analyst ?? null);
+  const automatic = new AutomaticAnalyses(
+    store,
+    options.analyst ?? null,
+    null,
+    options.agent ?? {},
+  );
   const sessionToken = randomBytes(32).toString("base64url");
   const rate = new Map<string, number[]>();
 
@@ -177,6 +188,15 @@ export async function startManweServer(options: ServerOptions) {
       }
       if (pathname === "/api/analyses/automatic" && request.method === "GET") {
         json(response, 200, automatic.describe());
+        return;
+      }
+      // D-028 : ce que fait l'agent, ou ce qu'il a fait en dernier ; lu à
+      // chaque ouverture, pour qu'un rechargement ne perde rien.
+      if (
+        pathname === "/api/analyses/automatic/current" &&
+        request.method === "GET"
+      ) {
+        json(response, 200, automatic.current());
         return;
       }
       if (pathname === "/api/analyses/automatic" && request.method === "POST") {
@@ -285,6 +305,7 @@ export async function startManweServer(options: ServerOptions) {
           201,
           store.capture(parseCaptureCommand(await readJson(request))),
         );
+        automatic.nudge();
         return;
       }
       if (pathname === "/api/imports" && request.method === "POST") {
@@ -297,6 +318,7 @@ export async function startManweServer(options: ServerOptions) {
             ),
           ),
         );
+        automatic.nudge();
         return;
       }
       const identityResolutionRoute = pathname.match(
@@ -319,6 +341,7 @@ export async function startManweServer(options: ServerOptions) {
           201,
           store.annotate(parseAnnotationCommand(await readJson(request))),
         );
+        automatic.nudge();
         return;
       }
       const answerRoute = pathname.match(/^\/api\/questions\/([^/]+)\/answer$/);
@@ -333,6 +356,7 @@ export async function startManweServer(options: ServerOptions) {
             ),
           ),
         );
+        automatic.nudge();
         return;
       }
       // BRIEF-005 : l'utilisateur choisit une direction ; aucune exécution.
@@ -361,6 +385,7 @@ export async function startManweServer(options: ServerOptions) {
             }),
           ),
         );
+        automatic.nudge();
         return;
       }
       // D-030 : renommer ou rattacher une personne, rétrospectivement.
@@ -431,6 +456,7 @@ export async function startManweServer(options: ServerOptions) {
           201,
           store.updateGoal(parseGoalCommand(await readJson(request))),
         );
+        automatic.nudge();
         return;
       }
       if (pathname === "/api/analyses" && request.method === "POST") {

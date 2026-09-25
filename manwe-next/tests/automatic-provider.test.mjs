@@ -1,4 +1,5 @@
 import test from "node:test";
+import { parseCaptureCommand } from "../packages/domain/src/memory.ts";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -94,17 +95,23 @@ const reply = (content) => ({
   },
 });
 
-test("IA-A.2 · même prompt que le harnais, proposition validée mais jamais appliquée seule", () =>
+test("IA-A.2 · même prompt que le harnais ; sans application automatique, rien n'est appliqué", () =>
   withStore(async (store) => {
     const prompts = [];
-    const automatic = new AutomaticAnalyses(store, {
-      id: "deepseek:test",
-      model: "test",
-      call: async ({ prompt }) => {
-        prompts.push(prompt);
-        return reply(validProposal(packetOf(prompt)));
+    const automatic = new AutomaticAnalyses(
+      store,
+      {
+        id: "deepseek:test",
+        model: "test",
+        call: async ({ prompt }) => {
+          prompts.push(prompt);
+          return reply(validProposal(packetOf(prompt)));
+        },
       },
-    });
+      null,
+      // Mode des évaluations scellées (IA-A.5) : confirmation explicite.
+      { autoApply: false },
+    );
     const revision = store.revision;
     const job = automatic.start({ task: "extract" });
     assert.equal(store.status().analyses.awaitingResponse, 1);
@@ -136,7 +143,7 @@ test("IA-A.2 · même prompt que le harnais, proposition validée mais jamais ap
     assert.ok(store.revision > revision);
   }));
 
-test("IA-A.3 · seconde tentative informée, puis échec explicite après deux rejets", () =>
+test("D-031 · reprises informées, puis échec explicite après trois rejets", () =>
   withStore(async (store) => {
     const prompts = [];
     let answers = ["pas du JSON", null];
@@ -152,19 +159,27 @@ test("IA-A.3 · seconde tentative informée, puis échec explicite après deux r
     const first = await automatic.settle(
       automatic.start({ task: "extract" }).requestId,
     );
-    assert.equal(first.status, "ready_for_review");
+    // D-028 : une proposition valide s'applique d'elle-même.
+    assert.equal(first.status, "applied");
+    assert.ok(first.applied.revision > 0);
     assert.equal(first.attempts.length, 2);
     assert.match(prompts[1], /Ta réponse précédente à ce paquet a été rejetée/);
     assert.match(prompts[1], /invalid_json/);
 
-    answers = ["{}", "{}"];
+    answers = ["{}", "{}", "{}"];
     prompts.length = 0;
+    store.capture(
+      parseCaptureCommand({
+        idempotencyKey: "d031:capture",
+        text: "Une autre note, pour une nouvelle analyse.",
+      }),
+    );
     const second = await automatic.settle(
       automatic.start({ task: "extract" }).requestId,
     );
     assert.equal(second.status, "failed");
     assert.equal(second.error.code, "proposal_rejected");
-    assert.equal(prompts.length, 2, "une seule seconde tentative");
+    assert.equal(prompts.length, 3, "deux reprises informées, pas plus");
     assert.equal(
       store.status().analyses.awaitingResponse,
       0,
@@ -306,12 +321,13 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
   const { startManweServer } = await import("../apps/server/src/server.ts");
   const uiOrigin = "http://127.0.0.1:5180";
   const directory = mkdtempSync(join(tmpdir(), "manwe-automatic-server-"));
-  const open = async (analyst) => {
+  const open = async (analyst, agent = {}) => {
     const server = await startManweServer({
       databasePath: join(directory, "memory.sqlite3"),
       port: 0,
       allowedOrigin: uiOrigin,
       analyst,
+      agent,
     });
     const cookie = (
       await fetch(`${server.origin}/api/session`, {
@@ -358,11 +374,14 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
     await off.server.close();
     servers.length = 0;
 
-    const on = await open({
-      id: "deepseek:test",
-      model: "test",
-      call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
-    });
+    const on = await open(
+      {
+        id: "deepseek:test",
+        model: "test",
+        call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
+      },
+      { quietMs: 30 },
+    );
     const forged = await on.call("/api/analyses/automatic", {
       method: "POST",
       body: JSON.stringify({ task: "extract", providerId: "autre" }),
@@ -376,22 +395,47 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
         await on.call(`/api/analyses/automatic/${job.requestId}`)
       ).json();
     }
-    assert.equal(state.status, "ready_for_review");
+    // D-028 : appliquée d'elle-même, sans confirmation.
+    assert.equal(state.status, "applied");
     const analysis = await (
       await on.call(`/api/analyses/${job.requestId}`)
     ).json();
     assert.equal(analysis.packet.providerId, "deepseek:test");
     assert.equal(analysis.packet.mode, "automatic");
     assert.equal(analysis.promptVersion, "analyst-v11");
-    const applied = await on.call(`/api/analyses/${job.requestId}/apply`, {
+    assert.equal(analysis.status, "applied");
+    // Après un rechargement, l'interface retrouve la dernière analyse.
+    const current = await (
+      await on.call("/api/analyses/automatic/current")
+    ).json();
+    assert.equal(current.job.requestId, job.requestId);
+    assert.equal(current.next, null, "plus rien à analyser");
+
+    // L'agent analyse seul une nouvelle note, après un court silence.
+    await on.call("/api/captures", {
       method: "POST",
       body: JSON.stringify({
-        requestId: job.requestId,
-        responseId: state.preview.responseId,
-        confirmed: true,
+        idempotencyKey: "auto:route:capture:2",
+        text: "Claire m'a rappelé ce soir pour s'excuser.",
       }),
     });
-    assert.equal(applied.status, 200);
+    let autonomous = null;
+    for (let i = 0; i < 100; i += 1) {
+      await new Promise((done) => setTimeout(done, 20));
+      autonomous = (
+        await (await on.call("/api/analyses/automatic/current")).json()
+      ).job;
+      if (
+        autonomous &&
+        autonomous.requestId !== job.requestId &&
+        autonomous.status !== "running"
+      )
+        break;
+    }
+    assert.notEqual(autonomous.requestId, job.requestId);
+    assert.equal(autonomous.task, "interpret");
+    assert.match(autonomous.reason, /nouvelle note/);
+    assert.equal(autonomous.status, "applied");
   } finally {
     for (const server of servers) await server.close().catch(() => {});
     rmSync(directory, { recursive: true, force: true });
@@ -400,12 +444,17 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
 
 test("IA-A.4 · budget quotidien : consommation comptée, refus explicite au-delà", () =>
   withStore(async (store) => {
-    const automatic = new AutomaticAnalyses(store, {
-      id: "deepseek:test",
-      model: "test",
-      dailyTokenBudget: 2000,
-      call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
-    });
+    const automatic = new AutomaticAnalyses(
+      store,
+      {
+        id: "deepseek:test",
+        model: "test",
+        dailyTokenBudget: 2000,
+        call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
+      },
+      null,
+      { autoApply: false },
+    );
     assert.deepEqual(automatic.describe().budget, {
       dailyTokens: 2000,
       usedToday: 0,

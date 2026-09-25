@@ -44,6 +44,7 @@ import {
   cognitionHash,
   parseCognitiveProposal,
   type AnalysisPreview,
+  type AnalysisTask,
   type ApplicationResult,
   type CognitiveOperation,
   type CognitiveOperationKind,
@@ -2052,6 +2053,93 @@ export class SqliteMemoryStore {
         JSON.stringify(packet.allowedOperations),
       );
     return packet;
+  }
+
+  /**
+   * D-028 : l'agent choisit seul la prochaine analyse. Révision après un
+   * résultat d'action ou un contexte ajouté ; interprétation (qui extrait
+   * aussi les faits) pour de nouvelles notes ; exploration pour un objectif
+   * confirmé sans direction. Rien à faire : null.
+   */
+  agentPlan(): {
+    task: AnalysisTask;
+    reason: string;
+    focus: EntityRef[];
+  } | null {
+    const lastRequest = (tasks: AnalysisTask[]) =>
+      (
+        this.database
+          .prepare(
+            `SELECT max(created_at) AS at FROM analysis_requests WHERE workspace_id = ?
+               AND task IN (${tasks.map(() => "?").join(", ")})
+               AND status IN ('applied', 'no_change', 'needs_context')`,
+          )
+          .get(this.workspaceId, ...tasks) as SqlRow
+      ).at as string | null;
+    const lastReading = lastRequest(["extract", "interpret", "revise"]) ?? "";
+    const snapshot = this.snapshot();
+    const focus: EntityRef[] = [
+      ...snapshot.goals
+        .filter((goal) => !goal.dismissed)
+        .map((goal) => ({ kind: "goal" as const, id: goal.id })),
+      ...snapshot.events.map((event) => ({
+        kind: "event" as const,
+        id: event.id,
+      })),
+      ...snapshot.hypotheses
+        .filter((hypothesis) => hypothesis.status !== "superseded")
+        .map((hypothesis) => ({
+          kind: "hypothesis" as const,
+          id: hypothesis.id,
+        })),
+    ].slice(0, 100);
+    const outcomes = (
+      this.database
+        .prepare(
+          "SELECT count(*) AS n FROM actions WHERE workspace_id = ? AND outcome_recorded_at > ?",
+        )
+        .get(this.workspaceId, lastReading) as SqlRow
+    ).n as number;
+    const annotationSources = new Set(
+      snapshot.annotations
+        .map((annotation) => annotation.sourceId)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const fresh = snapshot.sources.filter(
+      (source) => source.createdAt > lastReading,
+    );
+    if (outcomes || fresh.some((source) => annotationSources.has(source.id)))
+      return {
+        task: "revise",
+        reason: outcomes
+          ? "Un résultat d’action est à comparer aux prédictions."
+          : "Du contexte a été ajouté à une lecture.",
+        focus,
+      };
+    if (fresh.length)
+      return {
+        task: "interpret",
+        reason: `${fresh.length} nouvelle${fresh.length > 1 ? "s" : ""} note${fresh.length > 1 ? "s" : ""} à comprendre.`,
+        focus,
+      };
+    const lastExplore = lastRequest(["explore"]) ?? "";
+    const goal = snapshot.goals.find(
+      (item) => item.confirmedByUser && !item.dismissed,
+    );
+    if (
+      goal &&
+      goal.updatedAt > lastExplore &&
+      !snapshot.directions.some(
+        (direction) =>
+          direction.goalId === goal.id && direction.status !== "superseded",
+      )
+    )
+      return {
+        task: "explore",
+        reason: "Votre intention n’a pas encore de pistes.",
+        focus,
+      };
+    return null;
   }
 
   /** Tailles (caractères JSON) du dernier paquet préparé, complet et de travail. */
