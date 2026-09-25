@@ -1,0 +1,199 @@
+Now I have the mechanisms. The task is "explore" with a confirmed goal. allowedOperations: propose_question, propose_direction, propose_goal. So I should propose directions mainly, plus maybe questions. No claims/events/roles/hypotheses allowed.
+
+I need at least two action directions plus one do_nothing. Each direction must leverage a hypothesis present in packet (not superseded/contradicted). Let's check statuses: hypotheses statuses: 3ccc4a7f draft (D3), 11bda265 draft (D3), 2899186e plausible (D1), 335a05ef plausible (D2), 3ccc4a7f draft, 57a625a8 draft (D2), 5b5d0790 plausible (D2), 6ab32fba draft (D3), cfeff3a9 draft (D3), e5877f46 draft (D4), fe984789 plausible (D1).
+
+Note rule O2: lever.hypothesis must be a hypothesis present in the packet or proposed in the response, not "superseded" nor "contradicted". Draft hypotheses are allowed (they are not superseded/contradicted). Though O5 says: "n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides." The D3 hypotheses have 3-5 anchored supports — reasonably solid. I'll use D2/D3 ones with solid evidence.
+
+Directions to design for goal: "Faire tourner la colocation sans être le seul à tout gérer, en gardant la vie commune avec Jules et Maya."
+
+Let me design 3-4 action directions + 1 do_nothing.
+
+1. **Petit pas: demander explicitement à Jules sa part, une fois, une tâche datée** — lever: lower_barrier on 57a625a8 (compensation with Jules) targeting "barrier" (aucune demande explicite n'a été adressée à Jules). Actually lever type could be "change_reward" (changer ce que la répétition récompense: actuellement absorber récompense — l'utilisateur évite le conflit) or lower_barrier. Let's think: the mechanism barrier = "aucune demande explicite n'a été adressée à Jules sur les tâches avant que l'utilisateur ne fasse à sa place". Levying on barrier → lower_barrier: make the request small and specific, one dish/one turn, so the cost of asking is lower than doing it. Good. Predictions: Jules immediately may say ok or defer (transitional: Jules testera, laissera traîner, l'utilisateur devra tolérer un délai), equilibrium: tâche faite par Jules ou conflit latent.
+
+Also a second lever on 11bda265 (régulateur) — the barrier is the recognition/indispensability. Lever change_reward: shift what the group rewards — e.g., thank visibly when someone else does a task, i.e., rewire reward.
+
+2. **Abaisser la barrière en confiant une tâche entière et nommée à Maya/Jules** — hmm, avoid goals for third party. Rule G2: no goal for a third party; but directions are actions by the user. "Demander à Maya de prendre une des tâches récurrentes qu'elle formule" — that's an action by the user addressing Maya. That's fine — it's the user's action, serving his goal.
+
+Let's set direction 2: **Rendre visible et partagé : proposer que chacun prenne une tâche récurrente nominative, en commençant par celle que Maya formule** — lever lower_barrier? Hmm.
+
+Better: let's structure directions around distinct levers:
+
+A) **Micro-demande datée à Jules** (lower_barrier, hypothesis 57a625a8, mechanismKey "barrier"). Small step: plutôt que faire la vaisselle, dire « je te laisse ta vaisselle, tu la fais ce soir ? » une fois, sans reprendre derrière.
+
+B) **Répondre à Karim** (change_game / alternative_source, hypothesis 07997710, mechanismKey "defenses" or "protects"). The cost of coloc is voiced to Karim; the user can make the mirror useful: nommer soi-même le coût à voix haute dans le lien amical et le traduire en une phrase à dire aux colocs. lever: alternative_source (offrir une autre source du même gain: reconnaissance du coût) — actually the gain obtained with Karim is being heard without risk; alternative source would be... Hmm. Maybe better lever type: "lower_barrier" targeting "defenses" (silence). Or "change_game": changer le cadre — faire de Karim un lieu d'entraînement à formuler la demande avant de la faire dans le groupe. Let's use "lower_barrier" with mechanismKey "defenses" (le silence) — répéter à voix haute, à Karim, la phrase exacte qu'il dirait aux colocs, ce qui abaisse le coût de la formuler. That's concrete and it learns something even if it fails.
+
+C) **Renverser la boucle Maya : demander à Maya une chose, une fois** (lower_barrier or change_reward, hypothesis 335a05ef, mechanismKey "barrier" = la boucle demande/exécution jamais inversée). Action: faire une contre-demande à Maya (ex : « tu peux passer commande cette semaine ? ») — teste si l'asymétrie tient ou si elle s'ajuste. Also relates to 11bda265.
+
+D) **Récompense déplacée: remercier explicitement un coloc quand il fait une chose, et ne pas reprendre derrière** (change_reward, hypothesis 11bda265, mechanismKey "optimizes" or "soothes"). Action: laisser une tâche non faite 48h (tolérer le manque) — hmm that's "change_reward" too: change what the repetition rewards: currently doing it myself rewards me with recognition + order; if I leave the task, the group must face the gap. Concretely: choisir une tâche non urgente et ne pas la faire, en informant une fois (« je ne fais pas les courses cette semaine »). Predictions: immédiat = gêne/questionnement; transitional = Maya demandera, cela testera; equilibrium = répartition renégociée ou retour à l'ancien.
+
+E) **do_nothing**: rien ne change → 11bda265 prediction / 3ccc4a7f prediction: Jules continue, Maya continue de passer par lui, la lassitude s'exprime à Karim, fatigue s'aggrave; Karim's remarks s'espacent (07997710 prediction).
+
+Also maybe a direction about "change_game" — changer le cadre : proposer une répartition écrite lors d'un moment dédié (réunion coloc), instead of tableau des tâches that got deflected. That's already partly the failed proposal (tableau des tâches was deflected). Actually the tableau des tâches was proposed and deflected — a direction could be a variant: refaire la proposition mais avec un tour de rôle nominatif plutôt qu'un tableau, et seulement pour les tâches les plus coûteuses. Lever change_reward/change_game on 5b5d0790 (suspension entre Jules et Maya) — mechanismKey "barrier" (la tâche finit portée par l'utilisateur, ce qui rend la coordination inutile). Lever: change_game — faire porter une tâche directement entre Jules et Maya sans passer par l'utilisateur. Hmm, but action must be the user's gesture: « confier explicitement à Maya et Jules la prochaine échéance (renouvellement du bail) et se déclarer hors boucle ». That directly targets the barrier of 5b5d0790: as long as the user carries it, coordination is useless. Concretely: dire « cette fois je ne m'en occupe pas, vous vous répartissez ».
+
+I should keep to maybe 4 directions + do_nothing, each with predictions 1-5, signals, conditions, limits, learnsIfFails, effort.
+
+Per O1: propose all useful directions, at least two. I'll do 4 action + 1 do_nothing = 5. Max operations 100, fine.
+
+Also questions (propose_question): only if discriminating and not already asked. Existing questions cover: cost of doing Jules' part/Maya's requests (targets 11bda265, cfeff3a9); refusal history (57a625a8, cfeff3a9); Karim remark (07997710, 6ab32fba); cadeau hesitation (3ccc4a7f, fe984789); cuisine episode (11bda265, cfeff3a9). What's not covered and would discriminate for choosing a direction? Maybe a question about whether the user has already tried a specific ask to Jules/Maya (covered by 84f35647 — "As-tu déjà refusé une demande de Maya, ou demandé à Jules de faire sa part" — covers it). So a new question should be distinct: e.g., "Qu'est-ce qui serait le plus supportable pour toi : demander une chose précise à Jules, ou laisser une tâche non faite ?" — that discriminates between the lower_barrier approach and the change_reward approach and reveals the cost asymmetry. Hmm, it's about which lever works. That's discriminating between directions... The rule says questions target hypotheses. I could target 57a625a8 vs 11bda265: which barrier is the binding one (le coût de demander vs le coût de laisser tomber le statut d'indispensable).
+
+Actually maybe simpler: a question that discriminates between 3ccc4a7f (maintien du lien par l'utilité) and 11bda265 (régulateur) — or between "the barrier is the request" vs "the barrier is the recognition". Let's phrase: « Si tu laissais la vaisselle de Jules sans la faire, qu'est-ce qui serait le plus dur : l'inconfort de la voir traîner, ou l'idée qu'on te trouve moins fiable ? » — targets 57a625a8 and 11bda265. That's precise and discriminating, not present. Good, one question. Maybe a second? Keep it to one or two to avoid spam. I'll do one, maybe two: also a question about Maya: "Quand Maya te remercie devant ses amis, qu'est-ce que ça te fait ?" Hmm, that targets 3ccc4a7f — the limits say "Aucune observation ne montre ce que l'utilisateur retire subjectivement de cette place (fierté, plaisir, soulagement)". A question targeting 3ccc4a7f and fe984789: "Que ressens-tu quand Maya dit devant ses amis que sans toi la coloc s'effondrerait — est-ce que ça te fait plaisir, ou est-ce que ça te pèse ?" discriminating: plaisir → maintien du lien par la place valorisée (3ccc4a7f); pesanteur/fardeau → la place est subie, ce qui affaiblit et pousse vers l'explication contextuelle fe984789. That's good and discriminating and not in packet. I'll include both questions.
+
+Wait — rule 20: "pose une question seulement si sa réponse départage des hypothèses". OK.
+
+Also propose_goal: G3 — goal already confirmed equivalent, so no propose_goal. Good.
+
+Now: are directions required to have goal ref? payload.goal: {"kind":"goal","id":"63057893-0d54-430a-b4cc-d6207c9633da"} — yes, there is a goal in packet. Use it.
+
+do_nothing direction: lever {kind: "do_nothing", hypothesis: null, mechanismKey: null}. But rule says lever.hypothesis vaut null seulement pour do_nothing. Fine. But do_nothing still needs predictions and rationale. It's fine to have mechanismKey null.
+
+Hmm, can do_nothing have a hypothesis? Spec says hypothesis null only for do_nothing → implies do_nothing should have null hypothesis. OK.
+
+Now predictions must use MEMBRE actors: {"mention": "Jules"} etc. or person refs. Use person refs: {"kind":"person","id":"39cf600b-1618-4f44-bd2f-0889337e4731"} for Jules, bf9a3531 for Maya, 0de353d9 for Karim, and {"self":true}.
+
+Now write the directions.
+
+Direction 1 — "Une demande précise, une fois" (lower_barrier on 57a625a8, mechanismKey "barrier"):
+action: « La prochaine fois que Jules laisse une tâche qui le concerne (sa vaisselle), ne pas la faire : lui dire une phrase précise et datée — "ta vaisselle, tu la fais ce soir ?" — et ne rien reprendre derrière pendant 48 h. »
+conditions: utile quand la tâche est clairement à lui et non urgente pour le logement; à éviter un jour de tension ou si l'échéance est critique (visite).
+effort: low.
+limits: cela ne règle pas la répartition globale ni la place de régulateur ; si Jules laisse traîner, l'inconfort retombe sur l'utilisateur et peut faire monter la tension ; un seul essai ne prouve pas un schéma.
+signals: Jules fait la tâche dans la journée ; Jules répond « oui » puis ne fait rien ; Jules propose un échange (« je fais ça, tu fais X ») ; personne ne remarque.
+learnsIfFails: si la demande est ignorée sans conséquence, on apprend que le lien ne se rompt pas quand on demande — ce qui retire une part du coût anticipé.
+predictions: 
+- Jules: "répond oui sur le moment, puis laisse traîner quelques heures", immediate, 1.
+- Jules: "finissera par faire sa part, ou la laissera et testera si l'utilisateur reprend derrière", transitional, 3.
+- self: "sentira l'inconfort de la tâche qui traîne et l'envie de la faire", immediate, 1.
+- self: "découvrira que demander n'a pas cassé le lien", equilibrium, 14.
+Confidence: keep 2-4 predictions.
+
+Direction 2 — "Mettre une tâche hors de sa boucle" (change_game on 5b5d0790, mechanismKey "barrier"):
+action: « Pour la prochaine échéance du logement (renouvellement du bail, visite), annoncer une fois : "cette fois je ne m'en occupe pas, vous vous répartissez" — puis tenir, quitte à ce que ce soit imparfait. »
+conditions: sensé si l'échéance n'engage pas directement l'utilisateur (sinon il en paie les conséquences).
+effort: moderate.
+limits: si personne ne prend, le coût réel (bail non préparé) peut retomber sur tout le monde, y compris lui ; peut être lu comme un retrait.
+signals: Maya ou Jules organise quelque chose ; l'échéance est laissée à l'abandon ; on lui redemande de s'en occuper (« t'as l'habitude »).
+learnsIfFails: apprend si le groupe sait se coordonner sans lui, ou si sa place est structurellement nécessaire — information décisive pour la suite.
+predictions: Maya: "redemandera à l'utilisateur de s'en occuper", immediate 3; Jules: "ne réagira pas dans l'immédiat", immediate 3; Maya/Jules: "finit par traiter l'échéance entre eux ou la laisse s'éteindre", equilibrium 21.
+
+Direction 3 — "Déplacer la récompense : remercier ce qui est fait par d'autres" (change_reward on 11bda265, mechanismKey "optimizes" — hmm, the lever should target the mechanism field the lever aims at. The reward is recognition; changing what the repetition rewards → target "soothes" (la reconnaissance explicite apaise) or "optimizes" (obtenir reconnaissance + place d'indispensable). I'd say mechanismKey "soothes" — currently recognition for him; change: give recognition to whoever does the task. Hmm, but "change_reward" means "changer ce que la répétition récompense". The repetition (faire soi-même) is rewarded by recognition; change the reward: make the visible credit go to the person who does the task, and stop being the one who gets thanked. Action: « Quand Maya ou Jules fait une tâche, le dire explicitement ("merci, c'est toi qui l'as fait") ; et quand l'utilisateur la fait, ne pas compenser par un service supplémentaire — laisser la reconnaissance aller à celui qui agit. » Hmm slightly abstract.
+
+Alternative more concrete: "Nommer sa place au lieu de la tenir": a small public statement: when Maya thanks him in front of friends saying the coloc would collapse without him, répondre « pas tout seul » et citer une chose que les autres ont faite. Hmm.
+
+Let me instead make direction 3 about Maya's asymmetric loop: lower_barrier/change_reward on 335a05ef mechanismKey "barrier" (la boucle demande→exécution n'a jamais été inversée). Action: « Faire une contre-demande à Maya, une fois, sur une chose précise et petite : "tu peux passer commande des courses cette semaine ?" — sans faire à sa place si elle oublie. » This is distinct from direction 1 (Jules) and tests the inverse of the loop. Predictions: Maya accepte/ou reporte la demande sur l'utilisateur; Maya fait la commande; Maya: « bonne idée, tu t'en occupes ? » pattern repeats.
+
+Then direction 4 — change_reward on 11bda265: "Laisser un manque visible, sans le combler": choisir une tâche récurrente non urgente (les courses communes) et annoncer qu'il ne la fait pas cette semaine; laisser le manque apparaître. Lever change_reward, mechanismKey "barrier" or "optimizes". The repetition rewards: doing it preserves "la bonne entente du logement" and his indispensable status. Changing the reward: faire porter au groupe la conséquence du manque, ce qui rend visible ce que sa prise en charge procure. Hmm, mechanismKey "optimizes" (obtenir de la reconnaissance et éviter le conflit ouvert) — the lever removes the silent absorption that avoids conflict.
+
+Actually, is direction 4 too close to direction 1 and 2? Direction 1 = ask precisely to Jules; direction 2 = hand off a whole échéance; direction 4 = leave a gap deliberately (cesser d'absorber). They differ in lever: lower_barrier vs change_game vs change_reward. I think 4 distinct directions is good, but risk of redundancy. Maybe replace direction 4 with a Karim-based direction (change_game / alternative_source) since Karim is a real lever (questions about him exist, and the D3 mirror hypothesis). Direction: "Utiliser Karim comme répétition": formuler à Karim, à voix haute, la phrase exacte à dire dans la coloc — s'entraîner sur le lien sûr pour abaisser le coût de formuler devant le groupe. Lever: lower_barrier on 07997710 mechanismKey "defenses" (le silence). Or alternative_source: Karim offre déjà une source de reconnaissance; the lever is to convert it toward action. Hmm, lower_barrier targeting "defenses" fits well: the defense is silence; rehearsing the sentence lowers the barrier to speaking.
+
+I could include both 4 (Karim) and 5 (change_reward). Total 5 action directions + 1 do_nothing = 6. That may be a lot but allowed. Let's do 4 action + do_nothing to keep 2-3 strong: rule 15 says "Propose 2 ou 3 lectures fortes par sujet" — that's about hypotheses, not directions. For directions, O1 says propose all useful ones, at least two. I'll do 4 actions + do_nothing = 5 directions. Choose: (1) micro-demande à Jules (lower_barrier, 57a625a8), (2) contre-demande à Maya (lower_barrier? that'd be same lever type twice — fine, different hypotheses; but better vary: change_reward targeting 335a05ef "soothes"? Hmm). Let me assign:
+
+1. Micro-demande datée à Jules — lower_barrier — h 57a625a8 — barrier.
+2. Sortir une échéance de sa boucle (la confier à Maya et Jules) — change_game — h 5b5d0790 — barrier.
+3. Contre-demande à Maya (inverser la boucle) — lower_barrier — h 335a05ef — barrier. Hmm two lower_barrier + two barrier keys. Acceptable but let me differentiate: for 3, mechanismKey "beliefs" ("demander se fait, refuser se paie") — the lever is a disconfirming_experience! Yes: asking Maya for something, and having it accepted, disconfirms the belief "refuser se paie / demander met le lien en danger". Use lever kind "disconfirming_experience", mechanismKey "beliefs". Nice variety and it directly aligns with O4 (actions that learn).
+4. S'entraîner à haute voix avec Karim (le coût nommé hors du groupe) — change_game or alternative_source. Karim currently provides a safe place to voice cost (gain: reconnaissance sans risque). Alternative source: replace the "secret" acknowledgment with the group as source of the same gain... hmm, alternative_source = "offrir une autre source du même gain". Gain here is being heard/recognized in his fatigue. Alternative source could be... Karim is already that source. Maybe better: change_game — changer de cadre: faire du café avec Karim un lieu d'entraînement (répéter la phrase) plutôt qu'un lieu de plainte. I'll use "change_game" with mechanismKey "defenses" (le silence). And 5: laisser un manque visible (courses) — change_reward — h 11bda265 — mechanismKey "optimizes".
+
+Maybe 5 actions is too many; I'll drop one. Which is weakest? Direction 5 (laisser un manque) overlaps with 1 (ne pas reprendre derrière). Actually direction 1 already includes not doing it. So drop 5. Final: 4 actions (1 Jules micro-demande, 2 échéance hors boucle, 3 contre-demande à Maya, 4 Karim entraînement) + do_nothing.
+
+Hmm, is 4 (Karim) serving the goal "faire tourner la coloc sans être le seul à tout gérer, en gardant la vie commune"? Indirectly: it lowers the barrier to formulating the request in the group. Justified as a low-effort rehearsal step. OK.
+
+Actually let me reconsider direction 4 versus one targeting 3ccc4a7f (D3 self, attachement) — the alternative of the same lever: "vérifier que le lien tient quand une demande est faite". Direction 3 (contre-demande à Maya) already covers disconfirming experience. Fine.
+
+Predictions must be datable via horizonDays. Let me write them.
+
+Now, do I need citations? Directions don't have citations field. Questions don't either. Only claims/events/roles do. Good — no citations needed anywhere since I only propose directions and questions. But wait: allowedOperations only includes propose_question, propose_direction, propose_goal. So no claims. Good — no citation offset risk.
+
+Hmm, but should I propose a goal? No (already confirmed).
+
+Outcome: "proposed", operations non-empty.
+
+Now the summary: short, no claims absent from operations.
+
+Let me now write the JSON.
+
+Careful with schema fields exactness: each operation has key, kind, payload, rationale. rationale at operation level. Fields listed mandatory except rank, mechanism, horizonDays.
+
+For propose_direction payload: goal, title, action, lever{kind, hypothesis, mechanismKey}, conditions, effort, limits, signals, learnsIfFails, predictions.
+
+Let me draft each.
+
+D1:
+- key d1, goal ref goal id.
+- title: "Une demande précise à Jules, sans reprendre derrière"
+- action: "La prochaine fois que Jules laisse une tâche qui lui revient (sa vaisselle), lui adresser une phrase précise et datée — « ta vaisselle, tu la fais ce soir ? » — et ne pas la faire à sa place pendant 48 h."
+- lever: lower_barrier, hypothesis {kind: hypothesis, id 57a625a8-...}, mechanismKey "barrier"
+- conditions: "Quand la tâche est clairement à Jules, peu urgente pour le logement, et qu'aucune échéance (visite, bail) ne rend le manque coûteux pour l'utilisateur."
+- effort: low
+- limits: "Ne touche pas la répartition d'ensemble ni la place de régulateur ; si Jules laisse traîner, l'inconfort retombe d'abord sur l'utilisateur et peut tendre l'ambiance ; un seul essai ne démontre pas de schéma."
+- signals: ["Jules fait la tâche dans la journée", "Jules répond oui puis ne fait rien", "Jules propose un échange de tâches", "L'utilisateur cède et fait la tâche lui-même"]
+- learnsIfFails: "Si la demande reste sans effet et que le lien ne bouge pas, le coût anticipé de demander (casser l'ambiance) est démenti : l'échec apprend que demander est moins cher que prévu."
+- predictions: [{actor Jules, "répond oui sur le moment, puis laisse passer quelques heures", immediate, 1}, {actor self, "ressent l'envie de faire la tâche lui-même devant le manque", immediate, 1}, {actor Jules, "fait sa part ou teste si l'utilisateur reprend derrière", transitional, 3}, {actor self, "constate que demander n'a pas rompu le lien", equilibrium, 14}]
+- rationale: "La barrière de la lecture 57a625a8 est l'absence de toute demande explicite adressée à Jules : l'action la franchit à coût minimal."
+
+D2:
+- title: "Sortir une échéance du logement de sa propre boucle"
+- action: "Pour la prochaine échéance collective (préparation du renouvellement du bail), annoncer une fois : « cette fois je ne m'en occupe pas, vous vous répartissez », puis tenir, même si c'est imparfait."
+- lever: change_game, hypothesis 5b5d0790, mechanismKey "barrier"
+- conditions: "Quand l'échéance n'engage pas directement l'utilisateur (sinon il en subit les conséquences) et qu'un délai existe pour se rattraper."
+- effort: moderate
+- limits: "Si personne ne prend, le tort retombe sur tout le logement, utilisateur compris ; le geste peut être lu comme un retrait plutôt qu'une demande ; il ne dit rien de ce que l'utilisateur veut garder."
+- signals: ["Maya ou Jules organise quelque chose", "personne ne s'en saisit", "on lui redemande de s'en occuper « comme d'habitude »"]
+- learnsIfFails: "Si l'échéance reste en suspens sans lui, on apprend que le groupe ne se coordonne pas sans lui — information décisive avant toute renégociation."
+- predictions: [{Maya, "redemande à l'utilisateur de s'en charger", immediate, 3}, {Jules, "ne réagit pas dans l'immédiat", immediate, 3}, {self "voit le manque et l'envie de reprendre la main", immediate, 5}, {relation Maya/Jules — actor must be MEMBRE; can't be relation. Use Maya: "traite l'échéance directement avec Jules ou la laisse s'éteindre", equilibrium, 21}]
+- rationale.
+
+D3:
+- title: "Inverser la boucle : une contre-demande à Maya"
+- action: "Adresser à Maya une demande précise et petite sur une tâche qu'elle peut porter (par exemple « tu peux passer commande des courses cette semaine ? »), et ne pas exécuter à sa place si elle oublie."
+- lever: disconfirming_experience, hypothesis 335a05ef, mechanismKey "beliefs"
+- conditions: "Quand la demande porte sur quelque chose de petit, vérifiable dans la semaine, et que le manque n'est pas dangereux pour le logement."
+- effort: low
+- limits: "Un refus ou un report de Maya ne suffit pas à conclure ; tend à déplacer la tâche plutôt qu'à changer la répartition ; peut activer la culpabilité si les courses manquent."
+- signals: ["Maya accepte et exécute", "Maya renvoie la demande (« tu t'en occupes ? »)", "Maya oublie sans que rien ne se passe"]
+- learnsIfFails: "Que Maya refuse, reporte ou oublie, l'utilisateur saura ce que coûte une demande inversée — et donc si la boucle tient à son propre évitement ou à l'attente du groupe."
+- predictions: [{Maya, "accepte la demande sur le moment", immediate, 1}, {Maya, "exécute, ou la renvoie à l'utilisateur", transitional, 7}, {self, "hésite à reprendre la tâche si elle traîne", transitional, 3}, {Maya, "répartition légèrement déplacée ou retour à l'ancienne boucle", equilibrium, 21}]
+- rationale: "La croyance « demander se fait, refuser se paie » de 335a05ef n'a jamais été mise à l'épreuve : cette expérience la teste à faible coût."
+
+D4:
+- title: "Dire le coût à voix haute, d'abord avec Karim"
+- action: "Au prochain café avec Karim, répondre à sa remarque au lieu de la laisser passer : formuler à voix haute la phrase qu'il voudrait dire aux colocs (« je fais la part des autres et j'en ai marre »), comme un entraînement."
+- lever: change_game, hypothesis 07997710, mechanismKey "defenses"
+- conditions: "Quand Karim relance sur la fatigue ou la coloc ; le café sert alors de répétition et non de soupape."
+- effort: low
+- limits: "Parler à Karim ne change pas la coloc ; si Karim est déçu que l'utilisateur soit moins disponible, la remarque peut devenir une plainte ; Karim voit l'utilisateur hors du logement et peut surinterpréter."
+- signals: ["Karim rebondit et aide à formuler", "Karim change de sujet", "l'utilisateur dit la phrase sans que rien ne s'effondre"]
+- learnsIfFails: "Si la phrase est dite à voix haute sans catastrophe, le coût anticipé de la dire dans le groupe baisse ; si elle reste bloquée, la barrière est ailleurs."
+- predictions: [{Karim "relance et aide à formuler, ou commente que l'utilisateur a changé", immediate, 3}, {self "dit la phrase entière, ou s'arrête à mi-chemin", immediate, 1}, {Karim "repose la question sur la coloc", transitional, 14}]
+- rationale.
+
+D5 do_nothing:
+- title: "Ne rien entreprendre"
+- action: "Ne rien modifier : continuer à absorber les tâches et les demandes, sans demande ni limite."
+- lever: {kind do_nothing, hypothesis null, mechanismKey null}
+- conditions: "Si l'utilisateur ne veut rien changer avant une échéance qui l'occupe déjà."
+- effort: low
+- limits: "Le coût continue d'augmenter en silence et se dit hors du groupe."
+- signals: ["Jules laisse encore sa part", "Maya passe encore par l'utilisateur pour les tâches", "Karim note de nouveau la fatigue", "la lassitude s'exprime à l'extérieur du groupe"]
+- learnsIfFails: "Rien ne change : confirme que l'équilibre tient sans intervention et qu'aucun des deux autres ne prend l'initiative."
+- predictions: [{Jules, "continue à laisser sa part sans la demander", equilibrium, 30}, {Maya, "continue à adresser les tâches à l'utilisateur", equilibrium, 30}, {self, "voit la lassitude s'aggraver et se dire à Karim plutôt qu'aux colocs", equilibrium, 30}, {Karim, "espace ses remarques faute de réponse", equilibrium, 30}]
+- rationale: "Direction témoin demandée par la tâche : elle prédit ce que produit l'équilibre décrit par 11bda265 et 07997710 s'il n'est pas touché."
+
+Questions:
+q1: "Quand tu fais la part de Jules sans rien dire, qu'est-ce qui te retient le plus : l'idée de devoir demander (et qu'on te trouve pénible), ou celle de laisser une tâche traîner et de passer pour quelqu'un de moins fiable ?" targets 57a625a8, 11bda265. discriminatingInfo: "Selon que le frein est la formulation d'une demande ou la perte de la place d'indispensable, c'est la direction « demande précise à Jules » ou la direction « sortir une échéance de sa boucle » qui a le plus de chances." whyNow: les données ne montrent aucune tentative de demande alors que le remboursement montre que l'utilisateur sait réclamer.
+
+Careful — existing question 84f35647 asks about refusal history and against demand to Jules. My question is about the nature of the brake, not the existence — distinct enough? It's close. Hmm. The packet's question 84f35647: "As-tu déjà refusé une demande de Maya, ou demandé à Jules de faire sa part — et que s'est-il passé ensuite ?" My question asks what holds him back. Somewhat overlapping but different (anticipated cost vs history). Also question 6922d79b asks "quand tu fais la part de Jules ou que tu exécutes une demande de Maya, qu'est-ce que ça te coûte — et qu'est-ce que ça t'apporte ?" — that's very close to mine (what does it cost you). Hmm. My q1 risks being a re-ask of 6922d79b. Rule 20: never re-ask a question present in the packet.
+
+Let me design q1 differently: focus on which lever would be acceptable/feasible and on the anticipatory belief, not on cost. E.g., « Si tu ne faisais pas la vaisselle de Jules pendant deux jours, qu'est-ce que tu imagines qu'il se passerait entre vous ? » targets 57a625a8 & 3ccc4a7f: if he imagines a rupture/reproach → belief "je dois porter pour garder le lien" (lower_barrier needs reassurance); if he imagines nothing much → the barrier is habit, not fear. This is about expectation, distinct from "how does it feel". I think it's distinct from 6922d79b (cost/gain of doing) and 84f35647 (history of refusal). Good.
+
+q2: about Maya's thanks: existing questions don't cover that. Existing 72054d74 asks about the cadeau hesitation (targets 3ccc4a7f, fe984789) — that's similar in discriminating power. My q2 targets 3ccc4a7f vs 11bda265 or fe984789. Let's phrase: « Quand Maya dit devant ses amis que sans toi la coloc s'effondrerait, qu'est-ce que ça te fait — est-ce que ça te réchauffe, ou est-ce que ça te pèse ? » targets 3ccc4a7f (supports: recognition soothes → keeps place) and fe984789? Actually fe984789 is contextual fatigue. Alternatively target cfeff3a9 (banal répartition). discriminating: plaisir → la place est recherchée (3ccc4a7f, 11bda265 gains confirmed); pesanteur → place subie; indifference → cfeff3a9. Targets: 3ccc4a7f, cfeff3a9.
+
+Hmm, but is it too close to 6922d79b ("qu'est-ce que ça te coûte — et qu'est-ce que ça t'apporte ?")? The thanks/recognition aspect is not covered by any existing question. It's about the reward side of the loop, which is precisely what determines whether change_reward works. I'll keep it, targeting 3ccc4a7f and cfeff3a9.
+
+Maybe just two questions is enough. Actually maybe I should limit to one to avoid noise. I'll include two — they discriminate different choices (d1 vs d2; and D3 self readings). OK.
+
+Now write the JSON output. Fields for propose_question payload: question, targets, discriminatingInfo, whyNow.
+
+Everything must be JSON object per schema: schemaVersion "1.7", requestId, workspaceId, baseRevision 24, contextHash "2949edee88efdfe85c042699696973f418a10f04cea5f4533358f257ba219387", modelDeclaration {declaredModel: "deepseek-flash (analyst)"? Let's put "deepseek-v3.2" hmm. I'll declare "deepseek-chat" — safe: "deepseek". Let me put declaredModel "deepseek-flash", role "analyst", technicalId null.
+
+outcome "proposed", operations [...], clarifications [], summary.
+
+Let's write it carefully.

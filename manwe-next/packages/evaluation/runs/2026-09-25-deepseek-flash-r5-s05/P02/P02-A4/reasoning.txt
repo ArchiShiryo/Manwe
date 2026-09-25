@@ -1,0 +1,162 @@
+Now let me check the relations for Samir/Hugo/Léa and maybe get_person to see episodes. Also maybe check if there's an existing relation-only hypothesis for the group. I have enough.
+
+Let me also consider whether there's a hidden relation between Hugo and Léa (implicit:person:Hugo|Léa, 11 episodes, Léa makes 5 requests, Hugo 1). That's interesting: Léa asks Hugo too. Could be a direction target: the group. But directions must lever on hypotheses present; only group hypothesis 281182e4 covers Léa+Hugo+Samir+self.
+
+Now design directions.
+
+Goal id: 93c29ff1-c7f8-42fd-9181-48abd426d0ea.
+
+Direction 1 (lower_barrier / change_reward?): « Passer une tâche à un titulaire nommé, devant l'équipe »
+Lever: change_reward on 281182e4, mechanismKey "barrier" (reconnaissance verbale au lieu du partage; aucun membre n'a intérêt à changer). Hmm change_reward means "changer ce que la répétition récompense". The repetition rewards the group (task done at zero cost, recognition cheap). To change reward: make the task have a designated owner, so that recognition no longer substitutes. I think change_reward fits with mechanismKey "barrier".
+
+Concrete action: au prochain entraînement, annoncer que le planning (ou les relances de remboursement) ne sera plus tenu par lui, et désigner nommément une personne (« Léa, tu prends le planning ce mois-ci ? »), puis ne pas rattraper si ça ne se fait pas pendant deux semaines.
+
+Predictions:
+- Léa immediate (7 j): renvoie la charge (« super, tu le tiens à jour ? ») ou propose une répartition partielle — transitional; equilibrium 30 j: elle tient le planning ou il tombe.
+- Hugo immediate: silence puis ne prend rien; transitional: sollicite l'utilisateur pour une autre tâche.
+- Samir equilibrium: il nomme le changement ou continue à observer.
+- self: culpabilité dans les premiers jours (transitional).
+
+learnsIfFails: if the task drops and no one reacts nor blames him -> supports alternative 9811c32e (division fonctionnelle, not a demand for a carrier). Hmm actually if task drops with no crisis, that supports the "group would organise otherwise or let it drop" prediction of 9811c32e.
+
+Direction 2: disconfirming_experience on 75545e76, mechanismKey "beliefs": demander explicitement une aide précise à trois personnes nommées, une fois, sans rattraper derrière. If someone responds, it disconfirms "si je ne le fais pas, personne ne le fera". Prediction: transitional increase in annoyance? Signals: someone says yes within 48h; if nobody responds, belief confirmed (information).
+
+Hmm, is direction 1 and 2 too similar? Direction 1 = hand over a task in front of the group (public, names someone); direction 2 = ask for help for a task he keeps. They test different beliefs: d1 tests the group's willingness to own a task; d2 tests whether asking works (his own belief that asking is pointless/would threaten the place). Distinct enough. But maybe better differentiate: Direction 2 could be "répondre à Samir et accepter une sortie" — lever alternative_source on 5450084e, mechanismKey "barrier" (répondre coûte plus que laisser sans suite) or "optimizes" (garder Samir comme interlocuteur extérieur). Actually the relation with Samir is the friendship that gets sacrificed to the task. Accepting the ciné / answering his remark directly targets the goal "rester au club en portant moins": the club link isn't only through tasks — alternative_source of belonging: get the relational gain from friendship rather than from being indispensable. That's a nice lever: alternative_source, hypothesis 5450084e, mechanismKey "protects"? Hmm. The mechanism: optimizes "garder Samir comme interlocuteur extérieur"; protects "évitement de la question de l'asymétrie"; barrier "répondre coûterait plus que laisser sans suite". For alternative_source the point: offer another source of the same gain (the link/belonging without carrying). Mechanism key "optimizes" (the gain: keep a link outside obligations) → replace obligation-lien by friendship-lien. I'll use mechanismKey "optimizes".
+
+Direction 3 alternative maybe: change_game: "instituer une répartition écrite et tournante" — propose co-responsibility: for the repas de fin de saison he just accepted, propose to Léa a shared organisation with two names / a rotation. Lever change_game with hypothesis 7065f324 (Léa asymmetric) mechanismKey "barrier" (rouvrir le partage risquerait place et bonne relation). Hmm change_game = changer de cadre, de groupe ou de jeu. Introducing co-responsibility changes the frame: who "holds" a task becomes explicit and shared — changes the game from "reconnaissance contre exécution" to "contrepartie et rotation". mechanismKey "barrier" for 7065f324: "Rouvrir le partage risquerait la place et la bonne relation ; personne n'a intérêt à le faire."
+
+Alternatively, a direction with Hugo: lower_barrier targeting 69fc625b (créancier-secours), mechanismKey "barrier" (refuser exigerait de soutenir un conflit): a small step: dire explicitement une limite matérielle la prochaine fois qu'Hugo demande une avance (« je ne peux plus avancer »), without a big confrontation — perhaps in the frame of the repas or the remboursement. But is that serving the goal "charge du club ne repose plus sur lui"? Partly, it removes the "porteur de charge" role including financial rattrapage. Yes it does serve: the goal is that the load no longer rests on him.
+
+I have limited but fine. Let me pick 4 actions:
+
+1. d1 — « Nommer un titulaire pour une tâche » (change_reward, 281182e4, barrier)
+2. d2 — « Demander explicitement une aide précise » (disconfirming_experience, 75545e76, beliefs)
+3. d3 — « Répondre à Samir et reprendre une sortie » (alternative_source, 5450084e, optimizes)
+4. d4 — « Poser une limite matérielle à Hugo » (lower_barrier, 69fc625b, barrier) — small step: refuse/limit next advance, or ask for reimbursement date explicitly with a delay, framed as a budget constraint rather than a reproach.
+5. d5 — do_nothing.
+
+That's 5 directions. Good. Maybe 4 actions is many but O1 says propose toutes les directions utiles. Fine.
+
+Hmm, d2 asks three people named... careful about "actions that learn even if they fail". Good.
+
+O5: no direction that manipulates. All fine.
+
+Predictions per direction 1-5 with phase.
+
+Also propose_question: one discriminating question not in the package: "Quand tu as laissé une tâche non faite, est-ce que quelqu'un l'a reprise ou est-ce que la tâche est tombée ?" targets 281182e4 and 9811c32e (and maybe ccbe6c40). But wait — 9811c32e: revisionConditions mention... The question discriminates: does the group pressure him (over-functioning) or does the group organize otherwise (functional division). Hmm, but has this situation occurred? The ballons: Léa asked him to buy balls even though it was hers — no info whether he did. Actually a good discriminating question. Is it too close to b241c174 ("As-tu explicitement demandé de l'aide... si non qu'est-ce qui t'a retenu ?")? Different: about what happens when he doesn't do a task / whether he has ever not done something. Not identical. I'll propose it.
+
+Also maybe a question about the repas (already asked). No.
+
+Let me also consider proposing a question about the maillots reimbursement of Léa — 42852cff: he advanced the money for the jerseys and relaunched Léa and Hugo; Hugo reimbursed with 3 weeks delay; did Léa reimburse? That discriminates 7065f324 vs alternatives (Léa's asymmetry: does she also leave debts?). Hmm — question discriminates asymmetry with Léa vs. contextual. The existing question 92708fe8 asks about Hugo. A question about Léa's reimbursement is not in the package. Targets: 7065f324 and 86ec181e? Hmm 86ec181e is about exécutant fiable (D3). Actually Léa reimbursing promptly vs not would discriminate "Léa organiser/déléguer mais tient ses engagements" (functional division 9811c32e) vs "asymétrie installée". Maybe too weak. I'll include just one or two questions. Let's include two: the one about task dropping, and one about Léa's reimbursement? Let me keep it to one strong question about the task's fate — plus maybe a second about whether he has already asked for a specific task to Léa directly. Hmm, b241c174 covers asking for help generally.
+
+I'll include 1-2 questions. Let me include the "task drop" question and the "Léa reimbursement" question targeting 7065f324 / 9811c32e / 281182e4? The second seems weaker in discriminating power. Let me do just one strong question, maybe two.
+
+Actually another discriminating question: "Si tu ne relances pas pour l'argent, est-ce que Léa et Hugo te remboursent d'eux-mêmes ?" — tests whether the group's compliance depends on his reminders (supports over-functioning/reward structure). Targets 281182e4, 69fc625b. Hmm.
+
+I'll include two questions: 
+q1: task fate (281182e4 vs 9811c32e).
+q2: maybe about what he did with Léa's ballons demand — did he buy them? "Pour les ballons, tu les as achetés ou tu as dit à Léa que c'était son tour ?" That discriminates 7065f324 (exécute toujours) vs 86ec181e? Hmm, 86ec181e is D3 with 1 contradict. Actually weak.
+
+Let me think about what's most valuable: the direction set's success depends on whether the user has ever tried a demand and what happened; b241c174 covers. The key unknown for the do_nothing prediction and d1 is: when a task isn't done by him, does the group pressure him or does the task just drop? Also whether the group's willingness exists. So q1 is good. I might add q2: "Après le repas de fin de saison, combien de temps le lien dure-t-il : est-ce que vous vous voyez en dehors du club ?" — that discriminates whether the club is his only source of link (75545e76 attachment) vs. he has other links (alternative explanation). Targets 75545e76, ccbe6c40. That's a genuinely discriminating question about belonging sources. Good — and it's not in the package. But careful: rule 8 — reading about the user requires claims where user expresses cost/feeling; 75545e76 already exists as D4 draft with user's own statements cited ("je suis fatigué", "je ne veux pas quitter le club"). So a question about his other links is legitimate to discriminate D4 attachment vs conjunctural. OK.
+
+I'll include both q1 and q2. Two questions is fine.
+
+Now quantity check: 5 directions + 2 questions = 7 operations. Fine.
+
+Should I also propose_goal? Goal already confirmed equivalent → no (G3).
+
+Now write predictions carefully with actor members: for actors, MEMBère = {"mention": "Léa"} or {"person": {kind person id}}. Use mention for simplicity, but "person" refs are available: Léa = eedbc236-c61f-4928-91ed-bb2adca7f4c5, Hugo = 582cccad-21b8-4ce9-859e-196b60090a0a, Samir = 98601a37-02b2-40c0-812f-dbc41688fb08. I'll use {"person": {"kind":"person","id":"..."}}. Hmm, the spec's <MEMBRE> = { "mention": ... } | { "person": <RÉF> } | { "self": true }. <RÉF> = {kind, id}. So {"person": {"kind": "person", "id": "eedbc236-..."}}. Good.
+
+For lever.hypothesis: {"kind":"hypothesis","id":"..."}.
+
+Also validFrom/validTo not in direction payload. Fine.
+
+Now rationale at operation level, short.
+
+Let me write the do_nothing direction:
+title: « Ne rien changer à la répartition »
+action: ne rien entreprendre ; continuer à prendre en charge les demandes et les rattrapages comme aujourd'hui.
+lever: {kind: "do_nothing", hypothesis: null, mechanismKey: null}
+conditions: "pertinent si l'utilisateur juge la fatigue supportable et veut d'abord observer"
+effort: low
+limits: "la fatigue nommée ne se réduit pas ; la lecture 75545e76 prédit une nouvelle acceptation de tâches"
+signals: ["une nouvelle demande de Léa ou une nouvelle défaillance d'Hugo dans les 3 semaines", "Samir continue de nommer la charge sans que l'utilisateur réponde"]
+learnsIfFails: "si rien ne s'aggrave et que la fatigue baisse après les échéances de la saison, la lecture conjoncturelle (ccbe6c40) gagne du poids"
+predictions: 
+- Léa: "continue de demander directement, y compris des tâches dont elle a la charge", immediate, 14
+- Hugo: "une nouvelle demande d'avance ou de rattrapage", transitional, 30
+- self: "accepte une tâche supplémentaire malgré la fatigue nommée", equilibrium, 30
+- Samir: "continue de nommer la charge sans réponse", equilibrium, 30
+
+Good; 4 predictions ≤5.
+
+d1 change_reward details, signals: "quelqu'un dit oui à voix haute dans la semaine", "la tâche n'est pas faite et personne ne le relance", "Léa reformule sa demande (« tu le tiens à jour ? »)". learnsIfFails.
+
+predictions for d1:
+- Léa immediate 7: "renvoie la charge ou propose que l'utilisateur la tienne encore (« super, tu le tiens à jour ? »)" phase immediate
+- Hugo immediate 7: "ne se propose pas, reste silencieux"
+- self transitional 14: "culpabilité et envie de rattraper la tâche"
+- Léa equilibrium 30: "soit tient la tâche, soit elle cesse d'exister sans crise"
+- Samir equilibrium 30: "relève le changement ou soutient la répartition"
+
+d2 disconfirming_experience (ask for specific help on one task he keeps, to three named people, once, without doing it himself if no answer):
+predictions:
+- Léa immediate 5: "répond par une contre-demande ou par l'importance de l'utilisateur plutôt que par une aide concrète"
+- Samir immediate 5: "accepte ou propose une alternative" — hmm, Samir proposed ciné; he'd probably help.
+- self transitional 10: "inconfort à demander ; tentation de faire à la place"
+- group equilibrium 30: "au moins une aide réellement rendue, ou constat que la demande reste sans suite"
+
+d3 alternative_source (répondre à Samir, accepter la sortie):
+predictions:
+- Samir immediate 7: "reprend la proposition de sortie, s'étonne ou demande pourquoi maintenant"
+- self transitional 14: "culpabilité à laisser une tâche du club en attente pour une sortie"
+- self equilibrium 30: "un lien avec Samir hors des tâches du club"
+
+d4 lower_barrier à Hugo (mécanisme "barrier" de 69fc625b): action: la prochaine fois qu'Hugo demande une avance, répondre par une limite concrète et datée, sans reproche (« je ne peux plus avancer cette fois ; je peux te rappeler d'ici vendredi ») — petit pas, pas de confrontation globale.
+predictions:
+- Hugo immediate 7: "insiste ou se retire ; teste la limite"
+- Hugo transitional 21: "cherche une autre ressource ou revient avec un échéancier"
+- self transitional 14: "inconfort, crainte de casser la relation"
+- self equilibrium 30: "moins de rattrapages matériels"
+
+Wait — is d4's lever type well aligned? lower_barrier = abaisser la barrière de transition, par petits pas. The barrier in 69fc625b: "Refuser exigerait de soutenir un conflit et de renoncer à la place de celui qui assure". A small, bounded refusal lowers the barrier to saying no (not a total refusal). OK, that's fine.
+
+Note O2: lever.hypothesis must be a hypothesis "ni superseded ni contradicted". 69fc625b is draft — OK.
+
+Also O5: "n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides." These have moderate confidence with 5-6 episodes, fine.
+
+Now the summary: short synthesis.
+
+Let me double check citation requirement: claim/event/role ops require citations; directions/questions/goals don't need citations (goal has citations, but we're not proposing one). Good — no citations needed at all. 
+
+One more consideration: should I propose a direction that uses "change_game"? Not necessary.
+
+Also should the do_nothing hypothesis be null — yes, allowed only for do_nothing.
+
+Order: directions then questions. Keys: d1..d5, q1, q2.
+
+Write the JSON.
+
+Also modelDeclaration.declaredModel: "<ton nom de modèle>" — I'll put "deepseek-flash". Hmm, the workspace says "deepseek-flash-r5". I'll declare "deepseek-flash".
+
+Effort levels: d1 moderate, d2 low, d3 low, d4 moderate, d5 low.
+
+Conditions: describe when it makes sense.
+
+Let me write concise but rich text.
+
+For q1 payload: question, targets (refs), discriminatingInfo, whyNow.
+
+q1: "Quand une tâche ne dépend que de toi et que tu ne la fais pas, que se passe-t-il : quelqu'un la reprend, on te la redemande, ou elle tombe simplement ?" targets: 281182e4, 9811c32e. discriminatingInfo: "Départage un sur-fonctionnement entretenu par le groupe (retrait = sollicitation accrue) d'une division fonctionnelle des rôles où le groupe s'organise autrement ou laisse la tâche tomber." whyNow: "Les directions proposées reposent sur ce que fait le groupe quand l'utilisateur lâche une tâche ; le paquet ne le dit pas."
+
+q2: "En dehors du club, qu'est-ce qui te relie à l'équipe : vous vous voyez aussi en dehors, ou le club est-il le seul endroit où vous vous voyez ?" targets 75545e76, ccbe6c40. discriminatingInfo: "...". whyNow.
+
+Check: is q2 similar to any package question? Package questions: about feelings when Léa asks/Hugo fails (2ac310cc), about Hugo contact (92708fe8), about Samir's remark (354cd420), about lending cotisation (c49263b5), about having asked for help (b241c174), about accepting the meal (c0b76532). q2 is distinct. q1 distinct.
+
+Hmm, but rule 20: "pose une question seulement si sa réponse départage des hypothèses" — yes both do.
+
+Now final JSON. Ensure outcome "proposed".
+
+Also "clarifications": [].
+
+Let me write it.
