@@ -18,3 +18,15 @@ Ce journal liste les corrections du harnais et du moteur faites pendant l'évalu
 - **Reprise.**
   - S08-A1 a été ramenée en arrière, puis sa seconde tentative a été appliquée. S08-A2 a été régénérée : l'ancien prompt S08-A2 n'est plus valable.
   - S04-A2 a été ramenée en arrière. Elle attend sa seconde tentative (premier rejet : `invalid_citation`, une claim envoyée avec `"citations": []`).
+
+## 3. Réponses collées entremêlées (25 septembre 2026)
+
+- **Symptôme.** Au tour 3, les réponses S04-A2 (seconde tentative) et S08-A2 ont été collées ensemble : S08-A2 se trouvait au milieu de S04-A2, juste après `"payload": {` de l'opération `q2`.
+- **Traitement.** Les deux réponses ont été séparées à leurs limites exactes, sans rien modifier d'autre : S08-A2 va de son accolade ouvrante à son accolade fermante, et S04-A2 est ce qui reste de part et d'autre. Le collage d'origine est conservé hors du dépôt. S04-A2 reconstituée est un JSON valide, ce qui confirme la découpe.
+- **S08-A2.** Rejetée (`invalid_json`). Son résumé contient un artefact de l'interface ChatGPT, `:chatgpt-content-reference{index="0"}`, dont les guillemets ne sont pas échappés. La seconde tentative est demandée.
+
+## 4. Constat moteur : une correction n'est pas citable (S04-A2)
+
+- **Symptôme.** Les deux tentatives de S04-A2 sont rejetées pour `invalid_citation`. Les deux fois, le modèle propose une claim « l'utilisateur a annulé le week-end » avec `"citations": []`.
+- **Cause.** Un défaut du moteur, pas une erreur du modèle. La correction factuelle de l'utilisateur (« c'est moi qui ai annulé le week-end à la mer, pas Inès ») n'existe que comme annotation. Elle ne figure pas parmi les `sources` du paquet, donc aucune citation exacte n'est possible. À l'inverse, une réponse à une question crée bien une source et un événement.
+- **Décision.** Le moteur n'est pas modifié pendant le run. S04-A2 est notée comme rejetée, avec cette cause. La correction est reportée à BRIEF-003 : une correction factuelle créera une source citable, comme une réponse.
