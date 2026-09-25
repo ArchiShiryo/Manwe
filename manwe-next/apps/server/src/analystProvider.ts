@@ -36,7 +36,14 @@ export type ProviderConfig = {
   id: string;
   model: string;
   call: AnalystCall;
+  /** Jetons autorisés par jour (UTC) ; absent = pas de plafond. */
+  dailyTokenBudget?: number | null;
 };
+
+const startOfUtcDay = (now = new Date()) =>
+  new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  ).toISOString();
 
 /** Codes d'erreur du fournisseur, jamais remplacés par Sol assisté ni une fixture. */
 export type ProviderErrorCode =
@@ -250,14 +257,23 @@ export class AutomaticAnalyses {
     return this.provider !== null;
   }
 
+  /** Budget du jour (IA-A.4) : plafond et jetons déjà consommés. */
+  budget() {
+    return {
+      dailyTokens: this.provider?.dailyTokenBudget ?? null,
+      usedToday: this.store.providerTokensSince(startOfUtcDay()),
+    };
+  }
+
   describe() {
     return this.provider
       ? {
           enabled: true,
           providerId: this.provider.id,
           model: this.provider.model,
+          budget: this.budget(),
         }
-      : { enabled: false, providerId: null, model: null };
+      : { enabled: false, providerId: null, model: null, budget: null };
   }
 
   start(input: { task: AnalysisTask; focus?: EntityRef[] }) {
@@ -266,6 +282,13 @@ export class AutomaticAnalyses {
         "provider_unconfigured",
         "Aucun fournisseur automatique n’est configuré ; l’analyse assistée reste disponible.",
         503,
+      );
+    const budget = this.budget();
+    if (budget.dailyTokens !== null && budget.usedToday >= budget.dailyTokens)
+      throw new DomainError(
+        "budget_exceeded",
+        `Budget du jour atteint : ${budget.usedToday} jetons sur ${budget.dailyTokens}. L’analyse assistée reste disponible.`,
+        429,
       );
     const running = [...this.jobs.values()].find(
       (job) => job.status === "running",

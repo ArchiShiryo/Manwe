@@ -1964,6 +1964,16 @@ export class SqliteMemoryStore {
       );
   }
 
+  /** IA-A.4 : jetons consommés par le fournisseur depuis une date (ISO). */
+  providerTokensSince(sinceIso: string) {
+    const row = this.database
+      .prepare(
+        "SELECT COALESCE(SUM(json_extract(provider_usage_json, '$.total_tokens')), 0) AS total FROM analysis_responses WHERE workspace_id = ? AND received_at >= ? AND provider_usage_json IS NOT NULL",
+      )
+      .get(this.workspaceId, sinceIso) as SqlRow;
+    return Number(row.total);
+  }
+
   cancelAnalysis(requestId: string) {
     const result = this.database
       .prepare(

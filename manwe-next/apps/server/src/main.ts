@@ -17,9 +17,12 @@ const allowedOrigin = process.env.MANWE_UI_ORIGIN ?? "http://127.0.0.1:5180";
 let analyst: ProviderConfig | null = null;
 if (process.env.MANWE_ANALYST_PROVIDER === "deepseek") {
   const model = process.env.MANWE_ANALYST_MODEL ?? "deepseek-flash";
+  const budget = Number(process.env.MANWE_ANALYST_DAILY_TOKENS ?? 2_000_000);
   analyst = {
     id: `deepseek:${model}`,
     model,
+    // IA-A.4 : 2 millions de jetons par jour par défaut ; 0 ou moins = sans plafond.
+    dailyTokenBudget: Number.isFinite(budget) && budget > 0 ? budget : null,
     call: createDeepSeekCall({
       endpoint: process.env.DEEPSEEK_BASE_URL,
       apiKey: process.env.DEEPSEEK_API_KEY,

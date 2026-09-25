@@ -142,6 +142,7 @@ try {
   await panel.waitFor();
   const launch = panel.getByRole("button", { name: "Lancer l’analyse" });
   assert.equal(await launch.isDisabled(), true, "consentement exigé");
+  console.log("Budget :", await panel.locator(".automatic-budget").textContent());
   await panel.getByRole("checkbox").check();
   await launch.click();
   await panel.locator(".automatic-running").waitFor();

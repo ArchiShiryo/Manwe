@@ -30,11 +30,9 @@ export function AutomaticAnalysisPanel({
   onReload: () => Promise<void>;
   onNotify: (message: string) => void;
 }) {
-  const [provider, setProvider] = useState<{
-    enabled: boolean;
-    providerId: string | null;
-    model: string | null;
-  } | null>(null);
+  const [provider, setProvider] = useState<Awaited<
+    ReturnType<typeof memoryApi.automaticProvider>
+  > | null>(null);
   const [task, setTask] = useState<"extract" | "interpret">("extract");
   const [consent, setConsent] = useState(false);
   const [job, setJob] = useState<AutomaticJob | null>(null);
@@ -47,9 +45,14 @@ export function AutomaticAnalysisPanel({
       .automaticProvider()
       .then(setProvider)
       .catch(() =>
-        setProvider({ enabled: false, providerId: null, model: null }),
+        setProvider({
+          enabled: false,
+          providerId: null,
+          model: null,
+          budget: null,
+        }),
       );
-  }, []);
+  }, [job?.status]);
 
   useEffect(() => {
     if (!job || job.status !== "running") return;
@@ -149,6 +152,14 @@ export function AutomaticAnalysisPanel({
             ANALYSE AUTOMATIQUE · {String(provider.model).toUpperCase()}
           </div>
           <h3>Le modèle propose ; vous seul appliquez.</h3>
+          {provider.budget && (
+            <small className="automatic-budget">
+              Budget du jour :{" "}
+              {provider.budget.usedToday.toLocaleString("fr-FR")} jetons
+              {provider.budget.dailyTokens !== null &&
+                ` sur ${provider.budget.dailyTokens.toLocaleString("fr-FR")}`}
+            </small>
+          )}
           <p>
             Le service envoie au fournisseur le paquet de contexte (sources
             citées, hypothèses en cours) et rien d’autre. Le modèle n’a aucun

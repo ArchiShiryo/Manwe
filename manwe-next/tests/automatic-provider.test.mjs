@@ -330,14 +330,17 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
           ...(options.body ? { "content-type": "application/json" } : {}),
         },
       });
+    servers.push(server);
     return { server, call };
   };
+  const servers = [];
   try {
     const off = await open(null);
     assert.deepEqual(await (await off.call("/api/analyses/automatic")).json(), {
       enabled: false,
       providerId: null,
       model: null,
+      budget: null,
     });
     const refused = await off.call("/api/analyses/automatic", {
       method: "POST",
@@ -353,6 +356,7 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
       }),
     });
     await off.server.close();
+    servers.length = 0;
 
     const on = await open({
       id: "deepseek:test",
@@ -388,8 +392,43 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
       }),
     });
     assert.equal(applied.status, 200);
-    await on.server.close();
   } finally {
+    for (const server of servers) await server.close().catch(() => {});
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test("IA-A.4 · budget quotidien : consommation comptée, refus explicite au-delà", () =>
+  withStore(async (store) => {
+    const automatic = new AutomaticAnalyses(store, {
+      id: "deepseek:test",
+      model: "test",
+      dailyTokenBudget: 2000,
+      call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
+    });
+    assert.deepEqual(automatic.describe().budget, {
+      dailyTokens: 2000,
+      usedToday: 0,
+    });
+    const first = await automatic.settle(
+      automatic.start({ task: "extract" }).requestId,
+    );
+    assert.equal(first.status, "ready_for_review");
+    assert.equal(automatic.budget().usedToday, 1234);
+    store.cancelAnalysis(first.requestId);
+    const second = await automatic.settle(
+      automatic.start({ task: "extract" }).requestId,
+    );
+    assert.equal(second.status, "ready_for_review");
+    assert.equal(automatic.budget().usedToday, 2468);
+    assert.throws(
+      () => automatic.start({ task: "extract" }),
+      (error) => error.code === "budget_exceeded" && error.status === 429,
+    );
+    const unlimited = new AutomaticAnalyses(store, {
+      id: "deepseek:test",
+      model: "test",
+      call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
+    });
+    assert.equal(unlimited.budget().dailyTokens, null);
+  }));

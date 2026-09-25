@@ -240,6 +240,7 @@ class MemoryApi {
       enabled: boolean;
       providerId: string | null;
       model: string | null;
+      budget: { dailyTokens: number | null; usedToday: number } | null;
     }>("/api/analyses/automatic");
   }
 
