@@ -1726,6 +1726,7 @@ export class SqliteMemoryStore {
       revision: this.revision + 1,
       timestamp,
       keys: new Map(),
+      links: [],
       deferred: [],
     };
     const order: CognitiveOperationKind[] = [
@@ -1806,6 +1807,7 @@ export class SqliteMemoryStore {
         changed.push(...result.changed);
       }
     }
+    for (const link of context.links) link();
     for (const check of context.deferred) check();
     return { created, changed };
   }

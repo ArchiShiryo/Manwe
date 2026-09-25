@@ -38,6 +38,8 @@ export type OperationContext = {
   revision: number;
   timestamp: string;
   keys: Map<string, EntityRef>;
+  /** Liens résolus après création de toutes les hypothèses (références en avant). */
+  links: Array<() => void>;
   deferred: Array<() => void>;
 };
 
@@ -550,9 +552,16 @@ export class HypothesisStore {
           "Une hypothèse D4 nomme son cadre et son construct.",
         );
       const id = randomUUID();
-      const alternativeTo = payload.alternativeTo
-        ? this.resolve(payload.alternativeTo, "hypothesis", context)
-        : null;
+      // Une alternative peut viser une hypothèse proposée plus loin dans la même
+      // réponse : sa résolution est alors différée après toutes les créations.
+      const forward =
+        payload.alternativeTo !== null &&
+        "proposalKey" in payload.alternativeTo &&
+        !context.keys.has(payload.alternativeTo.proposalKey);
+      const alternativeTo =
+        payload.alternativeTo && !forward
+          ? this.resolve(payload.alternativeTo, "hypothesis", context)
+          : null;
       this.database
         .prepare(
           `INSERT INTO hypotheses(id, workspace_id, statement, depth, framework, construct, confidence, status,
@@ -598,6 +607,17 @@ export class HypothesisStore {
       }
       this.addEvidence(id, payload.evidence, context);
       context.keys.set(operation.key, { kind: "hypothesis", id });
+      if (forward && payload.alternativeTo)
+        context.links.push(() => {
+          const target = this.resolve(
+            payload.alternativeTo as TargetRef,
+            "hypothesis",
+            context,
+          );
+          this.database
+            .prepare("UPDATE hypotheses SET alternative_to = ? WHERE id = ?")
+            .run(target, id);
+        });
       context.deferred.push(() => {
         if (depthAtLeast(payload.depth, "D3") && !this.hasActiveAlternative(id))
           throw new DomainError(

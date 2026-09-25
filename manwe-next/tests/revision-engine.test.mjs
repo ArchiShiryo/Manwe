@@ -781,3 +781,39 @@ test("R3.4 · une passe critique vise une hypothèse antérieure et reste ouvert
     );
     store.close();
   }));
+
+test("R3 · une alternative peut viser une hypothèse proposée plus loin dans la même réponse", () =>
+  withStore((open) => {
+    const store = open();
+    const a = claimFrom(
+      store,
+      "Hugo a accepté sans rien proposer.",
+      "2026-05-20T12:00:00-03:00",
+    );
+    const b = claimFrom(
+      store,
+      "Hugo n’initie jamais.",
+      "2026-06-11T12:00:00-03:00",
+    );
+    const packet = interpretPacket(store, [a, b]);
+    const { preview } = respond(store, packet, [
+      hypothesisOp("h2", [a, b], {
+        depth: "D3",
+        statement: "Hugo tient au lien mais initie peu.",
+        alternativeTo: { proposalKey: "h3" },
+      }),
+      hypothesisOp("h3", [a, b], {
+        depth: "D3",
+        statement: "La faible initiative de Hugo est contextuelle.",
+        alternativeTo: { proposalKey: "h2" },
+      }),
+    ]);
+    assert.equal(
+      preview.status,
+      "ready_for_review",
+      JSON.stringify(preview.errors),
+    );
+    const [first, second] = store.snapshot().hypotheses;
+    assert.ok(first.alternativeTo && second.alternativeTo);
+    store.close();
+  }));
