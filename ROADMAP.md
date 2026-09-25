@@ -274,9 +274,9 @@ Livrable essentiel : historique compréhensible de ce qui a changé et de l'info
 
 Objectif : faire des trois surfaces visuelles des représentations cohérentes de la même situation.
 
-- [ ] R4.0a Créer l'objet Relation (dyade, puis lien de groupe) avec révision, trajectoire et hypothèses dont elle est le sujet (D-012).
-- [ ] R4.0b Extraire les participants et leurs rôles par épisode, avec citation et correction en un geste ; le rôle relationnel reste une hypothèse agrégée (D-013).
-- [ ] R4.0c Calculer des indicateurs relationnels déterministes (part des initiatives, réciprocité, fréquence, délais explicites, contre-exemples) utilisables comme ancrages citables.
+- [x] R4.0a Créer l'objet Relation (dyade, puis lien de groupe) avec révision, trajectoire et hypothèses dont elle est le sujet (D-012). (Preuve : BRIEF-004, lot R4-S02 ; [RAPPORT-006](./manwe-next/docs/pilotage/rapports/RAPPORT-006.md).)
+- [x] R4.0b Extraire les participants et leurs rôles par épisode, avec citation et correction en un geste ; le rôle relationnel reste une hypothèse agrégée (D-013). (Preuve : BRIEF-004, lot R4-S02 ; [RAPPORT-006](./manwe-next/docs/pilotage/rapports/RAPPORT-006.md).)
+- [x] R4.0c Calculer des indicateurs relationnels déterministes (part des initiatives, réciprocité, fréquence, délais explicites, contre-exemples) utilisables comme ancrages citables. (Preuve : BRIEF-004, lot R4-S02 ; [RAPPORT-006](./manwe-next/docs/pilotage/rapports/RAPPORT-006.md).)
 - [ ] R4.0d Déclarer le registre ontologique unique d'où découlent le prompt, le paquet, les contrôles et le graphe ; un test vérifie leur cohérence (D-014).
 - [ ] R4.0e Lecture stratégique et psychodynamique (D-017, D-019) : chaque personne reçoit sa formulation fine (ce qu'elle protège, défenses, croyances profondes, stratégies d'attachement, déclencheurs et états, conflits internes, besoins, motifs, valeurs, ce qui l'apaise) ; les hypothèses D3 à D5 portent une structure facultative (gain optimisé, croyances, coût payé, barrière, prédiction de perturbation) ; la relation et le groupe reçoivent leur lecture d'interdépendance (gains et pertes de chacun, dépendance, comportements récompensés par la répétition, équilibre).
 - [ ] R4.1 Définir `FocusContext` et `GraphProjection` avec identifiants métier et révision canonique ; retirer les branches conditionnelles propres à Marc.
