@@ -574,6 +574,8 @@ export default function App() {
                 page === "intentions" && (
                   <PersonalIntentions
                     snapshot={personal.snapshot}
+                    onReload={personal.reload}
+                    onNotify={notify}
                     onSave={async (text, id) => {
                       try {
                         await personal.updateGoal(text, id);

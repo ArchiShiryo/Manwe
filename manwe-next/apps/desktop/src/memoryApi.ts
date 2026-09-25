@@ -262,10 +262,13 @@ class MemoryApi {
     }>("/api/analyses/automatic");
   }
 
-  startAutomatic(task: "extract" | "interpret" | "revise" | "explore") {
+  startAutomatic(
+    task: "extract" | "interpret" | "revise" | "explore",
+    focus?: { kind: string; id: string }[],
+  ) {
     return this.request<AutomaticJob>("/api/analyses/automatic", {
       method: "POST",
-      body: JSON.stringify({ task }),
+      body: JSON.stringify(focus ? { task, focus } : { task }),
     });
   }
 

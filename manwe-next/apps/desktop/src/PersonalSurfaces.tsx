@@ -32,6 +32,7 @@ import { MemoryApiError, memoryApi, type MemoryStatus } from "./memoryApi.ts";
 import { syncLabels, type ConnectionState } from "./syncLabels.ts";
 import { CORRECTED_LABEL, WorldGraph } from "./WorldGraph.tsx";
 import { AutomaticAnalysisPanel } from "./AutomaticAnalysis.tsx";
+import { Directions } from "./Directions.tsx";
 import analystPrompt from "../../../packages/cognition/prompts/analyst-v7.md?raw";
 import {
   claimModalityLabels,
@@ -1421,9 +1422,13 @@ function AssistedAnalysisPanel({
 export function PersonalIntentions({
   snapshot,
   onSave,
+  onReload,
+  onNotify,
 }: {
   snapshot: WorkspaceSnapshot;
   onSave: (text: string, id?: string) => Promise<boolean>;
+  onReload?: () => Promise<void>;
+  onNotify?: (message: string) => void;
 }) {
   const current = snapshot.goals[0];
   const [text, setText] = useState(current?.text ?? "");
@@ -1463,6 +1468,13 @@ export function PersonalIntentions({
           <Check size={14} /> Conserver
         </button>
       </form>
+      {onReload && onNotify && (
+        <Directions
+          snapshot={snapshot}
+          onReload={onReload}
+          onNotify={onNotify}
+        />
+      )}
     </section>
   );
 }
