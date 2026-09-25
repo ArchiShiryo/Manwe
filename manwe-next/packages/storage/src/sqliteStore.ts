@@ -96,11 +96,11 @@ const PROFILE_LABELS: Record<ProfileField, string> = {
   poids: "Ce qui vous pèse",
   souhait: "Ce que vous aimeriez qui change",
 };
-const ANALYST_PROMPT_VERSION = "analyst-v11";
+const ANALYST_PROMPT_VERSION = "analyst-v12";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
     fileURLToPath(
-      new URL("../../cognition/prompts/analyst-v11.md", import.meta.url),
+      new URL("../../cognition/prompts/analyst-v12.md", import.meta.url),
     ),
     "utf8",
   ),

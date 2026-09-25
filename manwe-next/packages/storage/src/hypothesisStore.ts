@@ -43,6 +43,34 @@ import {
   type EvidenceSummary,
 } from "../../cognition/src/revision.ts";
 
+/** Mots vides ignorés pour ancrer une description composée. */
+const STOP_WORDS = new Set([
+  "les",
+  "des",
+  "une",
+  "son",
+  "sa",
+  "ses",
+  "mon",
+  "ma",
+  "mes",
+  "ton",
+  "ta",
+  "tes",
+  "leur",
+  "leurs",
+  "notre",
+  "votre",
+  "qui",
+  "que",
+  "avec",
+  "pour",
+  "dans",
+  "par",
+  "sur",
+  "the",
+]);
+
 type SqlRow = Record<string, unknown>;
 type ReviewReason = NonNullable<Hypothesis["reviewReason"]>;
 
@@ -734,6 +762,8 @@ export class HypothesisStore {
   private resolveSubject(
     subject: MemberInput,
     context: OperationContext,
+    /** Texte des citations qui ancrent une description composée (D-030). */
+    grounding?: string,
   ): RelationMember {
     if ("self" in subject) return { kind: "self" };
     if ("person" in subject) {
@@ -751,21 +781,6 @@ export class HypothesisStore {
       return { kind: "person", personId: subject.person.id };
     }
     const mention = subject.mention;
-    if (
-      !context.packet.sources.some((source) =>
-        plain(source.text).includes(plain(mention)),
-      ) &&
-      // D-026 : le prénom peut venir d'une note déjà analysée de l'espace.
-      !(
-        this.database
-          .prepare("SELECT content FROM sources WHERE workspace_id = ?")
-          .all(this.workspaceId) as SqlRow[]
-      ).some((row) => plain(String(row.content)).includes(plain(mention)))
-    )
-      throw new DomainError(
-        "subject_not_in_sources",
-        `« ${mention} » n’apparaît dans aucune source du paquet.`,
-      );
     const candidates = new Set<string>();
     for (const row of this.database
       .prepare("SELECT id, display_name FROM persons WHERE workspace_id = ?")
@@ -793,8 +808,35 @@ export class HypothesisStore {
         "ambiguous_subject",
         `« ${mention} » correspond à plusieurs personnes ; une clarification est nécessaire.`,
       );
+    // Une personne déjà connue (nom, alias, ancienne description) se désigne
+    // telle quelle ; une nouvelle doit être ancrée dans les notes.
     if (candidates.size === 1)
       return { kind: "person", personId: [...candidates][0] };
+    const inSources =
+      context.packet.sources.some((source) =>
+        plain(source.text).includes(plain(mention)),
+      ) ||
+      // D-026 : le prénom peut venir d'une note déjà analysée de l'espace.
+      (
+        this.database
+          .prepare("SELECT content FROM sources WHERE workspace_id = ?")
+          .all(this.workspaceId) as SqlRow[]
+      ).some((row) => plain(String(row.content)).includes(plain(mention)));
+    // Une description composée (« la femme de Théo » pour « mon frère Théo
+    // et sa femme ») est acceptée si chacun de ses mots porteurs figure dans
+    // les citations de l'opération qui la propose.
+    const words = plain(mention)
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length >= 3 && !STOP_WORDS.has(word));
+    const composed =
+      grounding !== undefined &&
+      words.length > 0 &&
+      words.every((word) => plain(grounding).includes(word));
+    if (!inSources && !composed)
+      throw new DomainError(
+        "subject_not_in_sources",
+        `« ${mention} » n’apparaît dans aucune source du paquet.`,
+      );
     const personId = randomUUID();
     this.database
       .prepare(
@@ -1018,6 +1060,21 @@ export class HypothesisStore {
             "INSERT OR IGNORE INTO event_participants(event_id, person_id, role) VALUES (?, ?, NULL)",
           )
           .run(eventId, member.personId);
+      // Deux acteurs d'un même épisode ont un lien observé : la dyade existe
+      // dès l'extraction, sans attendre une lecture (diagnostic du graphe vide).
+      const others = this.database
+        .prepare(
+          "SELECT DISTINCT subject_kind, person_id FROM event_roles WHERE workspace_id = ? AND event_id = ? AND id <> ?",
+        )
+        .all(this.workspaceId, eventId, id) as SqlRow[];
+      for (const row of others) {
+        const other: RelationMember =
+          String(row.subject_kind) === "self"
+            ? { kind: "self" }
+            : { kind: "person", personId: String(row.person_id) };
+        if (memberKey(other) !== memberKey(member))
+          this.ensureRelation([member, other], context.timestamp);
+      }
       context.keys.set(operation.key, { kind: "event", id: eventId });
       return { created: [], changed: [{ kind: "event", id: eventId }] };
     }
@@ -1212,7 +1269,11 @@ export class HypothesisStore {
             .all(this.workspaceId) as SqlRow[]
         ).map((row) => String(row.id)),
       );
-      const member = this.resolveSubject({ mention }, context);
+      const member = this.resolveSubject(
+        { mention },
+        context,
+        operation.payload.citations.map((citation) => citation.quote).join(" "),
+      );
       if (member.kind !== "person") return { created: [], changed: [] };
       const related = relatedTo
         ? this.resolveSubject(relatedTo, context)
@@ -1255,6 +1316,10 @@ export class HypothesisStore {
             context.timestamp,
             member.personId,
           );
+      // Lien déclaré avec l'utilisateur (« ma colocataire », « mon frère ») :
+      // la dyade existe tout de suite, citée par la note.
+      if (related?.kind === "self")
+        this.ensureRelation([{ kind: "self" }, member], context.timestamp);
       context.keys.set(operation.key, {
         kind: "person",
         id: member.personId,
