@@ -146,10 +146,7 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
                   ? "active"
                   : ""
               }
-              onClick={() => {
-                setSelected(null);
-                setFocus(item.focus);
-              }}
+              onClick={() => setFocus(item.focus)}
             >
               {short(item.label, 18)}
             </button>
@@ -223,7 +220,7 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
               <g
                 key={node.id}
                 className={`world-node world-node-${node.kind} world-node-${node.style} ${node.id === centerId ? "is-focus" : ""} ${node.id === selected ? "is-selected" : ""}`}
-                transform={`translate(${node.x},${node.y})`}
+                style={{ transform: `translate(${node.x}px, ${node.y}px)` }}
                 role="button"
                 tabIndex={0}
                 aria-label={`${KIND_LABELS[node.kind]} : ${node.label}`}
