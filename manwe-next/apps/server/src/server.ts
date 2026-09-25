@@ -192,6 +192,25 @@ export async function startManweServer(options: ServerOptions) {
         json(response, 200, automatic.describe());
         return;
       }
+      // D-031 : consentement à la transmission, donné une seule fois.
+      if (pathname === "/api/agent/consent" && request.method === "POST") {
+        const body = (await readJson(request)) as Record<string, unknown>;
+        if (body?.granted !== true && body?.granted !== false)
+          throw new DomainError(
+            "invalid_body",
+            "granted doit valoir vrai ou faux.",
+          );
+        store.setSetting(
+          "transmission_consent",
+          body.granted ? "granted" : "refused",
+        );
+        if (body.granted) {
+          automatic.nudge(0);
+          interviewer.open();
+        }
+        json(response, 200, automatic.current());
+        return;
+      }
       // R5.8 : la conversation du lieu.
       if (pathname === "/api/conversation" && request.method === "GET") {
         json(response, 200, interviewer.state());

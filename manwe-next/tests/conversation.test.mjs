@@ -12,6 +12,7 @@ import { Interviewer } from "../apps/server/src/interviewer.ts";
 test("R5.8 · un message devient une note et l'agent répond par une question motivée", async () => {
   const directory = mkdtempSync(join(tmpdir(), "manwe-conversation-"));
   const store = new SqliteMemoryStore(join(directory, "m.sqlite3"), "c");
+  store.setSetting("transmission_consent", "granted");
   const prompts = [];
   let answer = null;
   const interviewer = new Interviewer(store, {

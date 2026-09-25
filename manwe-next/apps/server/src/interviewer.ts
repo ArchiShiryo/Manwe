@@ -42,6 +42,7 @@ export class Interviewer {
   state() {
     return {
       enabled: this.provider !== null,
+      consent: this.store.transmissionConsent,
       thinking: this.thinking !== null,
       error: this.lastError,
       turns: this.store.conversation(),
@@ -72,7 +73,8 @@ export class Interviewer {
   }
 
   private reply() {
-    if (!this.provider || this.thinking) return;
+    if (!this.provider || this.thinking || !this.store.transmissionConsent)
+      return;
     let failed = false;
     this.thinking = this.ask()
       .catch((error: unknown) => {

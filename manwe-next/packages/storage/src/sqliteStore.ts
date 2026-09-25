@@ -226,6 +226,15 @@ export class SqliteMemoryStore {
       );
       this.database.exec(readFileSync(conversationMigrationPath, "utf8"));
     }
+    const settingsMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 15")
+      .get();
+    if (!settingsMigration) {
+      const settingsMigrationPath = fileURLToPath(
+        new URL("./migrations/015_settings.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(settingsMigrationPath, "utf8"));
+    }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
     this.database
@@ -2150,6 +2159,29 @@ export class SqliteMemoryStore {
         focus,
       };
     return null;
+  }
+
+  /** Réglage de l'espace (D-031), ou null s'il n'est pas défini. */
+  setting(key: string): string | null {
+    const row = this.database
+      .prepare(
+        "SELECT value FROM workspace_settings WHERE workspace_id = ? AND key = ?",
+      )
+      .get(this.workspaceId, key) as SqlRow | undefined;
+    return row ? String(row.value) : null;
+  }
+
+  setSetting(key: string, value: string) {
+    this.database
+      .prepare(
+        "INSERT INTO workspace_settings(workspace_id, key, value, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(workspace_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+      )
+      .run(this.workspaceId, key, value, nowIso());
+  }
+
+  /** D-031 : l'utilisateur a accepté une fois la transmission au fournisseur. */
+  get transmissionConsent() {
+    return this.setting("transmission_consent") === "granted";
   }
 
   /** R5.8 : la conversation du lieu, dans l'ordre. */

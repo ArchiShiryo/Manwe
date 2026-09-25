@@ -411,7 +411,13 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
     assert.equal(current.job.requestId, job.requestId);
     assert.equal(current.next, null, "plus rien à analyser");
 
-    // L'agent analyse seul une nouvelle note, après un court silence.
+    // Sans consentement, rien ne part ; une fois donné, l'agent analyse
+    // seul une nouvelle note, après un court silence.
+    const consent = await on.call("/api/agent/consent", {
+      method: "POST",
+      body: JSON.stringify({ granted: true }),
+    });
+    assert.equal((await consent.json()).consent, true);
     await on.call("/api/captures", {
       method: "POST",
       body: JSON.stringify({

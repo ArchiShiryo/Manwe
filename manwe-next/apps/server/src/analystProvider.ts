@@ -382,6 +382,8 @@ export class AutomaticAnalyses {
       (job) => job.status === "running",
     );
     return {
+      enabled: this.provider !== null,
+      consent: this.store.transmissionConsent,
       job: running ?? this.lastJob,
       scheduled: this.timer !== null,
       next: this.provider ? this.store.agentPlan() : null,
@@ -393,7 +395,8 @@ export class AutomaticAnalyses {
    * attend un court silence, puis lance seul l'analyse utile, s'il y en a.
    */
   nudge(delayMs = this.options.quietMs) {
-    if (!this.provider) return;
+    // D-031 : rien ne part chez le fournisseur sans consentement.
+    if (!this.provider || !this.store.transmissionConsent) return;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       this.timer = null;
