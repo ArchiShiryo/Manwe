@@ -72,11 +72,11 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
-const ANALYST_PROMPT_VERSION = "analyst-v9";
+const ANALYST_PROMPT_VERSION = "analyst-v10";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
     fileURLToPath(
-      new URL("../../cognition/prompts/analyst-v9.md", import.meta.url),
+      new URL("../../cognition/prompts/analyst-v10.md", import.meta.url),
     ),
     "utf8",
   ),
@@ -1888,6 +1888,11 @@ export class SqliteMemoryStore {
       ...compact,
       contextHash: cognitionHash(compact),
     };
+    // Mesure de la mémoire de travail sur un même état (RAPPORT-012).
+    this.lastPacketSizes = {
+      working: JSON.stringify(compact).length,
+      full: JSON.stringify({ ...packetWithoutHash, memory: "full" }).length,
+    };
     this.database
       .prepare(
         "INSERT INTO analysis_requests(id, workspace_id, base_revision, created_at, expires_at, mode, provider_id, task, prompt_version, prompt_hash, context_hash, context_json, allowed_operations_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_response')",
@@ -1909,6 +1914,9 @@ export class SqliteMemoryStore {
       );
     return packet;
   }
+
+  /** Tailles (caractères JSON) du dernier paquet préparé, complet et de travail. */
+  lastPacketSizes: { working: number; full: number } | null = null;
 
   receiveAnalysis(value: unknown): AnalysisPreview {
     const rawJson = JSON.stringify(value);
@@ -2400,6 +2408,9 @@ export class SqliteMemoryStore {
             "reviewSinceRevision",
             "evidence",
             "critiques",
+            "mechanism",
+            "limits",
+            "revisionConditions",
           ]),
           evidence: (item.evidence ?? [])
             .filter((entry) => entry.supersededRevision === null)
@@ -2407,7 +2418,31 @@ export class SqliteMemoryStore {
           critiques: (item.critiques ?? []).map((critique) =>
             (critique.findings ?? []).map((finding) => finding.kind),
           ),
+          // Le mécanisme, les limites et les conditions de révision se lisent
+          // par get_hypothesis ; seule la prédiction reste, pour comparer au
+          // résultat d'une action (RAPPORT-012).
+          prediction:
+            (item.mechanism as { prediction?: string } | null | undefined)
+              ?.prediction ?? null,
         };
+      }),
+      // Une direction non choisie se résume à ce qui évite de la reproposer ;
+      // la direction choisie garde ses prédictions et son détail.
+      directions: packet.directions.map((direction) => {
+        const item = direction as Record<string, unknown>;
+        const chosen =
+          item.status === "chosen" ||
+          packet.actions.some(
+            (action) =>
+              (action as { directionId?: string }).directionId === item.id,
+          );
+        return chosen
+          ? omit(item, technical)
+          : Object.fromEntries(
+              ["id", "goalId", "title", "action", "lever", "status"]
+                .filter((key) => key in item)
+                .map((key) => [key, item[key]]),
+            );
       }),
       // Une question close ne sert qu'à ne pas être reposée.
       questions: packet.questions.map((question) => {
@@ -2430,6 +2465,16 @@ export class SqliteMemoryStore {
           ...(omitted
             ? [
                 `${omitted} note(s) déjà analysée(s) : leurs faits sont dans claims et roles ; texte intégral sur requête (get_note).`,
+              ]
+            : []),
+          ...(packet.hypotheses.length
+            ? [
+                "Lectures résumées : mécanisme, limites et conditions de révision sur requête (get_hypothesis).",
+              ]
+            : []),
+          ...(packet.directions.length
+            ? [
+                "Directions non choisies résumées (titre, action, levier) ; la direction choisie reste entière.",
               ]
             : []),
         ],

@@ -42,7 +42,7 @@ import { createDeepSeekCall } from "../apps/server/src/analystProvider.ts";
 import { MEMORY_TOOLS } from "../packages/cognition/src/memoryTools.ts";
 
 const PROMPT_TEXT = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v9.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v10.md", import.meta.url),
   "utf8",
 );
 const QA_ROOT = resolve(process.cwd(), ".qa");
@@ -237,16 +237,25 @@ function runUntilAnalysis(runDir, scenario, state, store) {
         goal: pending?.text ?? step.fallbackText,
       });
     } else if (step.type === "choose") {
-      // Règle fixe, écrite avant tout run : la première direction d'action
-      // proposée pour l'objectif (ordre de création), jamais « ne rien faire ».
-      const direction = store
+      // Règle fixe, écrite avant tout run : parmi les directions d'action
+      // proposées pour l'objectif (ordre de création, jamais « ne rien
+      // faire »), la première dont le titre ou l'action contient un mot de
+      // step.match (mots du résultat, RAPPORT-012) ; à défaut la première.
+      const candidates = store
         .snapshot()
-        .directions.find(
+        .directions.filter(
           (item) =>
             item.status === "proposed" &&
             item.lever.kind !== "do_nothing" &&
             item.goalId === (state.goalId ?? null),
         );
+      const words = (step.match ?? []).map((word) => word.toLowerCase());
+      const direction =
+        candidates.find((item) =>
+          words.some((word) =>
+            `${item.title} ${item.action}`.toLowerCase().includes(word),
+          ),
+        ) ?? candidates[0];
       if (direction) {
         const result = store.chooseDirection({
           idempotencyKey: `scenario:${stepId}`,
@@ -260,6 +269,15 @@ function runUntilAnalysis(runDir, scenario, state, store) {
         type: "choose",
         outcome: direction ? "chosen" : "no_direction",
         directionId: direction?.id ?? null,
+        title: direction?.title ?? null,
+        matched: Boolean(
+          direction &&
+            words.some((word) =>
+              `${direction.title} ${direction.action}`
+                .toLowerCase()
+                .includes(word),
+            ),
+        ),
       });
     } else if (step.type === "outcome") {
       if (state.actionId)
@@ -294,6 +312,13 @@ function runUntilAnalysis(runDir, scenario, state, store) {
       const stepDir = join(scenarioDir, stepId);
       mkdirSync(stepDir, { recursive: true });
       writeJson(join(stepDir, "context.json"), packet);
+      // Réduction de la mémoire de travail, mesurée sur le même état.
+      if (store.lastPacketSizes)
+        writeJson(join(stepDir, "packet-sizes.json"), {
+          ...store.lastPacketSizes,
+          reduction:
+            1 - store.lastPacketSizes.working / store.lastPacketSizes.full,
+        });
       writeFileSync(
         join(stepDir, "PROMPT.txt"),
         `${PROMPT_TEXT.trimEnd()}\n\n${JSON.stringify(packet, null, 2)}\n`,

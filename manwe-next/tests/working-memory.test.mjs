@@ -34,13 +34,28 @@ test("D-026 · la mémoire de travail garde l'état du monde et allège nettemen
     assert.equal(full.memory, "full");
     assert.equal(working.memory, "working");
     const size = (packet) => JSON.stringify(packet).length;
-    // Garde-fou sur le paquet le plus lourd (dernière réanalyse, 18 lectures) :
-    // au moins 35 %. Le critère scellé du lot (40 % en moyenne sur A2 à A5)
-    // se mesure pendant le run R5-S03.
+    // Paquet le plus lourd (dernière réanalyse, 18 lectures) : le paquet de
+    // travail pèse au plus 60 % du paquet complet (critère R5-S04).
     assert.ok(
-      size(working) <= size(full) * 0.65,
+      size(working) <= size(full) * 0.6,
       `paquet ${size(working)} contre ${size(full)} (réduction insuffisante)`,
     );
+    // La mesure du même état est exposée pour le harnais.
+    assert.ok(store.lastPacketSizes.working < store.lastPacketSizes.full);
+    // Lectures résumées : le détail se lit par get_hypothesis, rien n'est
+    // effacé en base.
+    assert.ok(
+      working.hypotheses.every(
+        (item) => !("mechanism" in item) && !("limits" in item),
+      ),
+    );
+    const withMechanism = full.hypotheses.find((item) => item.mechanism);
+    if (withMechanism) {
+      const served = store.queryMemory(working.requestId, "get_hypothesis", {
+        hypothesisId: withMechanism.id,
+      });
+      assert.deepEqual(served.mechanism, withMechanism.mechanism);
+    }
     // Rien de l'état n'est perdu.
     for (const key of [
       "hypotheses",
