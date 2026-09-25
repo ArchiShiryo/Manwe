@@ -33,7 +33,14 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **BRIEF-004 livré** (relation comme objet, rôles d'épisode cités, indicateurs relationnels, contrat 1.4, prompt v5) mais **pas encore validé** : sur le lot R4-S01, R01 et R03 sont justes, mais R02 a été perdu à cause d'erreurs de format du modèle ([RAPPORT-005](./rapports/RAPPORT-005.md)). La correction est faite (D-021 : seconde tentative informée de l'erreur).
 
-**Prochaine étape** : sceller un lot de contrôle R4-S02 (nouveaux prénoms, mêmes fonctions : rôles, relation avec et sans l'utilisateur, contexte ajouté), le jouer avec `auto`, noter, puis cocher R4.0a à R4.0c. Viendront ensuite l'affichage des relations et de leurs indicateurs dans l'interface, puis le registre ontologique (R4.0d) et le graphe R4.
+**Prochaine étape (reprise exacte)** : le lot de contrôle R4-S02 est scellé (`scelles/R4-S02.sha256`). Le fichier d'attentes est chez l'utilisateur ; demande-le-lui et vérifie son empreinte. Le lot a été lancé le 25 septembre 2026 dans `packages/evaluation/runs/2026-09-25-deepseek-flash-r4-s02`, et il est peut-être incomplet.
+
+1. Relancer `node scripts/scenario-run.mjs auto packages/evaluation/runs/2026-09-25-deepseek-flash-r4-s02`. La commande reprend là où le lot s'est arrêté et ne rejoue pas les étapes finies.
+2. Lancer `summary`.
+3. Noter contre les attentes, écrire le RAPPORT-006 et publier les attentes dans `scelles/`.
+4. Si le lot passe, cocher R4.0a à R4.0c dans la roadmap.
+
+Viendront ensuite l'affichage des relations et de leurs indicateurs dans l'interface, puis le registre ontologique (R4.0d) et le graphe R4. La pull request [ArchiShiryo/Manwe#1](https://github.com/ArchiShiryo/Manwe/pull/1) attend d'être fusionnée dans `main`.
 
 **Méthode à conserver pour chaque lot** :
 

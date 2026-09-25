@@ -1,0 +1,325 @@
+Let me analyze this ContextPacket. We have three events (notes) about Sarah and Tom:
+
+1. 2026-03-07: At dinner at user's home, Sarah and Tom argued about ecology; Tom left the table. (event id 23e08c94...)
+2. 2026-04-04: At picnic, Sarah mocked Tom about his car, he didn't respond. (54dc9e2d...)
+3. 2026-05-09: At Nina's wedding, Tom avoided Sarah all evening. (33df3d2b...)
+
+No existing claims, hypotheses, roles, relations. All empty. allowedOperations include propose_hypothesis, propose_critique etc.
+
+Need to propose events, claims, roles, hypotheses.
+
+Let me build citations carefully.
+
+Source 1: sourceId "533d8173-03f5-43ad-95dd-e752b9a497f6", contentHash "dd93eee9577ed033f2a7d9c3b6926b6fe6b85d61d5ce416772e3a0bbadff0954", spanStart 0, spanEnd 54, quote "Au mariage de Nina, Tom a évité Sarah toute la soirée." Text is exactly that. Length: let's count: "Au mariage de Nina, Tom a évité Sarah toute la soirée." — that's 54 chars presumably. I'll cite full source.
+
+Source 2: "f64788ff-01fd-4d9b-b10d-c721b23f4181", hash "3c166aeac14c9dd9cc282d625d80dae9e73197a633ac8c46c58c421e1421493a", span 0-71, quote "Au pique-nique, Sarah a raillé Tom sur sa voiture, il n'a rien répondu."
+
+Source 3: "184b2848-8601-45ee-8259-2a0f35df70b1", hash "8ca8286191fb4090cf3ac0983cc745545048772faf2610487ab8a3412e5f1169", span 0-89, quote "Au dîner chez moi, Sarah et Tom se sont accrochés sur l'écologie ; Tom a quitté la table."
+
+Now, the entities are already events in the packet (focus). Rule 4: un fait accompli donne un propose_event ET un propose_claim. But the events already exist in the packet (entities). Hmm — entities are events with ids. Should I propose_event again? The focus points to events; they exist already. I think it's fine to add propose_claim referencing existing event ids? Actually propose_claim has citations, not event refs. Claims are statements.
+
+Let me think about what's needed: propose_claim for the facts (the notes describe behaviors). Since events already exist as entities, I don't necessarily need to propose_event. But rule says "Un fait accompli donne un propose_event ET un propose_claim qui porte sa provenance." The events exist already. Hmm. The events are in the packet as "entities". The focus is on them. I could propose additional events? Maybe not necessary. But to be safe, I could create claims describing the behaviors, with citations to the sources. And create roles for the events (using event ids from packet).
+
+Roles: 
+- Event 1 (dinner, March 7): Sarah and Tom argued. Tom left the table. Initiator of the conflict? Sarah mocked/raillé is in event 2. For event 3 (dinner), Sarah et Tom se sont accrochés — mutual. Hmm. The user (self) was host ("chez moi") — observer. Sarah: initiator? Tom: initiator? It's ambiguous — "se sont accrochés" mutual. I could assign observer role to self, and maybe both as initiators? That's risky. Let me assign: self = observer. For Sarah and Tom in event 3, "se sont accrochés" — mutual initiator role for both? Role is a fact cited. I could say both initiator. Hmm, or maybe skip roles for that one and just note in a claim. Actually to keep it clean: self as observer in all three events (present at dinner chez moi; picnic — was user there? "Au pique-nique" — not specified. Wedding "Au mariage de Nina" — not specified whether user attended). Hmm. Source 3 "Au dîner chez moi" — user was host, so observer. Sources 1 and 2 don't say the user was present. The user seems to be narrating though. Rule 7: if text doesn't allow knowing who/what, respond needs_context. But we can still propose.
+
+Let me be careful: The user is the note-taker; the fact of consigning is not behavior. But "chez moi" implies presence. For picnic and wedding, presence unknown — don't assume.
+
+Roles:
+- Event 3 (23e08c94, dinner): self = observer (chez moi). Sarah initiator? Tom initiator? Ambiguous. I could add role: Sarah initiator (she "raillé" pattern) — no, that's event 2. Let me just do self observer, and maybe Tom: responder? Hmm.
+
+Actually maybe simpler: assign roles where clear:
+- Event 2 (picnic): Sarah = initiator (raillé Tom), Tom = recipient (he received the mockery), Tom = responder with outcome? "il n'a rien répondu" — he did not respond. That's an absence. responder outcome "declined"? No — not responding isn't declining. Maybe outcome "unknown"? Hmm, rule: responder (répond à une demande ; outcome "accepted", "declined" ou "unknown"). Tom didn't respond, so no responder role? Or responder with outcome unknown? Actually "il n'a rien répondu" — he didn't respond. I'd say Sarah = initiator, Tom = recipient. Maybe also Tom = responder outcome "declined" (refusal to engage). Hmm, "declined" fits: he declined to respond. I'll do that but with care. Actually better: proposer role Tom responder outcome "declined" is an interpretation. But the text literally says he didn't respond — that's a refusal to engage. I think it's reasonable: responder (outcome unknown)? Let me pick "declined" — hmm risky. Let me use "unknown"? The role's outcome describes whether the response was accepted/declined. He didn't respond at all, so outcome... I'll skip responder for Tom or use "declined". Let me use declined since "il n'a rien répondu" is a non-response / avoidance. Hmm, but declined usually means declining a request. I'll set outcome null? The spec allows null for outcome. I'll use null.
+
+- Event 3 (dinner): Sarah and Tom argued; Tom left the table. Sarah = initiator? Tom = initiator? "se sont accrochés" mutual. I'd put both as initiator? Or skip. I could add self observer. And Tom leaving — could be a role? Maybe Tom = responder (declined engagement by leaving)? Eh. Tom "a quitté la table" = withdrawal. I'd better: Sarah initiator of the argument? Not clear. Let me just do self = observer for event 3.
+
+- Event 1 (wedding): Tom avoided Sarah. Tom = initiator (of avoidance/contact management)? Role initiator = "propose, lance le contact". Avoiding is not initiating contact. Hmm. Tom = responder/observer? Tom is the actor. Sarah = recipient? Hmm. Avoidance: Tom is the one acting, Sarah the one avoided. I'd say Tom = initiator? Not great. Maybe roles don't fit well; I can use role observer for Sarah? No.
+
+Roles are constrained to a fixed list. For avoidance, maybe Tom = responder (avoiding contact = declined)? or Tom initiator of the non-contact. Hmm. Maybe skip roles for event 1 and just do a claim. But the mission wants roles extracted. I'll do: Tom = initiator (he initiates the avoidance strategy) — hmm. Actually I think it's acceptable: Tom initiator (of the separation), Sarah recipient. Hmm ambiguous. Let me maybe use role "responder" for Tom outcome "declined"? Eh.
+
+Alternatively: roles are facts, and an unusual mapping creates noise. I might do:
+- Event 1: Tom = initiator (initiates avoidance, i.e., controls contact), Sarah = recipient. Hmm, "initiator = propose, lance le contact" — avoiding isn't launching contact. Maybe safer: no roles, use claims.
+
+But the schema's roles require citations; the packet has no roles. I think good to propose a few defensible ones:
+- Event 2: Sarah = initiator (she mocked Tom), Tom = recipient.
+- Event 3: self = observer; Sarah = initiator? Tom = initiator? Let's do both: hmm, one event can have multiple roles. "Sarah et Tom se sont accrochés" — mutual. I'll assign Sarah = initiator and Tom = initiator? That seems odd. Maybe assign Tom = responder outcome null and Sarah = initiator? The text says "se sont accrochés sur l'écologie" — mutual escalation; then Tom left. The only clear asymmetry is Tom leaving. Assign: Tom = responder outcome "declined" (leaves the interaction). Sarah = initiator? Hmm this is fabricating.
+
+Let me keep roles minimal but per the rule "Pour chaque épisode, extrais les rôles tenus avec propose_role". I'll do:
+- Event 3 (dinner): self = observer (chez moi), Sarah = initiator, Tom = responder? Hmm.
+
+Actually, for the argument, "Sarah et Tom se sont accrochés" both engage — I'll assign both as initiator? The rule says among mutual alternatives one rank 1 for hypotheses; roles are facts. Two initiators in an escalation is defensible: each contributed. I'll assign Sarah = initiator and Tom = initiator? Hmm, but then Tom leaving is separate. I think I'll just assign self = observer, Sarah = initiator, Tom = initiator, both with citations. Hmm... risk of noise. Alternatively assign only self = observer and skip actor roles.
+
+I'll go moderate: 
+- Event 1 (wedding): Tom = initiator (he actively avoided — controlling contact), Sarah = recipient? Avoidance has no recipient... Sarah is the recipient of avoidance. I'll skip and just claim.
+- Event 1: skip roles? Let me include Tom = responder? No.
+
+Decision: propose roles:
+- e2 (picnic): Sarah initiator, Tom recipient.
+- e3 (dinner): self observer.
+- e1 (wedding): none (or Tom initiator of avoidance). I'll add Tom = initiator for event 1 with rationale that avoiding is an active stance? I'd rather not. I'll skip.
+
+Hmm, but perhaps better to include something. I'll include for event 1: Tom = responder? no.
+
+Fine — I'll add roles: r1 Sarah initiator event2, r2 Tom recipient event2, r3 self observer event3, r4 Sarah initiator event3? Hmm. Let me do r3 self observer event3, and r4 Tom responder event3 outcome declined (left the table = withdrew from the exchange). That's a fair literal reading: he declined to continue. I'll note in rationale.
+
+Now claims. Facts:
+- c1: Sarah a raillé Tom sur sa voiture au pique-nique (sourced_observation? The user saw/heard? It's a note by the user describing what happened. The source is a note the user wrote. Category: sourced_observation = l'utilisateur l'a vu ou entendu lui-même, y compris un document ou une note qu'il a trouvé. Hmm, the note is the user's own. Actually the notes here are the user's own records — but is it the user's observation of the events? These seem like user's notes about events they witnessed. The picnic — was user there? Unknown. Hmm.
+
+The categories: sourced_observation = user saw or heard it himself. The source text is a note in the workspace. Given the user wrote/kept these notes, and "chez moi" indicates presence, I'd treat these as sourced_observation for the dinner, but for picnic/wedding unknown. Alternatively, treat the note content as "explicit_statement" (l'utilisateur a dit ou écrit) since the user wrote the note. Hmm. The instructions say annotations of the user count as explicit_statement. For the notes themselves, they are the user's own records — "un document ou une note qu'il a trouvé" is sourced_observation. So a note the user wrote... ambiguous.
+
+I think the cleanest: treat these as sourced_observation of the events (user's own account of what he observed). Hmm, but if he wasn't there... For picnic, he may have been. I'll use sourced_observation and note the uncertainty in limits.
+
+Actually, maybe the safest is: the source is the user's note = the user's statement (he wrote it) → explicit_statement (l'utilisateur a dit ou écrit). Then behaviors reported are... hmm. Actually the packet says category "unclassified_note" for entities. The user wrote the notes. I'll use explicit_statement for claims about what the user wrote/asserts? But the content of the claim is about Tom and Sarah's behavior, not about the user's state. Category describes provenance of the information: the user wrote it → explicit_statement. Hmm, but rule 3 defines explicit_statement as "une personne a dit ou écrit (y compris l'utilisateur parlant de lui-même)". The user wrote this note, so it's explicit_statement by the user. Alternatively sourced_observation if he witnessed.
+
+I'll pick sourced_observation for the behaviors he witnessed (picnic, wedding, dinner — he's the narrator, likely present at least at dinner). Hmm. Risky either way. Let me use sourced_observation for the events themselves since the note describes what happened in his presence — actually for the wedding he says "Tom a évité Sarah toute la soirée" — that requires observation of the whole evening, plausible the user attended Nina's wedding.
+
+I'll use sourced_observation for the behavioral descriptions, and add an inference claim about the relationship pattern.
+
+Now hypotheses:
+
+D2: Schéma relationnel — conflit asymétrique entre Sarah et Tom: Sarah initie l'hostilité (raillerie), Tom évite/évite le conflit (silence, retrait). Escalade sur trois épisodes sur ~2 mois (mars→mai 2026). Tom's strategy: withdrawal (leave table, no response, avoid all evening). Sarah's: verbal attack / mockery. This is a complementary pattern: pursuer-attacker / withdrawer. 
+
+Hypothesis H1 (D2): "La relation Sarah–Tom fonctionne en cycle attaque-retrait : Sarah initie la confrontation verbale, Tom répond par le silence ou la fuite, ce qui clôt l'épisode sans résoudre le conflit." Rank 1, confidence moderate (2-3 episodes: 3 episodes at least 30 days apart? March 7, April 4, May 9 — spans >30 days, 3 episodes). But confidence high only in D1/D2 with 3 episodes over 30 days and counter-evidence considered. We have 3 episodes over 62 days. Counter-evidence: none in data. Could be high. But the evidence anchor: claims must support. Hmm, but our claims are our own proposals — fine, {proposalKey}. But rule 13 says "Une inférence n'est jamais un ancrage" — meaning an inference claim cannot be an anchor. So my behavioral claims should be sourced_observation, not inference, to serve as anchors. The behavioral facts: Sarah mocked Tom (source 2), Tom didn't respond (source 2), Tom left table (source 3), Tom avoided Sarah (source 1). Those are observations in the notes.
+
+Careful: the description of the interpersonal cycle itself is D2 hypothesis — inference. Evidence: the observation claims.
+
+So claims:
+- k/c1: "Au pique-nique du 2026-04-04, Sarah a raillé Tom au sujet de sa voiture ; Tom n'a pas répondu." (sourced_observation, actual) — combined? Better split: c1 Sarah mockery, c2 Tom silence. Or a single claim "Sarah a raillé Tom... et Tom n'a rien répondu". I'll split for precision? Keep 1 claim per fact maybe. Let me do:
+  - c1: Sarah a raillé Tom sur sa voiture au pique-nique (explicit? sourced_observation, actual) — citation source 2.
+  - c2: Tom n'a pas répondu à la raillerie de Sarah (sourced_observation, actual).
+  - c3: Au dîner chez l'utilisateur, Sarah et Tom se sont accrochés sur l'écologie ; Tom a quitté la table (sourced_observation, actual).
+  - c4: Au mariage de Nina, Tom a évité Sarah toute la soirée (sourced_observation, actual).
+  - c5 (inference): "La raillerie de Sarah sur la voiture fonctionne comme une pique visant à provoquer Tom" — inference, hypothetical? It's an interpretation. modality actual? Modality for inference... Probably "hypothetical" or "actual". The inference is about the meaning. I'd say modality "hypothetical" is odd. Hmm. Rule says modality: actual (fait ou état), intended, hypothetical. An inference about the function of an act — the act is actual, the intent is hypothetical. I'd use "hypothetical" for inferences about intent, or "actual" for inference about pattern. For c6 (pattern inference), I'd use actual? Hmm. Let me be careful: "Sarah cherche à blesser Tom" is about intent → hypothetical/intended? I'd put hypothetical.
+
+Also inference: "Tom évite le conflit plutôt que d'y entrer" — inference from his non-response and leaving. Category inference, modality actual (it's a characterization of the observed pattern)? Could be inferred actual state. Fine.
+
+Hypotheses:
+H1 (D2): "Sarah–Tom : cycle complémentaire attaque verbale (Sarah) → retrait (Tom), stable sur trois épisodes de mars à mai 2026." Confidence moderate or high. 3 episodes over 30 days in D2 → high allowed. Hmm, but high requires "3 épisodes étalés sur au moins 30 jours, contre-preuves déduites". We have 3 episodes, spans March 7 to May 9 = 63 days. Counter-evidence: none found. But is the evidence anchored as claims (sourced_observation)? Yes, our proposed claims (proposalKey). Hmm, but is 3 episodes enough "indépendants"? They are distinct episodes. I'll set confidence moderate to be safe? The rule says "high seulement en D1 et D2, à partir de 3 épisodes ... contre-preuves déduites". We have 3. But the pattern attribution to Sarah (initiator of hostility) — event 3 is mutual "se sont accrochés". Let me set confidence "moderate" — safer and rule 14 says confidence is capped by system anyway. Actually giving high requires 3 episodes anchored; we have that. But event 3 is mutual, weakening "Sarah initie". I'll use moderate.
+
+Status: at creation, "plausible" for D1/D2 when evidence suffices. Yes, set status "plausible", rank 1.
+
+H2 (D3): Alternative/other reading — e.g., "Tom's avoidance is situational: he avoids conflict generally (conflict-avoidant temperament), not specific to Sarah." That's the alternative for D3 or a distinct D2/D3 hypothesis. Or: attachment-based: Tom's withdrawal = deactivation strategy. Let's build D3 hypothesis:
+
+H2 (D3): "Tom régule l'angoisse relationnelle par la déactivation : il coupe le contact (silence, quitter la table, éviter toute la soirée) plutôt que de négocier, ce qui protège son image et évite l'escalade mais empêche toute résolution et laisse Sarah en position d'initiatrice." Mechanism: optimizes = éviter la confrontation et le sentiment d'impuissance; protects = image de soi / ne pas perdre la face; defenses = évitement, silence; beliefs = "se confronter ne mène à rien / aggraver"; triggers = critique publique (raillerie); soothes = distance physique; barrier = le retrait réussit à court terme (fin immédiate du conflit) donc renforcé; prediction = Tom évitera Sarah lors des prochaines occasions, préférera les contextes où Sarah est absente; Sarah reprendra l'initiative du contact.
+
+AlternativeTo? H2 is D3, needs an alternative incompatible in the same response. Alternative: "Le retrait de Tom n'est pas un trait mais une réponse à un contexte précis (la relation avec Sarah est saturée de conflits). Or: c'est Sarah qui cherche le contact/confrontation et Tom qui se protège — normative: the group norm rewards avoiding scenes."
+
+Let me choose H2 as D3 about Tom, and H3 as the alternative: situational — "Le retrait de Tom se limite au contexte Sarah ; rien n'indique qu'il se retire ailleurs" — that's kind of a negation. Better alternative: "Sarah initie la confrontation parce que Tom ne lui donne pas de prise : la dynamique appartient à la relation, pas à Tom" — that's H1 (D2). AlternativeTo H1.
+
+Alternatively make the alternative: "Le comportement de Tom s'explique par un état transitoire/une blessure particulière (la raillerie sur sa voiture) : humilié, il évite Sarah depuis." That's a genuine competing mechanism: a specific humiliation episode (April 4) explaining later avoidance (May 9) — rather than a general deactivation. Good alternative, distinct.
+
+So:
+H2 (D3): Tom — déactivation/évitement comme régulation de l'affrontement; status draft (D3 new hypothesis is draft; but as a propose_hypothesis at creation... rule 16: "à la création, demande plausible pour une lecture D1 ou D2 dès que les preuves suffisent, sinon draft. Dès D3, une nouvelle hypothèse est draft.") So H2 D3 → draft.
+H3 (D3): alternative — "l'évitement de Tom est une réaction à une humiliation ponctuelle (raillerie sur la voiture) et se limite à Sarah, sans pattern général." status draft, alternativeTo h2 (proposalKey).
+
+Wait, rule 11: "Dès D3, propose aussi une hypothèse ALTERNATIVE incompatible". The alternative must be related by alternativeTo. Note H3 also mentions Sarah's role: Sarah initie (raillerie) — hmm, in H3 the mechanism is about Tom's response to humiliation.
+
+Also maybe a D2 hypothesis about Sarah: "Sarah initie les confrontations (raillerie, accrochage) — elle cherche le contact par le conflit." Alternative: Sarah's mockery is a form of play/teasing not hostility (inference). Hmm, the word "raillé" is hostile.
+
+Maybe propose a hypothesis about the relation as subject, ranking:
+h1 D2 relation [Sarah, Tom] cycle attaque-retrait — rank 1.
+h2 D3 Tom: déactivation — rank 1 for Tom as subject? Ranks are per subject. For subject Tom: h2 rank 1, h3 rank 2. For relation: h1 rank 1.
+Maybe also a D3 for Sarah: "Sarah utilise la moquerie/confrontation pour forcer un contact ou pour restaurer un statut" — alternative: "Sarah est en conflit ouvert avec Tom, c'est mutuel" (D2). Hmm, that's evidence-limited. I could do h4 D3 Sarah: "Sarah régule par l'attaque/le contrôle: provoquer pour garder la main" with alternative "Sarah exprime une rancune accumulée suite à un tort antérieur non raconté" (context). Hmm. Too much speculation, but the prompt encourages. But over-generating risks. Let me limit to 4 hypotheses: h1 (D2 relation), h2 (D3 Tom), h3 (D3 alternative Tom), h4 (D3 Sarah?). Possibly h4 as D3 about Sarah with alternative h5.
+
+The instructions: "Propose 2 ou 3 lectures fortes par sujet plutôt qu'une longue liste." Subjects: relation [Sarah, Tom], Tom, Sarah, maybe self.
+
+For Sarah, one strong reading: "Sarah prend l'initiative de la confrontation (raillerie publique, accrochage) — projette l'hostilité plutôt que de l'éviter." Alternative: "Sarah ne cherche pas le conflit : elle répond à un comportement de Tom" — but data shows she initiated the mockery. Another alternative: "la raillerie est une tentative de contact/provocation ludique" — incompatible.
+
+Hmm, is Sarah's reading D2-level? It's about the relation. D3 for Sarah would need motives — limited data (only 2 episodes with Sarah as agent). Could do D3 draft with low confidence. Let's do it: h4 D3 Sarah: "Sarah cherche à forcer une réaction de Tom par la provocation — la raillerie (voiture) et l'accrochage visent à sortir Tom de son retrait, l'attaque étant un mode de contact." Mechanism: optimizes = obtenir une réaction/prise; protects = ne pas être ignorée; defenses = passage à l'attaque; beliefs = "l'attaque force l'autre à me reconnaître"; triggers = le silence/fuite de Tom; soothes = provoquer une réaction (même négative); barrier = Tom's withdrawal reinforces the escalation attempts. Alternative h5: "Sarah a accumulé une rancune envers Tom sur un épisode antérieur (contexte politique des années précédentes) et les piques sur des sujets différents (voiture, écologie) sont des rejets" — situational/history-based.
+
+That might be good but speculative. Let's include h4 with low confidence, draft, and h5 as alternativeTo.
+
+Also small note: the notes serve as our only source; the user is present at least as host ("chez moi") and note-taker. A reading on the user himself (D3+) requires unusual act — user hosting dinner, relancer, etc. is ordinary. So pose a question maybe: "Quel est ton rôle dans ce conflit / que ressens-tu?" But rule 20: pose une question seulement si sa réponse départage des hypothèses, and not reposing existing questions (none exist). Good discriminating question: "Tom a-t-il un comportement d'évitement en dehors de ses interactions avec Sarah (autres conflits, autres personnes)?" That discriminates h2 (general deactivation) vs h3 (specific to Sarah). Great. Also could ask: "Qu'est-ce qui s'est passé entre Sarah et Tom avant mars 2026?" that discriminates h4/h5 (rancune préalable). Two questions maybe. Keep to 1-2.
+
+Also the events exist already in the packet. Should I propose_event for them? They already exist as entities; proposing duplicate events could be redundant. Rule 4 says fait accompli → propose_event AND propose_claim. Since the events already exist, I think we should NOT duplicate them; instead use existing event ids in roles. But the schema says "Un fait accompli donne un propose_event et un propose_claim qui porte sa provenance." The events in entities are already events (focus). I'll skip propose_event and reference existing events in roles. Hmm, but might be considered missing. Actually the events already exist with ids; proposing new events would duplicate. I'll not propose events. Alternatively I could propose events for the ones not in the packet — all are in the packet. So skip.
+
+Hmm, but strictly the analyst should produce events. Risk assessment: In similar tasks, when events exist in the packet, one doesn't re-propose. I'll skip. Actually, hmm — but a grader may check that events are proposed. The prompt says "Un fait accompli donne un propose_event ET un propose_claim qui porte sa provenance. Jamais d'événement pour une intention..." The facts are already events in the packet (entities list). I think the safest is to link claims and roles to existing event ids where possible — but propose_claim payload has citations only, no event refs. So claims stand with citations.
+
+I'll not propose events (they exist). Roles reference existing event ids. Good.
+
+Now mechanism fields for each hypothesis.
+
+Let me now write the claims with precise citations.
+
+Source A (wedding): sourceId 533d8173-03f5-43ad-95dd-e752b9a497f6, hash dd93eee9577ed033f2a7d9c3b6926b6fe6b85d61d5ce416772e3a0bbadff0954, spanStart 0, spanEnd 54, quote "Au mariage de Nina, Tom a évité Sarah toute la soirée."
+
+Source B (picnic): sourceId f64788ff-01fd-4d9b-b10d-c721b23f4181, hash 3c166aeac14c9dd9cc282d625d80dae9e73197a633ac8c46c58c421e1421493a, span 0-71 quote "Au pique-nique, Sarah a raillé Tom sur sa voiture, il n'a rien répondu."
+
+Source C (dinner): sourceId 184b2848-8601-45ee-8259-2a0f35df70b1, hash 8ca8286191fb4090cf3ac0983cc745545048772faf2610487ab8a3412e5f1169, span 0-89 quote "Au dîner chez moi, Sarah et Tom se sont accrochés sur l'écologie ; Tom a quitté la table."
+
+Claims:
+c1: "Le 2026-04-04, au pique-nique, Sarah a raillé Tom au sujet de sa voiture." category sourced_observation, modality actual, validFrom 2026-04-04. Actually validFrom should be the date. Use "2026-04-04T12:00:00-03:00"? validFrom expects ISO 8601 date. I'll use "2026-04-04".
+c2: "Tom n'a pas répondu à la raillerie de Sarah." sourced_observation, actual.
+c3: "Le 2026-03-07, au dîner chez l'utilisateur, Sarah et Tom se sont accrochés sur l'écologie et Tom a quitté la table." sourced_observation, actual.
+c4: "Le 2026-05-09, au mariage de Nina, Tom a évité Sarah toute la soirée." sourced_observation, actual.
+c5: inference: "Le retrait de Tom (silence, quitter la table, éviter Sarah) est un évitement actif du conflit avec Sarah." category inference, modality actual. validFrom 2026-03-07? maybe null.
+c6: inference: "Sarah agit en initiatrice de l'hostilité dans les deux épisodes où elle est décrite (raillerie, accrochage)." inference, actual. Hmm c6 conflates; ok.
+
+Careful: rule 13: inference is never an anchor, so evidence for hypotheses must use c1-c4 (sourced_observation). I'll use c1-c4 as supports; I can also include c5 but as a non-anchor — better avoid inference claims in evidence. I'll keep inference claims minimal and not in evidence.
+
+Actually maybe I don't need inference claims at all since hypotheses carry the inferences. But rule 5, 7 suggest inference claims for non-literal reading. The mockery "raillé" is literal enough. I'll include one inference claim about the function: "la raillerie de Sarah sur la voiture vise Tom personnellement (pique)" — that's inference, hypothetical. Maybe skip. I'll include one to show reading: c5 inference about Tom's avoidance being conflict-avoidance. And skip c6.
+
+Hmm, but including an inference claim in evidence is forbidden as anchor. I'll include c5 as inference and not use it in evidence.
+
+Roles:
+o1: event 54dc9e2d (picnic), subject Sarah, role initiator, outcome null, citation B.
+o2: event 54dc9e2d, subject Tom, role recipient, outcome null, citation B.
+o3: event 23e08c94 (dinner), subject self, role observer, outcome null, citation C.
+o4: event 23e08c94, subject Tom, role responder, outcome "declined", citation C. (He left the table = declined to continue the exchange.) Hmm, is Tom responder? The "requester" would be Sarah... this stretches. Maybe better: Sarah initiator (of the accrochage), Tom responder declined (withdrew). I'll include both? Let me include: o4 Sarah initiator event 23e08c94; o5 Tom responder outcome declined. Hmm "se sont accrochés" mutual. I'll include Sarah as initiator with rationale "elle est la première à attaquer verbalement dans les deux autres épisodes; ici la formulation est symétrique, le rôle est proposé au titre de l'hypothèse"? But roles are supposed to be facts cited. Risky. I'll include only: self observer (event 3), Tom responder declined (event 3)? Hmm, "Tom a quitté la table" is a fact; role responder with outcome declined is an interpretation of the leaving as withdrawal from the exchange. I think it's acceptable and useful. Alternatively make Tom "initiator" of the withdrawal — no, that's not "lance le contact".
+
+Let me do o4: Tom responder, outcome "declined" for event 3.
+
+And event 1 (wedding): Tom avoided Sarah — role? Tom = initiator? Avoidance = not launching contact. I'd add: Tom = responder outcome "declined"? He declines contact. Hmm. Or skip. I'll add o5: Tom responder, outcome declined, event 33df3d2b with rationale "éviter Sarah toute la soirée = refuser le contact". Eh, that's a stretch but consistent. Maybe skip event 1 roles to avoid noise. Hmm. The mission says extract roles for each episode. I'll include it: Tom responder/declined for wedding, Sarah recipient? I'll just do Tom.
+
+Hmm, actually for the wedding, maybe better: Tom = observer? No. I'll include Tom responder outcome declined — "il évite le contact, refusant l'interaction".
+
+Let's also add Sarah observer? no.
+
+OK roles: r1, r2, r3, r4, r5.
+
+Hypotheses:
+
+h1: D2, relation [Sarah, Tom]. Statement: "Entre Sarah et Tom, la relation s'organise en cycle complémentaire : Sarah initie la confrontation (raillerie, accrochage), Tom répond par le retrait (silence, quitter la table, éviter), ce qui met fin à l'épisode sans le résoudre ; le cycle se répète sur au moins trois occasions entre mars et mai 2026." Confidence: moderate (3 episodes but event 3 mutual). Status: plausible. Rank 1. Framework: null? D2 doesn't require framework. mechanism: optional but can fill.
+Evidence: c1, c2, c3, c4 supports. Contradicts: any? c3 shows mutual (both initiated) — could be a contradicts for "Sarah initie"? It's partially contradicting. I'll add c3 as supports (Tom left) and note limits. Hmm, maybe add c3 as supports and mention in limits that episode 3 is symmetric.
+
+Mechanism for relation: optimizes: chacun réduit un coût — Sarah obtient une réaction/évacuation de la tension, Tom met fin au conflit; protects: Tom protège son calme et son image, Sarah protège sa position/prise; barrier: le retrait de Tom éteint l'incendie à court terme et récompense les deux, ce qui rend la résolution inutile; prediction: d'autres épisodes similaires lors de prochaines occasions sociales, avec l'un qui attaque, l'autre qui s'absente.
+
+h2: D3, subject Tom. Statement: "Tom régule la tension relationnelle par la déactivation : face à une attaque verbale, il coupe le contact (silence, retrait physique, évitement) plutôt que de négocier ou de rendre coup pour coup." Confidence: low (few episodes? we have 3 episodes of Tom's withdrawal: March 7 leaving the table, April 4 no response, May 9 avoidance). Those are 3 episodes → rule 14: "low avec moins de 2 épisodes indépendants ancrés; moderate à partir de 2". 3 episodes → moderate allowed but "Dès D3, la confiance ne dépasse jamais moderate". So moderate. Status draft (D3 new). Rank 1 for Tom.
+Mechanism: optimizes = éviter l'escalade et l'humiliation publique; protects = son image et son calme; defenses = évitement, silence, fuite; beliefs = "répondre aggrave", "je ne peux pas gagner ce genre d'échange"; triggers = critique publique, moquerie devant les autres; soothes = la distance; barrier = le retrait réussit immédiatement (fin du conflit) et évite le coût, donc renforcé; prediction = Tom déclinera les occasions où Sarah est présente, ou restera en périphérie; il ne lèvera pas le sujet avec elle.
+limits: on ne sait pas si ce style existe hors de la relation avec Sarah; on ne connaît pas son ressenti; pas d'info sur d'autres contextes.
+revisionConditions: si l'on observe Tom tenir tête ou négocier avec Sarah, ou s'il se retire aussi ailleurs sans conflit.
+alternativeTo: null (h2 is primary for Tom), h3 alternativeTo h2.
+
+h3: D3, subject Tom, alternativeTo h2 (proposalKey). Statement: "Le retrait de Tom n'est pas un style général mais la conséquence d'une humiliation ponctuelle : raillé publiquement sur sa voiture, il évite Sarah depuis, ce qui est une réaction contextuelle à une offense précise." Confidence low. Status draft. Rank 2. Mechanism: optimizes = éviter de revivre l'humiliation; protects = estime de soi; triggers = présence de Sarah; barrier = l'évitement empêche le test de réalité (il ne découvre jamais si Sarah recommencerait).
+Evidence: c1, c2 (picnic precedes wedding), c4.
+
+Hmm, note the chronology: dinner March 7 (before picnic April 4). So the conflict preceded the mockery. So "évite depuis la raillerie" — the wedding May 9 is after April 4. But the dinner argument March 7 predates. So the humiliation story is weaker — actually good: the evidence ordering weakens h3, which makes h1/h2 rank higher. I can note this in h3's limits.
+
+h4: D3, subject Sarah. Statement: "Sarah maintient le contact par la confrontation : raillerie et accrochage forcent Tom à réagir, l'hostilité étant son mode d'engagement quand il se dérobe." Confidence low. Status draft. Rank 1 for Sarah. Mechanism: optimizes = obtenir une réaction/éviter l'indifférence; protects = statut dans le groupe, ne pas être ignorée; defenses = attaque, humour mordant; beliefs = "s'il ne me répond pas, c'est qu'il me méprise/je dois forcer"; triggers = le silence/retrait de Tom; soothes = la réaction obtenue; barrier = le retrait de Tom confirme que la confrontation « marche ».
+limits: on ne sait pas ce que Sarah dit de Tom ni ce qu'elle veut; 2 épisodes seulement.
+
+h5: D3, subject Sarah, alternativeTo h4. Statement: "L'hostilité de Sarah s'explique par un conflit de valeurs ou une rancune antérieure sur des sujets précis (écologie, voiture), non par une stratégie relationnelle : elle attaque des positions, pas Tom en tant que personne." Hmm, "raillé sur sa voiture" is personal. Alternative: "Sarah ne cherche pas particulièrement Tom : les deux épisodes s'expliquent par la friction de deux personnalités fortes dans un groupe d'amis (norme de débat), pas par une dynamique dyadique." That's a group norm alternative — good. Confidence low, draft, rank 2.
+
+Maybe include a D5 hypothesis about the group? The group "Amis" context. Could propose: the group's social life centers on occasions where Sarah and Tom must co-exist; the group tolerates the friction without intervening. Maybe skip D5 to keep it tight. The prompt says propose 2-3 strong readings per subject. Subjects: relation, Tom, Sarah. Self: only asks questions.
+
+Questions:
+q1: "Tom se retire-t-il aussi dans d'autres conflits (travail, famille, autres amis), ou seulement avec Sarah ?" targets h2, h3 — discriminating.
+q2: "Que s'est-il passé entre Sarah et Tom avant mars 2026 ?" targets h4, h5 (and h3) — discriminating: whether there's an anterior history.
+Both plausible. Note rule: pose question only if it discriminates. Yes.
+
+Maybe q2 could be seen as needing context. Fine.
+
+Outcome: proposed.
+
+Now write the JSON. Keys: c1..c5, o1..o5, h1..h5, q1, q2.
+
+Note: alterativeTo for h3 references h2 via proposalKey.
+
+Also note rule 11: for D3, alternative incompatible, "Relie-la par alternativeTo, dans la même réponse si elle n'existe pas déjà." Good.
+
+Also for relation hypothesis h1 (D2) no alternative needed.
+
+Let me write mechanism objects. For h1 (relation), mechanism: optimizes, protects, barrier, prediction. Rule 12 says fill what data allows.
+
+Let me now compose the citations exactly.
+
+Citation for source A:
+{"sourceId": "533d8173-03f5-43ad-95dd-e752b9a497f6", "contentHash": "dd93eee9577ed033f2a7d9c3b6926b6fe6b85d61d5ce416772e3a0bbadff0954", "spanStart": 0, "spanEnd": 54, "quote": "Au mariage de Nina, Tom a évité Sarah toute la soirée."}
+
+Source B: spanEnd 71.
+Source C: spanEnd 89.
+
+Now dates: validFrom for c1: "2026-04-04"? ISO 8601 date acceptable. Events used occurredStart "2026-04-04T12:00:00-03:00". I'll use full ISO with time for claims? validFrom expects "<date ISO 8601>". I'll use "2026-04-04T12:00:00-03:00" to match. Hmm, simpler "2026-04-04". I'll use the date-only.
+
+Write claims:
+
+c1 text: "Au pique-nique du 2026-04-04, Sarah a raillé Tom au sujet de sa voiture." category sourced_observation, modality actual, validFrom "2026-04-04", citation B.
+
+c2: "Tom n'a pas répondu à la raillerie de Sarah." sourced_observation, actual, validFrom "2026-04-04", citation B.
+
+c3: "Au dîner chez l'utilisateur le 2026-03-07, Sarah et Tom se sont accrochés sur l'écologie ; Tom a quitté la table." sourced_observation, actual, validFrom "2026-03-07", citation C.
+
+c4: "Au mariage de Nina le 2026-05-09, Tom a évité Sarah toute la soirée." sourced_observation, actual, validFrom "2026-05-09", citation A.
+
+c5: inference: "Le retrait de Tom (ne pas répondre, quitter la table, éviter Sarah) vise à interrompre le conflit plutôt qu'à le traiter." inference, hypothetical (about intention), validFrom null, citations B, C, A? citations can be multiple. I'll cite B and C and A.
+
+Hmm, maybe make modality "actual" for the functional reading that the withdrawals interrupt the conflict — that's observable. The intent to "interrompre plutôt que traiter" is hypothetical. I'll use "hypothetical".
+
+Roles:
+o1: event 54dc9e2d-c7ff-4071-82a8-6fb0482eaf24, subject {"mention":"Sarah"}, role initiator, outcome null, citation B.
+o2: same event, subject {"mention":"Tom"}, role recipient, outcome null, citation B.
+o3: event 23e08c94-b781-4e61-8168-8b911c57d1a4, subject {"self":true}, role observer, outcome null, citation C.
+o4: same event, Tom, responder, outcome "declined", citation C.
+o5: event 33df3d2b-81ce-459f-b212-5b37d8140013, Tom, responder, outcome "declined", citation A. Hmm "éviter Sarah" = declining contact. Rationale accordingly. Maybe instead I'll make o5 Tom = initiator? No. Keep responder declined. Hmm, alternatively for the wedding there's no request, so responder fits loosely. I'll keep it with rationale that avoidance = refusing the interaction.
+
+Hmm, maybe for the wedding better role: observer? No, he avoided — he's an actor. Role "initiator" is about launching contact. Avoidance is launching non-contact... I'll keep responder/declined.
+
+Actually, maybe simplest to skip o5 to avoid a shaky role. But the focus includes the wedding event. Roles are not obligatory for each. I'll include it though — the extraction of Tom's avoidance as a "declined" response supports the pattern. OK.
+
+Hypotheses evidence refs: use {"kind":"claim","id":...} for packet claims (none) or {"proposalKey":"c1"} etc. Our claims are proposals, so use proposalKey.
+
+h1 evidence: [{claim:{proposalKey:"c1"},stance:"supports"},{claim:{proposalKey:"c2"},stance:"supports"},{claim:{proposalKey:"c3"},stance:"supports"},{claim:{proposalKey:"c4"},stance:"supports"}].
+
+Hmm c5 is inference, skip.
+
+Now compose the summary: short, no claims beyond operations.
+
+Let me write the final JSON.
+
+Note modelDeclaration: declaredModel "<ton nom de modèle>". I'm "Claude"? The system prompt says I'm the MANWË analyst. I'll put declaredModel "deepseek-flash"? The workspace id says deepseek-flash. Hmm. declaredModel should be my model name. I'll write "claude-sonnet-4.5"? Hmm. The evaluation workspace suggests evaluating deepseek-flash-r4. The providerId "sol-assisted". I'll set declaredModel: "claude-sonnet-4.5", technicalId null.
+
+Hmm, risky but fine. Actually maybe better: declaredModel "deepseek-flash" matches the workspace naming (evaluation-2026-09-25-deepseek-flash-r4-s02-Q03). The prompt asks for "ton nom de modèle". I'll go with "claude-sonnet-4.5"? I'm Claude. Let's say declaredModel: "claude-sonnet-4.5". Fine.
+
+Now confidences:
+h1: D2, 3 episodes over 62 days → high permitted. But I said moderate. Let me consider: rule 14 says "high seulement en D1 et D2, à partir de 3 épisodes étalés sur au moins 30 jours, contre-preuves déduites". We have 3 episodes over 63 days. Counter-evidence: none. So high is allowed. However the third episode is symmetric (mutual), which weakens "Sarah initie". But the withdrawal part (Tom leaves) holds in all 3. Hmm. The system caps confidence anyway. I'll set h1 confidence "moderate" to be safe? Or "high"? I think moderate is defensible and safer; the pattern attribution to Sarah as initiator only cleanly holds in 1-2 episodes. I'll use moderate.
+
+h2: D3 → moderate max. We have 3 withdrawal episodes. moderate.
+
+h3, h4, h5: D3 → low (fewer clean episodes). h3: reaction to humiliation — supported by 2 (picnic, wedding) — moderate allowed at 2 episodes? Rule 14: low with <2 independent episodes; moderate from 2. h3 has 2 (picnic mockery + wedding avoidance)... but the ordering undermines. I'll set low for h3 (rank 2). h4: 2 episodes (picnic, dinner) → moderate possible but interpretation is thin → low. h5: low.
+
+Statuses: h1 plausible (D2 with evidence). h2-h5 draft.
+
+Now write mechanism details.
+
+h1 mechanism:
+optimizes: "Chacun met fin à la tension immédiate : Sarah évacue une contrariété en la rendant visible, Tom échappe à un échange qu'il perdrait."
+protects: "Tom protège son calme et son image ; Sarah protège sa position et évite d'être ignorée."
+defenses: "Attaque verbale d'un côté, silence et retrait physique de l'autre."
+beliefs: "« Se confronter ne mène à rien » (Tom) ; « il faut bien que quelqu'un dise les choses » (Sarah, hypothèse)."
+triggers: "Sujets publics (voiture, écologie), présence d'autres amis."
+soothes: "La distance : le conflit s'arrête dès que Tom se retire."
+barrier: "Le retrait éteint l'épisode sans le résoudre, donc rien ne change et la même séquence peut se rejouer."
+prediction: "Lors des prochaines occasions communes, Sarah initiera une remarque et Tom se mettra en retrait ; aucun des deux n'abordera le conflit hors scène publique."
+
+h2 mechanism: as above.
+h3 mechanism: optimizes/protects/triggers/barrier/prediction.
+h4 mechanism.
+h5 mechanism (optional; can be null or simple). Rule requires at least one field if not null. I'll provide a short one.
+
+Let me now write the final JSON output. Keep rationales short.
+
+Also "limits" and "revisionConditions" for each hypothesis.
+
+Ensure no extra fields.
+
+Subjects for h2: [{ "mention": "Tom" }]; h3 same; h4: [{"mention":"Sarah"}]; h5: same; h1: [{"relation":[{"mention":"Sarah"},{"mention":"Tom"}]}].
+
+Note: MEMBRE can be mention. Relation members are MEMBRE.
+
+Write out now.
+
+Questions:
+q1 payload: question "Tom se retire-t-il aussi face à d'autres personnes (famille, travail, autres amis), ou seulement avec Sarah ?", targets [{"proposalKey":"h2"},{"proposalKey":"h3"}], discriminatingInfo: "Départage la déactivation générale (style) de la réaction contextuelle à Sarah.", whyNow: "Les trois épisodes impliquent tous Sarah ; aucune donnée hors de cette relation."
+q2: question "Y a-t-il eu, avant mars 2026, un épisode (tort, humiliation, rupture) entre Sarah et Tom ?", targets [{"proposalKey":"h4"},{"proposalKey":"h5"}], discriminatingInfo: "Départage une stratégie relationnelle actuelle d'un règlement de comptes lié à une histoire antérieure.", whyNow: "Les notes ne couvrent que mars–mai 2026."
+
+Both fine.
+
+Outcome: proposed; clarifications: can be [] but we have propose_question operations. The "clarifications" top-level array can be []. Yes.
+
+Summary: "Trois épisodes (mars–mai 2026) documentent un cycle Sarah–Tom : confrontation initiée par Sarah, retrait de Tom ; hypothèses relationnelles (D2) et individuelles (D3) proposées, avec alternatives et deux questions de départage."
+
+Careful: summary shouldn't contain affirmations absent from operations — it's consistent.
+
+Double-check citation spans/quote — full source quotes given in packet; I replicate.
+
+Let me write JSON.
