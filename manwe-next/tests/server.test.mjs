@@ -139,6 +139,11 @@ test("capture, recherche, correction et redémarrage utilisent la même mémoire
     assert.equal((await filteredSearch.json()).results.length, 1);
     await context.restart();
     cookie = await session(context.origin);
+    const graph = await request(context.origin, cookie, "/api/graph?kind=self");
+    assert.equal(graph.status, 200);
+    const projection = await graph.json();
+    assert.equal(projection.focus.kind, "self");
+    assert.ok(projection.nodes.some((node) => node.id === "self"));
     const snapshot = await request(context.origin, cookie, "/api/workspace");
     const body = await snapshot.json();
     assert.equal(body.workspace.revision, 2);
@@ -149,9 +154,7 @@ test("capture, recherche, correction et redémarrage utilisent la même mémoire
     );
     assert.equal(body.annotations[0].target.id, event.id);
     assert.ok(
-      body.sources.some(
-        (source) => source.id === body.annotations[0].sourceId,
-      ),
+      body.sources.some((source) => source.id === body.annotations[0].sourceId),
     );
   }));
 

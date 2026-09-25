@@ -19,6 +19,10 @@ import {
   parsePrepareAnalysisCommand,
 } from "../../../packages/cognition/src/contract.ts";
 import { SqliteMemoryStore } from "../../../packages/storage/src/sqliteStore.ts";
+import {
+  projectGraph,
+  type FocusContext,
+} from "../../../packages/cognition/src/projection.ts";
 
 const JSON_LIMIT = 64 * 1024;
 
@@ -163,6 +167,24 @@ export async function startManweServer(options: ServerOptions) {
           response,
           200,
           store.getAnalysis(decodeURIComponent(analysisRoute[1])),
+        );
+        return;
+      }
+      if (pathname === "/api/graph" && request.method === "GET") {
+        // Projection du graphe vivant autour d'un focus (R4.1, R4.2).
+        const params = new URL(request.url ?? "/", `http://${host}`)
+          .searchParams;
+        const kind = params.get("kind") ?? "self";
+        const kinds = ["person", "self", "relation", "hypothesis", "question"];
+        if (!kinds.includes(kind))
+          throw new DomainError("invalid_focus", "Focus de graphe inconnu.");
+        json(
+          response,
+          200,
+          projectGraph(store.snapshot(), {
+            kind: kind as FocusContext["kind"],
+            id: params.get("id") ?? "self",
+          }),
         );
         return;
       }
