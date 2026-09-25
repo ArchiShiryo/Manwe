@@ -144,6 +144,7 @@ test("capture, recherche, correction et redémarrage utilisent la même mémoire
     const projection = await graph.json();
     assert.equal(projection.focus.kind, "self");
     assert.ok(projection.nodes.some((node) => node.id === "self"));
+    assert.equal(projection.synthesis.revision, projection.revision);
     const snapshot = await request(context.origin, cookie, "/api/workspace");
     const body = await snapshot.json();
     assert.equal(body.workspace.revision, 2);

@@ -23,6 +23,7 @@ import {
   projectGraph,
   type FocusContext,
 } from "../../../packages/cognition/src/projection.ts";
+import { buildSynthesis } from "../../../packages/cognition/src/synthesis.ts";
 
 const JSON_LIMIT = 64 * 1024;
 
@@ -178,14 +179,16 @@ export async function startManweServer(options: ServerOptions) {
         const kinds = ["person", "self", "relation", "hypothesis", "question"];
         if (!kinds.includes(kind))
           throw new DomainError("invalid_focus", "Focus de graphe inconnu.");
-        json(
-          response,
-          200,
-          projectGraph(store.snapshot(), {
-            kind: kind as FocusContext["kind"],
-            id: params.get("id") ?? "self",
-          }),
-        );
+        // Synthèse (R4.6) calculée sur le même instantané : même révision.
+        const snapshot = store.snapshot();
+        const projection = projectGraph(snapshot, {
+          kind: kind as FocusContext["kind"],
+          id: params.get("id") ?? "self",
+        });
+        json(response, 200, {
+          ...projection,
+          synthesis: buildSynthesis(snapshot, projection),
+        });
         return;
       }
       if (pathname === "/api/search" && request.method === "GET") {

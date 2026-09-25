@@ -15,6 +15,7 @@ import type {
   AnnotationType,
   WorkspaceSnapshot,
 } from "../../../packages/domain/src/memory.ts";
+import type { Synthesis } from "../../../packages/cognition/src/synthesis.ts";
 import { annotationTarget, explainNode } from "./graphEvidence.ts";
 import { memoryApi } from "./memoryApi.ts";
 import {
@@ -258,6 +259,120 @@ function DetailActions({
   );
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  sourced_observation: "observé",
+  reported_observation: "rapporté",
+  user_impression: "impression",
+  explicit_statement: "déclaration",
+};
+
+/** Synthèse structurée (R4.6) : reprise telle quelle des objets de la projection. */
+function SynthesisPanel({
+  synthesis,
+  stale,
+  onSelect,
+}: {
+  synthesis: Synthesis;
+  stale: boolean;
+  onSelect: (nodeId: string) => void;
+}) {
+  const empty =
+    !synthesis.readings.length &&
+    !synthesis.facts.length &&
+    !synthesis.openQuestions.length;
+  if (empty) return null;
+  return (
+    <section
+      className={`world-synthesis ${stale ? "is-stale" : ""}`}
+      aria-label="Synthèse"
+      aria-busy={stale}
+    >
+      <div className="eyebrow">
+        SYNTHÈSE · RÉVISION {String(synthesis.revision).padStart(2, "0")}
+        {stale && " · RECALCUL EN COURS"}
+      </div>
+      {synthesis.relation && (
+        <p className="world-synthesis-indicators">
+          {synthesis.relation.episodes} épisode(s) cité(s) ·{" "}
+          {synthesis.relation.counterexamples} contre-exemple(s)
+          {synthesis.relation.episodesPer30Days !== null &&
+            ` · ${synthesis.relation.episodesPer30Days} par 30 jours`}
+        </p>
+      )}
+      {synthesis.readings.length > 0 && (
+        <>
+          <h3>Lectures principales</h3>
+          <ol>
+            {synthesis.readings.map((reading) => (
+              <li key={reading.hypothesisId}>
+                <button
+                  className="world-synthesis-link"
+                  onClick={() => onSelect(`hypothesis:${reading.hypothesisId}`)}
+                >
+                  {reading.statement}
+                </button>
+                <small>
+                  {reading.depth} ·{" "}
+                  {STATUS_LABELS[reading.status] ?? reading.status} · confiance{" "}
+                  {CONFIDENCE_LABELS[reading.confidence] ?? reading.confidence}{" "}
+                  · {reading.supports} pour, {reading.contradicts} contre
+                </small>
+                {reading.alternative && (
+                  <small>Alternative : {reading.alternative}</small>
+                )}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+      {synthesis.facts.length > 0 && (
+        <>
+          <h3>Ce qui est établi</h3>
+          <ul>
+            {synthesis.facts.map((fact) => (
+              <li key={fact.claimId}>
+                {fact.text}{" "}
+                <small>
+                  {CATEGORY_LABELS[fact.category] ?? fact.category}
+                  {fact.quote && ` · « ${fact.quote} »`}
+                </small>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {synthesis.counterexamples.length > 0 && (
+        <>
+          <h3>Ce qui ne colle pas</h3>
+          <ul>
+            {synthesis.counterexamples.map((fact) => (
+              <li key={fact.claimId}>
+                {fact.text}
+                {fact.quote && <small> · « {fact.quote} »</small>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {synthesis.openQuestions.length > 0 && (
+        <>
+          <h3>Ce qui reste ouvert</h3>
+          <ul>
+            {synthesis.openQuestions.map((question) => (
+              <li key={question.questionId}>? {question.question}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      {synthesis.truncated && (
+        <p className="world-graph-note">
+          Synthèse abrégée : recentrez sur une lecture pour tout voir.
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function WorldGraph({
   snapshot,
   onAnnotate,
@@ -269,7 +384,9 @@ export function WorldGraph({
     kind: "self",
     id: "self",
   });
-  const [projection, setProjection] = useState<GraphProjection | null>(null);
+  const [projection, setProjection] = useState<
+    (GraphProjection & { synthesis: Synthesis }) | null
+  >(null);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [level, setLevel] = useState<DetailLevel>("full");
@@ -479,6 +596,13 @@ export function WorldGraph({
               );
             })}
         </svg>
+      )}
+      {projection && (
+        <SynthesisPanel
+          synthesis={projection.synthesis}
+          stale={projection.revision !== revision}
+          onSelect={(nodeId) => setSelected(nodeId)}
+        />
       )}
       {detail && (
         <aside className="world-graph-detail" aria-live="polite">

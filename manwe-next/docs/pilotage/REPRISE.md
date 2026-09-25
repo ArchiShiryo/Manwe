@@ -35,7 +35,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **Prochaine étape** : (les relations et leurs indicateurs s'affichent dans l'inspecteur depuis le 25 septembre) R4.0e est validé ; le registre ontologique (R4.0d) est amorcé : `packages/cognition/src/ontology.ts` (types, liens, actions, vocabulaires) et `tests/ontology.test.mjs`, qui échoue si le contrat, le prompt ou le stockage divergent. Reste à en faire dériver le prompt et le paquet, puis le graphe et le graphe R4. La sur-lecture de l'utilisateur est corrigée par le prompt v6 ([RAPPORT-007](./rapports/RAPPORT-007.md)). La pull request [ArchiShiryo/Manwe#1](https://github.com/ArchiShiryo/Manwe/pull/1) attend d'être fusionnée dans `main`.
 
-**Graphe (R4.1-R4.5 faits)** : `projectGraph(snapshot, focus)` produit nœuds et liens typés (styles épistémiques observé, rapporté, impression, inféré, inconnu) ; route `GET /api/graph?kind=person|self|relation|hypothesis|question&id=…`. L'écran « Monde » du mode personnel l'affiche (`apps/desktop/src/WorldGraph.tsx`, disposition déterministe dans `graphLayout.ts`) : focus au centre, anneaux par distance, recentrage au clic, double trait qui tremble d'autant plus que la confiance est basse. R4.4 est fait (positions ancrées entre révisions, zoom sémantique Essentiel / Détails, sélection conservée). R4.5 est fait : la fiche d'un nœud offre « Pourquoi ? » (extraits exacts, épisode, date), « Corriger » ou « Contester », et « Ajouter du contexte » (`graphEvidence.ts`). Prochaine étape : R4.6 (synthèse construite à partir des claims validées de la projection), R4.7 (états de chargement, attente, erreur, resynchronisation), R4.8 (accessibilité), puis R4.0d.
+**Graphe (R4.1-R4.6 faits)** : `projectGraph(snapshot, focus)` produit nœuds et liens typés (styles épistémiques observé, rapporté, impression, inféré, inconnu) ; route `GET /api/graph?kind=person|self|relation|hypothesis|question&id=…`. L'écran « Monde » du mode personnel l'affiche (`apps/desktop/src/WorldGraph.tsx`, disposition déterministe dans `graphLayout.ts`) : focus au centre, anneaux par distance, recentrage au clic, double trait qui tremble d'autant plus que la confiance est basse. R4.4 est fait (positions ancrées entre révisions, zoom sémantique Essentiel / Détails, sélection conservée). R4.5 est fait : la fiche d'un nœud offre « Pourquoi ? » (extraits exacts, épisode, date), « Corriger » ou « Contester », et « Ajouter du contexte » (`graphEvidence.ts`). R4.6 est fait : synthèse déterministe (`synthesis.ts`) renvoyée avec la projection, datée par sa révision. Prochaine étape : R4.7 (états de chargement, attente, erreur, resynchronisation), R4.8 (accessibilité), puis R4.0d.
 
 **Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
 
@@ -72,7 +72,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 ```sh
 cd manwe-next
 npm ci
-npm test            # 83 tests au 25 septembre 2026
+npm test            # 84 tests au 25 septembre 2026
 npm run typecheck
 npm run dev         # interface http://127.0.0.1:5180, service :5181
 

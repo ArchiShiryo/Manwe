@@ -22,6 +22,7 @@ import type {
   FocusContext,
   GraphProjection,
 } from "../../../packages/cognition/src/projection.ts";
+import type { Synthesis } from "../../../packages/cognition/src/synthesis.ts";
 
 const API_ORIGIN = "http://127.0.0.1:5181";
 
@@ -111,7 +112,9 @@ class MemoryApi {
 
   graph(focus: FocusContext) {
     const params = new URLSearchParams({ kind: focus.kind, id: focus.id });
-    return this.request<GraphProjection>(`/api/graph?${params}`);
+    return this.request<GraphProjection & { synthesis: Synthesis }>(
+      `/api/graph?${params}`,
+    );
   }
 
   search(query: MemorySearchQuery) {
