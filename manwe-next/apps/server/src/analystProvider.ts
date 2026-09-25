@@ -156,20 +156,112 @@ export function createDeepSeekCall(options: {
     };
   };
 
+  type Completion = {
+    model?: string;
+    usage?: Record<string, number>;
+    choices?: Choice[];
+  };
+
+  /**
+   * La réponse arrive en flux : les octets circulent pendant tout le calcul,
+   * ce qui évite qu'un intermédiaire coupe une connexion restée muette plus
+   * de deux minutes (« terminated »). Un fournisseur ou un serveur de test
+   * qui répond en JSON simple reste accepté.
+   */
+  const readStream = async (body: ReadableStream<Uint8Array>) => {
+    const decoder = new TextDecoder();
+    const result: Completion = {};
+    const choice: Choice = { message: {} };
+    const message = choice.message!;
+    const calls: Array<{
+      id: string;
+      type: "function";
+      function: { name: string; arguments: string };
+    }> = [];
+    let pending = "";
+    const handle = (line: string) => {
+      if (!line.startsWith("data:")) return;
+      const data = line.slice(5).trim();
+      if (!data || data === "[DONE]") return;
+      let chunk: {
+        model?: string;
+        usage?: Record<string, number> | null;
+        choices?: Array<{
+          finish_reason?: string | null;
+          delta?: {
+            content?: string | null;
+            reasoning_content?: string | null;
+            tool_calls?: Array<{
+              index?: number;
+              id?: string;
+              function?: { name?: string; arguments?: string };
+            }>;
+          };
+        }>;
+      };
+      try {
+        chunk = JSON.parse(data);
+      } catch {
+        return;
+      }
+      if (chunk.model) result.model = chunk.model;
+      if (chunk.usage) result.usage = chunk.usage;
+      const piece = chunk.choices?.[0];
+      if (!piece) return;
+      if (piece.finish_reason) choice.finish_reason = piece.finish_reason;
+      const delta = piece.delta;
+      if (delta?.content)
+        message.content = (message.content ?? "") + delta.content;
+      if (delta?.reasoning_content)
+        message.reasoning_content =
+          (message.reasoning_content ?? "") + delta.reasoning_content;
+      for (const part of delta?.tool_calls ?? []) {
+        const at = part.index ?? 0;
+        calls[at] ??= {
+          id: "",
+          type: "function",
+          function: { name: "", arguments: "" },
+        };
+        if (part.id) calls[at].id = part.id;
+        if (part.function?.name) calls[at].function.name += part.function.name;
+        if (part.function?.arguments)
+          calls[at].function.arguments += part.function.arguments;
+      }
+    };
+    const reader = body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      pending += decoder.decode(value, { stream: true });
+      const lines = pending.split("\n");
+      pending = lines.pop() ?? "";
+      for (const line of lines) handle(line.trim());
+    }
+    handle((pending + decoder.decode()).trim());
+    if (calls.length) message.tool_calls = calls.filter(Boolean);
+    result.choices = [choice];
+    return result;
+  };
+
   const post = async (payload: unknown, signal: AbortSignal) => {
-    const body = JSON.stringify(payload);
+    const body = JSON.stringify({
+      ...(payload as Record<string, unknown>),
+      stream: true,
+      stream_options: { include_usage: true },
+    });
     let last: ProviderError | null = null;
     for (let attempt = 0; attempt <= retries; attempt += 1) {
       if (attempt)
         await pause((options.backoffMs ?? 2000) * 2 ** (attempt - 1), signal);
       const timeout = AbortSignal.timeout(timeoutMs);
+      const attemptSignal = AbortSignal.any([signal, timeout]);
       let response: Response;
       try {
         response = await fetch(endpoint, {
           method: "POST",
           headers,
           body,
-          signal: AbortSignal.any([signal, timeout]),
+          signal: attemptSignal,
         });
       } catch {
         if (signal.aborted)
@@ -185,7 +277,6 @@ export function createDeepSeekCall(options: {
         );
         continue;
       }
-      const text = await response.text();
       if (response.status === 401 || response.status === 403)
         throw new ProviderError(
           "provider_auth",
@@ -203,21 +294,40 @@ export function createDeepSeekCall(options: {
         );
         continue;
       }
-      if (!response.ok)
+      if (!response.ok) {
+        // Le motif du refus aide à corriger la requête ; il ne contient pas la clé.
+        const detail = (await response.text().catch(() => ""))
+          .replace(/\s+/g, " ")
+          .slice(0, 300);
         throw new ProviderError(
           "provider_error",
-          `Le fournisseur a refusé la requête (${response.status}).`,
+          `Le fournisseur a refusé la requête (${response.status})${detail ? ` : ${detail}` : ""}.`,
         );
+      }
+      // La lecture de la réponse est protégée comme l'envoi : une connexion
+      // coupée en route (« terminated ») est relancée, pas déclarée inattendue.
       try {
-        return JSON.parse(text) as {
-          model?: string;
-          usage?: Record<string, number>;
-          choices?: Choice[];
-        };
-      } catch {
-        throw new ProviderError(
-          "provider_error",
-          "Réponse du fournisseur illisible.",
+        const streamed = (response.headers.get("content-type") ?? "").includes(
+          "text/event-stream",
+        );
+        if (streamed && response.body) return await readStream(response.body);
+        return JSON.parse(await response.text()) as Completion;
+      } catch (error) {
+        if (signal.aborted)
+          throw new ProviderError("analysis_cancelled", "Analyse annulée.");
+        if (timeout.aborted)
+          throw new ProviderError(
+            "provider_timeout",
+            `Le modèle n’a pas répondu en ${Math.round(timeoutMs / 1000)} s.`,
+          );
+        if (error instanceof SyntaxError)
+          throw new ProviderError(
+            "provider_error",
+            "Réponse du fournisseur illisible.",
+          );
+        last = new ProviderError(
+          "provider_unreachable",
+          "La connexion au modèle a été coupée pendant la réponse (réseau).",
         );
       }
     }

@@ -4,6 +4,7 @@
 // récent et fort. Shader WebGL ; image fixe si l'utilisateur réduit les
 // animations ; dégradé CSS si WebGL est indisponible. Purement décoratif.
 import { useEffect, useRef, useState } from "react";
+import { useFieldMotion } from "./fieldMotion.ts";
 
 export type FieldSegment = {
   ax: number;
@@ -114,6 +115,11 @@ export function JewelField({
   const data = useRef({ segments, width, height, focus });
   data.current = { segments, width, height, focus };
   const [fallback, setFallback] = useState(false);
+  const { animated } = useFieldMotion();
+  // Lu à chaque image : changer de préférence ne recrée pas le contexte WebGL.
+  const motion = useRef({ animated, dirty: true });
+  motion.current.animated = animated;
+  motion.current.dirty = true;
 
   useEffect(() => {
     const element = canvas.current;
@@ -158,9 +164,6 @@ export function JewelField({
       seg: uniform("uSeg"),
       col: uniform("uCol"),
     };
-    const still = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
     const start = performance.now();
     let frame = 0;
 
@@ -195,7 +198,10 @@ export function JewelField({
         );
       });
       gl.uniform2f(u.res, w, h);
-      gl.uniform1f(u.time, still ? 0 : (performance.now() - start) / 1000);
+      gl.uniform1f(
+        u.time,
+        motion.current.animated ? (performance.now() - start) / 1000 : 0,
+      );
       gl.uniform1f(u.scale, scale);
       gl.uniform2f(u.offset, (w - vw * scale) / 2, (h - vh * scale) / 2);
       gl.uniform2f(u.focus, center.x, center.y);
@@ -207,18 +213,27 @@ export function JewelField({
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
 
+    // Animé : une image par tour. Fixe : on ne redessine qu'au besoin
+    // (nouvelles données, changement de préférence ou de taille).
     const loop = () => {
-      if (!document.hidden) draw();
+      if (
+        !document.hidden &&
+        (motion.current.animated || motion.current.dirty)
+      ) {
+        motion.current.dirty = false;
+        draw();
+      }
       frame = requestAnimationFrame(loop);
     };
-    if (still) {
-      draw();
-      const observer = new ResizeObserver(draw);
-      observer.observe(element);
-      return () => observer.disconnect();
-    }
+    const observer = new ResizeObserver(() => {
+      motion.current.dirty = true;
+    });
+    observer.observe(element);
     loop();
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   if (fallback)

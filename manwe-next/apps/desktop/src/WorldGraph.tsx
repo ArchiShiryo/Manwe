@@ -31,6 +31,7 @@ import {
   type PlacedNode,
 } from "./graphLayout.ts";
 import { JewelField, type FieldSegment } from "./JewelField.tsx";
+import { useFieldMotion } from "./fieldMotion.ts";
 import {
   CONTEXT_COLORS,
   personContexts,
@@ -514,6 +515,7 @@ export function WorldGraph({
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [level, setLevel] = useState<DetailLevel>("full");
+  const fieldMotion = useFieldMotion();
   // Dernière disposition par focus : une nouvelle révision ne déplace pas
   // ce qui était déjà à l'écran (R4.4).
   const previous = useRef(new Map<string, PlacedNode[]>());
@@ -670,6 +672,22 @@ export function WorldGraph({
               {short(item.label, 18)}
             </button>
           ))}
+        </div>
+        <div className="segmented" role="group" aria-label="Fond animé">
+          <button
+            className={fieldMotion.animated ? "active" : ""}
+            aria-pressed={fieldMotion.animated}
+            onClick={() => fieldMotion.choose(true)}
+          >
+            Fond animé
+          </button>
+          <button
+            className={fieldMotion.animated ? "" : "active"}
+            aria-pressed={!fieldMotion.animated}
+            onClick={() => fieldMotion.choose(false)}
+          >
+            Fixe
+          </button>
         </div>
         <div className="segmented" role="group" aria-label="Niveau de détail">
           <button

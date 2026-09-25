@@ -669,3 +669,151 @@ test("D-023 · une requête mémoire est journalisée, n'écrit rien, et rend l'
       JSON.stringify(preview.errors),
     );
   }));
+
+test("IA-A.3 · le client lit la réponse en flux et relance une connexion coupée en route", async () => {
+  let hits = 0;
+  const sse = (object) => `data: ${JSON.stringify(object)}\n\n`;
+  const server = createServer((request, response) => {
+    hits += 1;
+    request.resume();
+    request.on("end", () => {
+      response.writeHead(200, { "content-type": "text/event-stream" });
+      if (hits === 1) {
+        // Coupure après les en-têtes, comme le « terminated » de Node.
+        response.write(": keep-alive\n\n");
+        setTimeout(() => response.destroy(), 20);
+        return;
+      }
+      response.write(": keep-alive\n\n");
+      response.write(
+        sse({
+          model: "deepseek-flash",
+          choices: [
+            { delta: { reasoning_content: "je " }, finish_reason: null },
+          ],
+        }),
+      );
+      response.write(
+        sse({
+          choices: [{ delta: { content: '{"ok":' }, finish_reason: null }],
+        }),
+      );
+      response.write(
+        sse({
+          choices: [{ delta: { content: "true}" }, finish_reason: "stop" }],
+        }),
+      );
+      response.write(sse({ choices: [], usage: { total_tokens: 11 } }));
+      response.end("data: [DONE]\n\n");
+    });
+  });
+  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  const endpoint = `http://127.0.0.1:${server.address().port}`;
+  const signal = new AbortController().signal;
+  try {
+    const result = await createDeepSeekCall({
+      endpoint,
+      model: "deepseek-flash",
+      backoffMs: 10,
+      transportRetries: 1,
+    })({ prompt: "p", signal });
+    assert.equal(hits, 2, "la coupure est relancée une fois");
+    assert.equal(result.content, '{"ok":true}');
+    assert.equal(result.reasoning, "je ");
+    assert.equal(result.meta.usage.total_tokens, 11);
+    assert.equal(result.meta.finishReason, "stop");
+    hits = 0;
+    await assert.rejects(
+      createDeepSeekCall({
+        endpoint,
+        model: "deepseek-flash",
+        backoffMs: 10,
+        transportRetries: 0,
+      })({ prompt: "p", signal }),
+      (error) => error.code === "provider_unreachable",
+    );
+  } finally {
+    server.close();
+  }
+});
+
+test("IA-A.3 · en flux, les appels d'outils sont rejoués avec leur type (sinon le fournisseur répond 422)", async () => {
+  let round = 0;
+  let replayed = null;
+  const sse = (object) => `data: ${JSON.stringify(object)}\n\n`;
+  const server = createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      round += 1;
+      const parsed = JSON.parse(body);
+      response.writeHead(200, { "content-type": "text/event-stream" });
+      if (round === 1) {
+        response.write(
+          sse({
+            choices: [
+              {
+                delta: {
+                  tool_calls: [
+                    {
+                      index: 0,
+                      id: "call_1",
+                      type: "function",
+                      function: { name: "get_event", arguments: '{"id":' },
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+        );
+        response.write(
+          sse({
+            choices: [
+              {
+                delta: {
+                  tool_calls: [{ index: 0, function: { arguments: '"e1"}' } }],
+                },
+                finish_reason: "tool_calls",
+              },
+            ],
+          }),
+        );
+      } else {
+        replayed = parsed.messages[1];
+        response.write(
+          sse({
+            choices: [
+              { delta: { content: '{"ok":true}' }, finish_reason: "stop" },
+            ],
+          }),
+        );
+      }
+      response.end("data: [DONE]\n\n");
+    });
+  });
+  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  const endpoint = `http://127.0.0.1:${server.address().port}`;
+  const executed = [];
+  try {
+    const result = await createDeepSeekCall({
+      endpoint,
+      model: "deepseek-flash",
+    })({
+      prompt: "p",
+      signal: new AbortController().signal,
+      tools: [{ type: "function", function: { name: "get_event" } }],
+      executeTool: (name, args) => {
+        executed.push([name, args]);
+        return { ok: true };
+      },
+    });
+    assert.deepEqual(executed, [["get_event", { id: "e1" }]]);
+    assert.equal(replayed.tool_calls[0].type, "function");
+    assert.equal(replayed.tool_calls[0].id, "call_1");
+    assert.equal(replayed.tool_calls[0].function.arguments, '{"id":"e1"}');
+    assert.equal(result.content, '{"ok":true}');
+  } finally {
+    server.close();
+  }
+});
