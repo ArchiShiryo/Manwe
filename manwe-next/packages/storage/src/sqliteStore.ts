@@ -71,11 +71,11 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
-const ANALYST_PROMPT_VERSION = "analyst-v7";
+const ANALYST_PROMPT_VERSION = "analyst-v8";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
     fileURLToPath(
-      new URL("../../cognition/prompts/analyst-v7.md", import.meta.url),
+      new URL("../../cognition/prompts/analyst-v8.md", import.meta.url),
     ),
     "utf8",
   ),
@@ -177,6 +177,15 @@ export class SqliteMemoryStore {
         new URL("./migrations/009_directions_actions.sql", import.meta.url),
       );
       this.database.exec(readFileSync(directionsMigrationPath, "utf8"));
+    }
+    const goalMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 10")
+      .get();
+    if (!goalMigration) {
+      const goalMigrationPath = fileURLToPath(
+        new URL("./migrations/010_goal_emergence.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(goalMigrationPath, "utf8"));
     }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
@@ -1189,6 +1198,61 @@ export class SqliteMemoryStore {
     });
   }
 
+  /** R5.4 : écarter un objectif proposé par l'analyse (jamais un objectif confirmé). */
+  dismissGoal(command: {
+    idempotencyKey: string;
+    goalId: string;
+  }): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "goal.update",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    return this.transaction(() => {
+      const row = this.database
+        .prepare(
+          "SELECT confirmed_by_user, origin FROM goals WHERE workspace_id = ? AND id = ?",
+        )
+        .get(this.workspaceId, command.goalId) as SqlRow | undefined;
+      if (!row)
+        throw new DomainError(
+          "goal_not_found",
+          "Cette intention n’existe pas.",
+          404,
+        );
+      if (row.confirmed_by_user)
+        throw new DomainError(
+          "goal_confirmed",
+          "Une intention confirmée se reformule, elle ne s’écarte pas.",
+          409,
+        );
+      const timestamp = nowIso();
+      this.database
+        .prepare(
+          "UPDATE goals SET dismissed_at = ?, row_version = row_version + 1, updated_at = ? WHERE id = ?",
+        )
+        .run(timestamp, timestamp, command.goalId);
+      const ref: EntityRef = { kind: "goal", id: command.goalId };
+      const revision = this.advanceRevision("goal.update", [ref], timestamp);
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created: [],
+      };
+      this.saveReceipt(
+        "goal.update",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        timestamp,
+      );
+      return result;
+    });
+  }
+
   updateGoal(command: GoalCommand): CommandResult {
     const commandHash = sha256(canonicalJson(command));
     const previous = this.receipt(
@@ -1346,6 +1410,16 @@ export class SqliteMemoryStore {
         workspaceId: String(row.workspace_id),
         text: String(row.text),
         confirmedByUser: Boolean(row.confirmed_by_user),
+        problem:
+          row.problem === null || row.problem === undefined
+            ? null
+            : String(row.problem),
+        origin: (row.origin ?? "user") as "user" | "analysis",
+        citations:
+          row.citations_json === null || row.citations_json === undefined
+            ? []
+            : JSON.parse(String(row.citations_json)),
+        dismissed: row.dismissed_at !== null && row.dismissed_at !== undefined,
         revision: Number(row.row_version),
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
@@ -2078,6 +2152,7 @@ export class SqliteMemoryStore {
       "propose_critique",
       "revise_hypothesis",
       "propose_question",
+      "propose_goal",
       "propose_direction",
     ];
     const operations = [...proposal.operations].sort(
@@ -2145,7 +2220,8 @@ export class SqliteMemoryStore {
         operation.kind === "propose_question" ||
         operation.kind === "propose_critique" ||
         operation.kind === "propose_role" ||
-        operation.kind === "propose_direction"
+        operation.kind === "propose_direction" ||
+        operation.kind === "propose_goal"
       ) {
         const result = this.hypotheses.applyOperation(operation, context);
         created.push(...result.created);

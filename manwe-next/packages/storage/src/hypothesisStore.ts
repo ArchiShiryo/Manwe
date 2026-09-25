@@ -59,6 +59,8 @@ export type OperationContext = {
   warnings: Array<{ code: string; message: string }>;
   /** Directions déjà reçues par objectif dans cette réponse (BRIEF-005). */
   directions?: Map<string, { actions: number; doNothing: boolean }>;
+  /** Un seul objectif proposé par réponse (R5.4). */
+  goalProposed?: boolean;
 };
 
 const plain = (value: string) =>
@@ -1166,6 +1168,52 @@ export class HypothesisStore {
       context.keys.set(operation.key, { kind: "question", id });
       return { created: [{ kind: "question", id }], changed: [] };
     }
+    if (operation.kind === "propose_goal") {
+      // R5.4 : une proposition ne remplace jamais un objectif confirmé ; elle
+      // remplace une proposition précédente encore en attente.
+      if (context.goalProposed) {
+        context.warnings.push({
+          code: "too_many_goals",
+          message:
+            "Un seul objectif proposé par réponse ; le suivant est écarté.",
+        });
+        return { created: [], changed: [] };
+      }
+      context.goalProposed = true;
+      const pending = this.database
+        .prepare(
+          "SELECT id FROM goals WHERE workspace_id = ? AND origin = 'analysis' AND confirmed_by_user = 0 AND dismissed_at IS NULL",
+        )
+        .all(this.workspaceId) as SqlRow[];
+      for (const row of pending)
+        this.database
+          .prepare(
+            "UPDATE goals SET dismissed_at = ?, row_version = row_version + 1, updated_at = ? WHERE id = ?",
+          )
+          .run(context.timestamp, context.timestamp, String(row.id));
+      const id = randomUUID();
+      this.database
+        .prepare(
+          `INSERT INTO goals(id, workspace_id, text, confirmed_by_user, row_version, created_at, updated_at,
+             problem, origin, citations_json) VALUES (?, ?, ?, 0, 1, ?, ?, ?, 'analysis', ?)`,
+        )
+        .run(
+          id,
+          this.workspaceId,
+          operation.payload.goal,
+          context.timestamp,
+          context.timestamp,
+          operation.payload.problem,
+          JSON.stringify(
+            operation.payload.citations.map((citation) => ({
+              sourceId: citation.sourceId,
+              quote: citation.quote,
+            })),
+          ),
+        );
+      return { created: [{ kind: "goal", id }], changed: [] };
+    }
+
     if (operation.kind === "propose_direction") {
       const payload = operation.payload;
       // Objectif existant dans l'espace.

@@ -238,7 +238,7 @@ if (!withEnvProxy()) {
   store.close();
   writeJson(join(runDir, "log.json"), {
     model,
-    prompt: "analyst-v7",
+    prompt: "analyst-v8",
     contract: "1.4",
     first: first.status,
     second: second.status,

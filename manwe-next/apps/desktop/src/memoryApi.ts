@@ -221,6 +221,19 @@ class MemoryApi {
     return this.snapshot();
   }
 
+  async dismissGoal(goalId: string) {
+    await this.request<CommandResult>(
+      `/api/goals/${encodeURIComponent(goalId)}/dismiss`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          idempotencyKey: `goal:dismiss:${crypto.randomUUID()}`,
+        }),
+      },
+    );
+    return this.snapshot();
+  }
+
   async updateGoal(command: GoalCommand) {
     await this.request<CommandResult>("/api/goals", {
       method: "POST",

@@ -360,6 +360,30 @@ export async function startManweServer(options: ServerOptions) {
         );
         return;
       }
+      const dismissGoalRoute = pathname.match(
+        /^\/api\/goals\/([^/]+)\/dismiss$/,
+      );
+      if (dismissGoalRoute && request.method === "POST") {
+        const body = await readJson(request);
+        const key =
+          body && typeof body === "object" && !Array.isArray(body)
+            ? (body as { idempotencyKey?: unknown }).idempotencyKey
+            : undefined;
+        if (typeof key !== "string" || key.length < 8)
+          throw new DomainError(
+            "invalid_idempotency_key",
+            "Clé d’idempotence invalide.",
+          );
+        json(
+          response,
+          200,
+          store.dismissGoal({
+            idempotencyKey: key,
+            goalId: decodeURIComponent(dismissGoalRoute[1]),
+          }),
+        );
+        return;
+      }
       if (pathname === "/api/goals" && request.method === "POST") {
         json(
           response,

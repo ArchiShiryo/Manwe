@@ -167,7 +167,7 @@ test("BRIEF-005 · directions : levier requis, deux au plus, « ne rien entrepre
   withStore((store) => {
     const { hypothesisId, goalId } = setup(store);
     const packet = explorePacket(store, goalId, hypothesisId);
-    assert.equal(packet.schemaVersion, "1.5");
+    assert.equal(packet.schemaVersion, "1.6");
     assert.ok(packet.allowedOperations.includes("propose_direction"));
     assert.equal(packet.goals.length, 1);
     const { result } = respond(store, packet, [
@@ -385,5 +385,107 @@ test("RAPPORT-010 · un sujet recopié du format du paquet est normalisé", () =
     assert.throws(
       () => store.receiveAnalysis(proposal(packet2, [bad])),
       /invalid_subject|Un sujet/,
+    );
+  }));
+
+test("R5.4 · un objectif émerge de la conversation, reste à adopter, ne remplace jamais un objectif confirmé", () =>
+  withStore((store) => {
+    store.capture(
+      parseCaptureCommand({
+        idempotencyKey: "r54:capture:1",
+        text: "J'en ai marre de tout porter pour la coloc, je voudrais que ça tourne sans que je sois le seul à tout gérer.",
+        occurredStart: "2026-03-01T20:00:00+01:00",
+        temporalPrecision: "day",
+      }),
+    );
+    const goalOp = (key, goal) => ({
+      key,
+      kind: "propose_goal",
+      payload: {
+        problem: "L'utilisateur porte seul la charge de la colocation.",
+        goal,
+        citations: [],
+      },
+      rationale: "Souhait exprimé.",
+    });
+    let packet = store.prepareAnalysis({ task: "interpret" });
+    const cite = [citation(packet.sources[0])];
+    const first = goalOp(
+      "g1",
+      "Que la coloc tourne sans que je sois le seul à tout gérer",
+    );
+    first.payload.citations = cite;
+    const second = goalOp("g2", "Autre formulation");
+    second.payload.citations = cite;
+    const { result } = respond(store, packet, [first, second]);
+    assert.ok(result.warnings.some((item) => item.code === "too_many_goals"));
+    let goals = store.snapshot().goals;
+    assert.equal(goals.length, 1);
+    assert.equal(goals[0].origin, "analysis");
+    assert.equal(
+      goals[0].confirmedByUser,
+      false,
+      "pas adopté sans l'utilisateur",
+    );
+    assert.equal(
+      goals[0].problem,
+      "L'utilisateur porte seul la charge de la colocation.",
+    );
+    assert.equal(goals[0].citations[0].sourceId, packet.sources[0].sourceId);
+
+    // Sans citation : refusé par le contrat.
+    packet = store.prepareAnalysis({ task: "interpret" });
+    assert.throws(
+      () =>
+        store.receiveAnalysis(proposal(packet, [goalOp("g3", "Sans source")])),
+      /citation/i,
+    );
+
+    // Une nouvelle proposition remplace la précédente en attente.
+    packet = store.prepareAnalysis({ task: "interpret" });
+    const third = goalOp("g4", "Partager les tâches de la coloc");
+    third.payload.citations = [citation(packet.sources[0])];
+    respond(store, packet, [third]);
+    goals = store.snapshot().goals;
+    assert.equal(goals.filter((goal) => !goal.dismissed).length, 1);
+    const pending = goals.find((goal) => !goal.dismissed);
+
+    // Adoption avec reformulation immédiate : l'objectif devient courant.
+    store.updateGoal(
+      parseGoalCommand({
+        idempotencyKey: "r54:adopt",
+        goalId: pending.id,
+        text: "Partager les tâches de la coloc sans conflit",
+      }),
+    );
+    goals = store.snapshot().goals;
+    const adopted = goals.find((goal) => goal.id === pending.id);
+    assert.equal(adopted.confirmedByUser, true);
+    assert.equal(adopted.text, "Partager les tâches de la coloc sans conflit");
+    assert.throws(
+      () =>
+        store.dismissGoal({
+          idempotencyKey: "r54:dismiss:confirmed",
+          goalId: adopted.id,
+        }),
+      /confirmée/,
+    );
+
+    // Une proposition ultérieure ne remplace jamais l'objectif confirmé.
+    packet = store.prepareAnalysis({ task: "interpret" });
+    const fourth = goalOp("g5", "Autre chose");
+    fourth.payload.citations = [citation(packet.sources[0])];
+    respond(store, packet, [fourth]);
+    goals = store.snapshot().goals;
+    assert.equal(
+      goals.find((goal) => goal.id === adopted.id).text,
+      "Partager les tâches de la coloc sans conflit",
+    );
+    const later = goals.find((goal) => goal.text === "Autre chose");
+    assert.equal(later.confirmedByUser, false);
+    store.dismissGoal({ idempotencyKey: "r54:dismiss", goalId: later.id });
+    assert.equal(
+      store.snapshot().goals.find((goal) => goal.id === later.id).dismissed,
+      true,
     );
   }));

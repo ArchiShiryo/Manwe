@@ -84,10 +84,29 @@ export type Goal = {
   workspaceId: string;
   text: string;
   confirmedByUser: boolean;
+  /** R5.4 : problème formulé avec l'objectif, s'il vient de l'analyse. */
+  problem: string | null;
+  origin: "user" | "analysis";
+  citations: Array<{ sourceId: string; quote: string }>;
+  /** Proposition écartée par l'utilisateur. */
+  dismissed: boolean;
   revision: number;
   createdAt: string;
   updatedAt: string;
 };
+
+/** Objectif courant : le plus récent confirmé par l'utilisateur et non écarté. */
+export function currentGoal(goals: Goal[]): Goal | undefined {
+  return goals.find((goal) => goal.confirmedByUser && !goal.dismissed);
+}
+
+/** Proposition d'objectif en attente : non confirmée, non écartée. */
+export function pendingGoal(goals: Goal[]): Goal | undefined {
+  return goals.find(
+    (goal) =>
+      goal.origin === "analysis" && !goal.confirmedByUser && !goal.dismissed,
+  );
+}
 
 export type Person = {
   id: string;

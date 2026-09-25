@@ -1,5 +1,5 @@
 // Rend le gabarit du prompt analyste depuis le registre ontologique (R4.0d).
-//   node scripts/render-prompt.mjs packages/cognition/prompts/analyst-v7.md
+//   node scripts/render-prompt.mjs packages/cognition/prompts/analyst-v9.md
 // Une nouvelle version de prompt se prépare en modifiant le gabarit, puis en
 // rendant un NOUVEAU fichier : un prompt déjà évalué n'est jamais réécrit.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";

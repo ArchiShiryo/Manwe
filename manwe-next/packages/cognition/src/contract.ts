@@ -7,9 +7,9 @@ import {
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.5" as const;
+export const COGNITION_SCHEMA_VERSION = "1.6" as const;
 /** Versions acceptées : 1.4 reste valide (prompt v6), 1.5 ajoute les directions. */
-export const SUPPORTED_SCHEMA_VERSIONS = ["1.4", "1.5"] as const;
+export const SUPPORTED_SCHEMA_VERSIONS = ["1.4", "1.5", "1.6"] as const;
 export const COGNITION_VALIDATOR_VERSION = "1.2.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;
@@ -35,7 +35,8 @@ export type CognitiveOperationKind =
   | "propose_question"
   | "propose_critique"
   | "propose_role"
-  | "propose_direction";
+  | "propose_direction"
+  | "propose_goal";
 
 export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_event",
@@ -46,6 +47,7 @@ export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_critique",
   "propose_role",
   "propose_direction",
+  "propose_goal",
 ];
 
 /** Opérations proposées par défaut selon la tâche (contrat 1.2). */
@@ -61,6 +63,7 @@ export const DEFAULT_OPERATIONS: Record<
     "propose_hypothesis",
     "propose_question",
     "propose_critique",
+    "propose_goal",
   ],
   revise: [
     "propose_event",
@@ -72,7 +75,7 @@ export const DEFAULT_OPERATIONS: Record<
     "propose_critique",
   ],
   // BRIEF-005 : explorer, c'est aussi proposer des directions pour un objectif.
-  explore: ["propose_question", "propose_direction"],
+  explore: ["propose_question", "propose_direction", "propose_goal"],
 };
 
 import {
@@ -256,6 +259,13 @@ export type DirectionPayload = {
   predictions: DirectionPrediction[];
 };
 
+/** R5.4 : problème et objectif formulés avec les mots de l'utilisateur, cités. */
+export type GoalPayload = {
+  problem: string;
+  goal: string;
+  citations: SourceCitation[];
+};
+
 export type CognitiveOperation =
   | {
       key: string;
@@ -303,6 +313,12 @@ export type CognitiveOperation =
       key: string;
       kind: "propose_direction";
       payload: DirectionPayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_goal";
+      payload: GoalPayload;
       rationale: string;
     };
 
@@ -1020,6 +1036,29 @@ function operation(value: unknown): CognitiveOperation {
   const key = text(input.key, "operation.key", 80);
   const rationale = text(input.rationale, "operation.rationale", 800);
   const payload = object(input.payload, "operation.payload");
+  if (input.kind === "propose_goal") {
+    exactKeys(
+      payload,
+      ["problem", "goal", "citations"],
+      "propose_goal.payload",
+    );
+    const list = citations(payload.citations);
+    if (list.length > 5)
+      throw new DomainError(
+        "invalid_goal",
+        "Un objectif proposé porte entre 1 et 5 citations.",
+      );
+    return {
+      key,
+      kind: "propose_goal",
+      rationale,
+      payload: {
+        problem: text(payload.problem, "goal.problem", 600),
+        goal: text(payload.goal, "goal.goal", 240),
+        citations: list,
+      },
+    };
+  }
   if (input.kind === "propose_direction")
     return {
       key,

@@ -158,6 +158,12 @@ export function describeOperation(operation: CognitiveOperation): {
               .join(" · ")
           : "Aucun constat",
       };
+    case "propose_goal":
+      return {
+        label: "objectif proposé",
+        classification: operation.payload.problem,
+        text: operation.payload.goal,
+      };
     case "propose_direction":
       return {
         label:

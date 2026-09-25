@@ -4,10 +4,11 @@
 // agit lui-même, puis consigne le résultat : la prédiction, figée avant
 // l'essai, est comparée à la réalité à la réanalyse.
 import { useEffect, useState } from "react";
-import type {
-  ActionRecord,
-  DirectionRecord,
-  WorkspaceSnapshot,
+import {
+  currentGoal,
+  type ActionRecord,
+  type DirectionRecord,
+  type WorkspaceSnapshot,
 } from "../../../packages/domain/src/memory.ts";
 import type { AnalysisPreview } from "../../../packages/cognition/src/contract.ts";
 import { memoryApi, type AutomaticJob } from "./memoryApi.ts";
@@ -192,7 +193,7 @@ export function Directions({
   onReload: () => Promise<void>;
   onNotify: (message: string) => void;
 }) {
-  const goal = snapshot.goals[0];
+  const goal = currentGoal(snapshot.goals);
   const [automatic, setAutomatic] = useState(false);
   const [expectation, setExpectation] = useState<Record<string, string>>({});
   const [outcome, setOutcome] = useState<Record<string, string>>({});

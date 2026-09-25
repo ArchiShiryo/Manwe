@@ -29,11 +29,15 @@ import type {
   ContextPacket,
 } from "../../../packages/cognition/src/contract.ts";
 import { MemoryApiError, memoryApi, type MemoryStatus } from "./memoryApi.ts";
+import {
+  currentGoal,
+  pendingGoal,
+} from "../../../packages/domain/src/memory.ts";
 import { syncLabels, type ConnectionState } from "./syncLabels.ts";
 import { CORRECTED_LABEL, WorldGraph } from "./WorldGraph.tsx";
 import { AutomaticAnalysisPanel } from "./AutomaticAnalysis.tsx";
 import { Directions } from "./Directions.tsx";
-import analystPrompt from "../../../packages/cognition/prompts/analyst-v7.md?raw";
+import analystPrompt from "../../../packages/cognition/prompts/analyst-v8.md?raw";
 import {
   claimModalityLabels,
   confidenceLabels,
@@ -1432,8 +1436,10 @@ export function PersonalIntentions({
   onReload?: () => Promise<void>;
   onNotify?: (message: string) => void;
 }) {
-  const current = snapshot.goals[0];
+  const current = currentGoal(snapshot.goals);
+  const pending = pendingGoal(snapshot.goals);
   const [text, setText] = useState(current?.text ?? "");
+  const [draft, setDraft] = useState<string | null>(null);
   return (
     <section className="surface-panel personal-empty personal-goal">
       <span className="personal-emblem">
@@ -1470,6 +1476,70 @@ export function PersonalIntentions({
           <Check size={14} /> Conserver
         </button>
       </form>
+      {pending && (
+        <section className="goal-suggestion" aria-label="Objectif proposé">
+          <div className="eyebrow">PROPOSÉ À PARTIR DE VOS NOTES</div>
+          {pending.problem && (
+            <p className="goal-problem">Problème : {pending.problem}</p>
+          )}
+          <h3>{pending.text}</h3>
+          {pending.citations.length > 0 && (
+            <ul className="goal-citations">
+              {pending.citations.map((citation, index) => (
+                <li key={index}>« {citation.quote} »</li>
+              ))}
+            </ul>
+          )}
+          <p className="goal-note">
+            Rien n’est adopté sans vous. Adoptez-le tel quel, reformulez-le avec
+            vos mots, ou écartez-le.
+            {current
+              ? " Votre intention actuelle reste en place tant que vous n’en changez pas."
+              : ""}
+          </p>
+          {draft !== null && (
+            <textarea
+              aria-label="Reformuler l’objectif proposé"
+              value={draft}
+              maxLength={240}
+              rows={2}
+              onChange={(event) => setDraft(event.target.value)}
+            />
+          )}
+          <div className="personal-question-actions">
+            <button
+              className="primary-button"
+              disabled={draft !== null && !draft.trim()}
+              onClick={() =>
+                void onSave(draft?.trim() || pending.text, pending.id).then(
+                  () => setDraft(null),
+                )
+              }
+            >
+              {draft === null ? "Adopter" : "Adopter cette formulation"}
+            </button>
+            {draft === null && (
+              <button
+                className="text-button"
+                onClick={() => setDraft(pending.text)}
+              >
+                Reformuler
+              </button>
+            )}
+            <button
+              className="text-button"
+              onClick={() =>
+                void memoryApi
+                  .dismissGoal(pending.id)
+                  .then(() => onReload?.())
+                  .then(() => onNotify?.("Proposition écartée"))
+              }
+            >
+              Écarter
+            </button>
+          </div>
+        </section>
+      )}
       {onReload && onNotify && (
         <Directions
           snapshot={snapshot}

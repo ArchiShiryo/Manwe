@@ -41,7 +41,7 @@ import {
 } from "./lib/deepseek.mjs";
 
 const PROMPT_TEXT = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v7.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v8.md", import.meta.url),
   "utf8",
 );
 const QA_ROOT = resolve(process.cwd(), ".qa");
@@ -204,6 +204,37 @@ function runUntilAnalysis(runDir, scenario, state, store) {
       });
       state.goalId = result.created[0]?.id ?? state.goalId ?? null;
       state.log.push({ step: stepId, type: "goal", outcome: "set" });
+    } else if (step.type === "adopt") {
+      // R5.4 : l'utilisateur adopte l'objectif proposé par l'analyse ; sans
+      // proposition, un objectif de secours est posé (le point R5.4 est perdu).
+      const pending = store
+        .snapshot()
+        .goals.find(
+          (goal) =>
+            goal.origin === "analysis" &&
+            !goal.confirmedByUser &&
+            !goal.dismissed,
+        );
+      if (pending) {
+        store.updateGoal({
+          idempotencyKey: `scenario:${stepId}`,
+          goalId: pending.id,
+          text: pending.text,
+        });
+        state.goalId = pending.id;
+      } else {
+        const result = store.updateGoal({
+          idempotencyKey: `scenario:${stepId}`,
+          text: step.fallbackText,
+        });
+        state.goalId = result.created[0]?.id ?? null;
+      }
+      state.log.push({
+        step: stepId,
+        type: "adopt",
+        outcome: pending ? "adopted" : "fallback",
+        goal: pending?.text ?? step.fallbackText,
+      });
     } else if (step.type === "choose") {
       // Règle fixe, écrite avant tout run : la première direction d'action
       // proposée pour l'objectif (ordre de création), jamais « ne rien faire ».
@@ -245,7 +276,9 @@ function runUntilAnalysis(runDir, scenario, state, store) {
     } else if (step.type === "analyze") {
       const snapshot = store.snapshot();
       const focus = [
-        ...snapshot.goals.map((goal) => ({ kind: "goal", id: goal.id })),
+        ...snapshot.goals
+          .filter((goal) => !goal.dismissed)
+          .map((goal) => ({ kind: "goal", id: goal.id })),
         ...snapshot.events.map((event) => ({ kind: "event", id: event.id })),
         ...snapshot.hypotheses
           .filter((hypothesis) => hypothesis.status !== "superseded")
@@ -611,6 +644,7 @@ function summary(runDirArgument) {
         question: question.question,
         status: question.status,
       })),
+      goals: snapshot.goals,
       directions: snapshot.directions ?? [],
       actions: snapshot.actions ?? [],
     };
@@ -632,6 +666,10 @@ function summary(runDirArgument) {
       );
     for (const question of result.questions)
       lines.push(`- ? ${question.question} — ${question.status}`);
+    for (const goal of snapshot.goals)
+      lines.push(
+        `- ◎ **objectif** [${goal.origin}${goal.confirmedByUser ? ", confirmé" : ", proposé"}${goal.dismissed ? ", écarté" : ""}] ${goal.text}${goal.problem ? ` ; problème : ${goal.problem}` : ""}${goal.citations?.length ? ` ; cite : ${goal.citations.map((citation) => `« ${citation.quote} »`).join(" | ")}` : ""}`,
+      );
     // BRIEF-005 : directions et actions.
     const memberName = (member) =>
       member.kind === "self" ? "moi" : person(member.personId);
