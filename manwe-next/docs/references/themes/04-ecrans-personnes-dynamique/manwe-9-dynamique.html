@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MANWË — Dynamique interne (modèles scientifiques)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{--bg:#040404;--tx:#ECEFF5;--tx2:#B4BACA;--tx3:#8A90A3;--bone:#D8D6D0;--indigo:#3E40C1;--inf:#D6D4F5;
+--app:#FEB800;--inh:#2F6BFF;--soc:#E4559B;--line:#1C1F29}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg)}
+body{width:1440px;height:900px;overflow:hidden;position:relative;font-family:'IBM Plex Sans',sans-serif;color:var(--tx)}
+.side{position:absolute;left:0;top:0;width:220px;height:900px;padding:22px 16px;background:linear-gradient(180deg,#0B0C12,#040404);border-right:1px solid #262A36;display:flex;flex-direction:column;gap:4px}
+.logo{padding:0 10px 26px;font-family:'Chakra Petch';font-weight:600;font-size:26px;letter-spacing:.2em;color:#fff;text-shadow:-2px 0 var(--soc),2px 0 #0092F9}
+.side a{display:flex;justify-content:space-between;align-items:center;height:40px;padding:0 10px;text-decoration:none;font-family:'Chakra Petch';font-size:15px;color:#A3A9BC;border-radius:3px}
+.side a.on{color:#fff;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.side a i{font-style:normal;font-family:'Space Mono';font-size:10px;color:var(--tx3)}
+.serial{margin-top:auto;font-family:'Space Mono';font-size:10px;line-height:1.7;color:#009B9A}
+.k{font-family:'Space Mono';font-size:10.5px;letter-spacing:.12em;color:var(--bone)}
+.top{position:absolute;left:220px;top:0;width:860px;height:56px;padding:0 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);z-index:4;background:#040404}
+.top h1{margin:0;font-family:'Chakra Petch';font-weight:500;font-size:20px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.top span{font-family:'Space Mono';font-size:11px;color:var(--tx3);white-space:nowrap}
+.seg{margin-left:auto;display:flex;gap:4px}
+.seg b{font-weight:400;font-family:'Chakra Petch';font-size:13px;padding:6px 10px;border:1px solid transparent;color:var(--tx2);border-radius:3px}
+.seg b.on{border-color:#333848;color:#fff;background:#12141C}
+#gl,#ov{position:absolute;left:220px;top:56px;width:860px;height:844px}
+#ov{z-index:2}
+.lb{position:absolute;z-index:3;pointer-events:none;text-align:center;transform:translateX(-50%)}
+.lb .ty{font-family:'Space Mono';font-size:9.5px;letter-spacing:.08em;color:var(--tx3);white-space:nowrap}
+.lb .nm{font-family:'Chakra Petch';font-size:14px;line-height:1.2;color:#fff;white-space:nowrap;background:rgba(4,4,4,.8);padding:0 3px}
+.lb .ds{font-size:11px;line-height:1.3;color:var(--tx2);white-space:nowrap;background:rgba(4,4,4,.8);padding:0 3px}
+.lb.unk .nm{color:var(--tx3)}
+.lb.act .nm{color:#FFE19A}
+.band{position:absolute;left:236px;z-index:3;font-family:'Space Mono';font-size:9.5px;letter-spacing:.1em;color:#5A6072}
+.band b{display:block;font-weight:400;color:#3E4352;font-size:9px;letter-spacing:.04em}
+.out{position:absolute;left:700px;top:118px;z-index:3;font-size:12px;line-height:1.7;color:var(--tx2)}
+.out b{font-weight:400;color:#fff}
+.pan{position:absolute;left:1080px;top:0;width:360px;height:900px;padding:18px 22px;border-left:1px solid #262A36;background:linear-gradient(180deg,#0B0C12,#060608);display:flex;flex-direction:column;gap:13px;z-index:4}
+.pan h2{margin:3px 0 0;font-family:'Chakra Petch';font-weight:500;font-size:21px;line-height:1.15}
+.pan p{margin:0;font-size:12.5px;line-height:1.5;color:var(--tx2)}
+.box{border:1px solid #262A36;border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.ccrt{display:grid;grid-template-columns:28px 1fr;gap:6px 8px;font-size:12.5px;line-height:1.4;color:var(--tx2)}
+.ccrt em{font-style:normal;font-family:'Space Mono';font-size:10.5px;color:var(--bone);padding-top:1px}
+.ccrt b{font-weight:500;color:#fff}
+.sim{display:flex;flex-direction:column;gap:8px}
+.sim button{height:40px;border-radius:4px;border:1px solid var(--app);background:transparent;color:#FFE19A;font-family:'Chakra Petch';font-size:14px;cursor:pointer}
+.sim button.on{background:var(--app);color:#000}
+.refs{font-size:10.5px;line-height:1.5;color:var(--tx3);border-top:1px solid var(--line);padding-top:9px;margin-top:auto}
+.scan{position:absolute;inset:0;pointer-events:none;z-index:8;background:repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 1px,transparent 1px 4px)}
+</style>
+</head>
+<body>
+<div class="scan"></div>
+<aside class="side">
+<div class="logo">MANWË</div>
+<a href="#"><span>Aujourd'hui</span><i>02</i></a>
+<a href="#"><span>Monde</span><i>04</i></a>
+<a href="#" class="on"><span>Personnes</span><i>04</i></a>
+<a href="#"><span>Intentions</span><i>01</i></a>
+<a href="#"><span>Mémoire</span><i>20</i></a>
+<div class="serial">SLUS_973.25 · rév. 041<br>mode : sol-assisté<br>lecture D3 · prompt v4</div>
+</aside>
+<header class="top"><h1>Marc Dupont</h1><span>dynamique interne · lecture #1</span>
+<div class="seg"><b>Signature</b><b>Épisodes</b><b class="on">Dynamique</b></div></header>
+
+<canvas id="gl" width="860" height="844"></canvas>
+<canvas id="ov" width="860" height="844"></canvas>
+<div class="band" style="top:140px">EXPRESSION<b>épisodes codés CCRT</b></div>
+<div class="band" style="top:300px">RÉGULATION<b>Gross</b></div>
+<div class="band" style="top:470px">CONFLITS<b>OPD-2</b></div>
+<div class="band" style="top:720px">MOTIFS<b>Kenrick</b></div>
+<div id="labels"></div>
+<div class="out">● propose une partie <b>×2</b><br>● déjeuner en groupe <b>×1</b><br><span style="color:var(--tx3)">? invitation directe : jamais</span></div>
+
+<aside class="pan">
+<div><div class="k" style="color:var(--inf)">◇ LECTURE D3 · CONFIANCE FAIBLE</div>
+<h2>Approche-évitement autour de la proximité</h2></div>
+<p>Le motif d'<b style="color:#fff;font-weight:500">affiliation</b> et celui d'<b style="color:#fff;font-weight:500">autoprotection</b> tirent le conflit « proximité ↔ autarcie » vers deux pôles opposés. La régulation passe par la <b style="color:#FFE19A;font-weight:500">sélection de situation</b> : n'approcher que dans un cadre qui rend un refus sans conséquence.</p>
+
+<div class="box"><div class="k">GRADIENTS D'APPROCHE-ÉVITEMENT · MILLER</div>
+<canvas id="mil" width="314" height="168"></canvas></div>
+
+<div class="box"><div class="k">ÉPISODE 12.09 · CCRT</div>
+<div class="ccrt">
+<em>S ◇</em><span><b>Souhait :</b> être plus proche de vous</span>
+<em>RO ◇</em><span><b>Réponse de l'autre attendue :</b> un refus possible, sans prétexte</span>
+<em>RS ●</em><span><b>Réponse du soi :</b> propose une partie de jeu</span>
+</div></div>
+
+<div class="sim"><div class="k">SIMULER</div>
+<button id="simb">Vous l'invitez, sans activité</button>
+<p id="simp">Votre invitation serait un retour d'inclusion. On pourra ensuite comparer la prédiction avec ce qui se passe vraiment.</p></div>
+
+<div class="refs">Motifs : Kenrick, Neuberg et al. (2010). Conflits : OPD-2. Gradients : Miller (1944). Régulation : Gross (1998). Épisodes : Luborsky, CCRT. Structure en réseau : Borsboom. Boucle de retour : Powers, contrôle perceptif. Flux continu : observé, pulsé : inféré, gris : inconnu. Ceci est une lecture, pas un diagnostic.</div>
+</aside>
+
+<script>
+const W=860,H=844;
+const N={
+ out:{x:430,y:112,r:30,st:'obs',ty:'EXPRESSION ●',nm:'Comportements',lab:'l'},
+ sel:{x:170,y:290,g:1,st:'inf',ty:'◇ ACTIVE',nm:'Sélection',ds:'de situation',act:1},
+ mod:{x:300,y:290,g:1,st:'inf',ty:'◇',nm:'Modification',ds:'de situation'},
+ att:{x:430,y:290,g:1,st:'unk',ty:'?',nm:'Attention',ds:'déploiement'},
+ rea:{x:560,y:290,g:1,st:'unk',ty:'?',nm:'Réévaluation',ds:'cognitive'},
+ modu:{x:690,y:290,g:1,st:'unk',ty:'?',nm:'Modulation',ds:'de la réponse'},
+ D1:{x:300,y:490,dial:62,st:'inf',ty:'OPD · MODE PASSIF',nm:'Proximité ↔ autarcie',a:'Autarcie',b:'Proximité',v:-.15,vs:.55},
+ D2:{x:585,y:490,dial:48,st:'inf',ty:'OPD',nm:'Valeur de soi',a:'Doute',b:'Assurance',v:-.3,vs:.2},
+ prot:{x:170,y:700,r:22,st:'inf',ty:'◇',nm:'Autoprotection',ds:'risque social'},
+ dis:{x:90,y:745,r:14,st:'unk',ty:'?',nm:'Maladie',ds:''},
+ aff:{x:400,y:720,r:28,st:'inf',ty:'◇',nm:'Affiliation',ds:'appartenance, amitié'},
+ stat:{x:640,y:700,r:18,st:'unk',ty:'?',nm:'Statut',ds:''},
+ mate:{x:770,y:745,r:14,st:'unk',ty:'?',nm:'Partenaire',ds:''},
+ kin:{x:540,y:770,r:14,st:'unk',ty:'?',nm:'Proches',ds:''},
+ fb1:{x:820,y:112,hid:1},fb2:{x:820,y:490,hid:1},
+};
+// from, to, color (0 approche,1 retenue,2 lien,3 résultante), now, simulated, status
+const E=[
+ ['aff','D1',2,.9,.9,'inf'],['prot','D1',1,.75,.3,'inf'],['prot','D2',1,.5,.2,'inf'],['stat','D2',0,.2,.2,'unk'],['aff','D2',2,.3,.5,'inf'],
+ ['D1','D2',2,.4,.15,'inf'],
+ ['D1','sel',3,.85,.4,'inf'],['D1','mod',3,.45,.3,'inf'],['D2','sel',1,.5,.15,'inf'],
+ ['sel','out',3,.85,.45,'obs'],['mod','out',3,.45,.35,'obs'],
+ ['att','out',3,.12,.12,'unk'],['rea','out',3,.12,.12,'unk'],['modu','out',3,.12,.12,'unk'],
+ ['D1','out',0,0,.8,'inf'],
+ ['out','fb1',3,.18,.6,'unk'],['fb1','fb2',3,.18,.6,'unk'],['fb2','D2',3,.18,.6,'unk'],
+];
+const cur=E.map(e=>e[3]);let sim=false,t0=performance.now();
+const dv={D1:N.D1.v,D2:N.D2.v};
+
+// ---------- WebGL flows ----------
+const gl=document.getElementById('gl').getContext('webgl',{antialias:false});
+const FS=`precision highp float;
+uniform vec2 R;uniform float T;uniform vec4 S[20];uniform vec4 P[20];uniform vec4 K[2];
+vec3 pal(float i){if(i<.5)return vec3(1.,.66,.04);if(i<1.5)return vec3(.16,.38,1.);if(i<2.5)return vec3(.9,.28,.58);return vec3(.86,.85,.8);}
+float flow(vec2 q,float t){vec3 p=vec3(q,t*.25);float d=2.;for(int j=0;j<5;j++){d/=.8;p+=.6*cos(p.yzx*d-vec3(t,t*.6,t*.3))/d;}return .5+.5*sin(p.x*1.7+p.y*1.1+p.z);}
+vec3 th(vec3 x){vec3 e=exp(2.*x);return (e-1.)/(e+1.);}
+void main(){vec2 p=gl_FragCoord.xy;vec3 col=vec3(0.);
+ for(int i=0;i<20;i++){vec4 s=S[i];vec4 pr=P[i];if(pr.x<.005)continue;vec2 a=s.xy,b=s.zw;vec2 ab=b-a;float L=length(ab);vec2 dir=ab/L;
+  float h=clamp(dot(p-a,dir),0.,L);vec2 q=p-(a+dir*h);float dist=length(q);
+  float w=4.+9.*pr.x;float m=exp(-dist*dist/(w*w));if(m<.003)continue;
+  float perp=dot(q,vec2(-dir.y,dir.x));float I=pr.x;
+  float f=flow(vec2(h*.03-T*(.8+2.2*I),perp*.13),T*.5);
+  float body=m*(.12+1.6*f*f)*I;body*=.35+.65*smoothstep(0.,16.,h)*smoothstep(0.,16.,L-h);
+  vec3 c=pal(pr.y);
+  if(pr.z>.5&&pr.z<1.5)body*=.5+.5*smoothstep(-.3,.7,sin(h*.07-T*2.6*(.4+I)));
+  if(pr.z>1.5){c=vec3(.5,.52,.6);body*=.5;}
+  col+=c*body;}
+ for(int k=0;k<2;k++){vec2 d=p-K[k].xy;float r=length(d);float a=atan(d.y,d.x);
+  float sw=flow(vec2(a*1.6+r*.05-T*.7,r*.06),T*.8);
+  col+=mix(pal(1.),pal(2.),sw)*exp(-r*r/(K[k].w*K[k].w))*K[k].z*(.4+1.4*sw);}
+ col=th(col*1.15);col*=.9+.1*step(1.,mod(p.y,3.));gl_FragColor=vec4(col,1.);}`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(o));return o}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const la=gl.getAttribLocation(pr,'a');gl.enableVertexAttribArray(la);gl.vertexAttribPointer(la,2,gl.FLOAT,false,0,0);
+const U=n=>gl.getUniformLocation(pr,n);gl.uniform2f(U('R'),W,H);
+const segs=new Float32Array(80);E.forEach((e,i)=>{const a=N[e[0]],b=N[e[1]];segs.set([a.x,H-a.y,b.x,H-b.y],i*4)});gl.uniform4fv(U('S'),segs);
+
+// ---------- labels ----------
+const lab=document.getElementById('labels');
+Object.entries(N).forEach(([id,n])=>{if(n.hid)return;const d=document.createElement('div');
+ d.className='lb '+(n.st==='unk'?'unk ':'')+(n.act?'act':'');
+ let y=n.dial?n.y+22:n.g?n.y+16:n.y+(n.r||0)+6;if(id==='out'){y=n.y-72}
+ d.style.left=(220+n.x)+'px';d.style.top=(56+y)+'px';
+ d.innerHTML=`<div class="ty">${n.ty}</div><div class="nm">${n.nm}</div>${n.ds?`<div class="ds">${n.ds}</div>`:''}`;lab.appendChild(d)});
+const fb=document.createElement('div');fb.className='lb unk';fb.style.left='1030px';fb.style.top='330px';fb.style.transform='translateX(-50%) rotate(90deg)';
+fb.innerHTML='<div class="ty">RETOUR ? · RÉPONSE DE L\'AUTRE → VALEUR DE SOI</div>';lab.appendChild(fb);
+
+// ---------- overlay ----------
+const ov=document.getElementById('ov').getContext('2d');
+function dial(n,v,T){const R=n.dial,x=n.x,y=n.y;
+ ov.fillStyle='rgba(4,4,4,.8)';ov.beginPath();ov.arc(x,y,R+6,Math.PI,0);ov.lineTo(x+R+6,y+6);ov.lineTo(x-R-6,y+6);ov.fill();
+ // pole arcs
+ const g=ov.createLinearGradient(x-R,0,x+R,0);g.addColorStop(0,'#2F6BFF');g.addColorStop(.5,'rgba(216,214,208,.3)');g.addColorStop(1,'#E4559B');
+ ov.strokeStyle=g;ov.lineWidth=4;ov.beginPath();ov.arc(x,y,R,Math.PI,0);ov.stroke();
+ ov.strokeStyle='rgba(214,212,245,.35)';ov.lineWidth=1;ov.setLineDash([3,3]);ov.beginPath();ov.arc(x,y,R-10,Math.PI,0);ov.stroke();ov.setLineDash([]);
+ for(let i=0;i<=10;i++){const a=Math.PI+i*Math.PI/10;ov.strokeStyle='rgba(216,214,208,.35)';ov.beginPath();ov.moveTo(x+Math.cos(a)*(R+3),y+Math.sin(a)*(R+3));ov.lineTo(x+Math.cos(a)*(R+8),y+Math.sin(a)*(R+8));ov.stroke()}
+ // needle with jitter = uncertainty
+ const a=Math.PI*1.5+v*Math.PI/2+Math.sin(T*3.1)*.04;
+ ov.strokeStyle='#fff';ov.lineWidth=2;ov.beginPath();ov.moveTo(x,y);ov.lineTo(x+Math.cos(a)*(R-4),y+Math.sin(a)*(R-4));ov.stroke();
+ ov.fillStyle='#fff';ov.beginPath();ov.arc(x,y,3.5,0,Math.PI*2);ov.fill();
+ ov.font='10px Space Mono';ov.fillStyle='#7FA0FF';ov.textAlign='right';ov.fillText(n.a,x-R-10,y+4);
+ ov.fillStyle='#F08BBE';ov.textAlign='left';ov.fillText(n.b,x+R+10,y+4);ov.textAlign='center'}
+function frame(){const T=(performance.now()-t0)/1000;
+ E.forEach((e,i)=>{cur[i]+=((sim?e[4]:e[3])-cur[i])*.03});
+ dv.D1+=((sim?N.D1.vs:N.D1.v)-dv.D1)*.03;dv.D2+=((sim?N.D2.vs:N.D2.v)-dv.D2)*.03;
+ const P=new Float32Array(80);E.forEach((e,i)=>P.set([cur[i],e[2],{obs:0,inf:1,unk:2}[e[5]],0],i*4));gl.uniform4fv(U('P'),P);
+ gl.uniform4fv(U('K'),new Float32Array([N.D1.x,H-N.D1.y+20,Math.min(cur[0],cur[1])*1.1,40, N.D2.x,H-N.D2.y+16,Math.min(cur[2],cur[4])*1.2,30]));
+ gl.uniform1f(U('T'),T);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+ ov.clearRect(0,0,W,H);
+ [['sel',0],['mod',1],['att',2],['rea',3],['modu',4]].forEach(([id])=>{const n=N[id];const act=n.act;
+  ov.fillStyle='rgba(4,4,4,.85)';ov.fillRect(n.x-15,n.y-9,30,18);
+  ov.setLineDash(n.st==='unk'?[2,3]:[]);ov.strokeStyle=act?'#FEB800':n.st==='unk'?'rgba(138,144,163,.8)':'rgba(214,212,245,.9)';ov.lineWidth=act?1.6:1.2;ov.strokeRect(n.x-15,n.y-9,30,18);ov.setLineDash([]);
+  ov.beginPath();ov.moveTo(n.x-15,n.y);ov.lineTo(n.x-5,n.y);ov.moveTo(n.x+5,n.y);ov.lineTo(n.x+15,n.y);ov.stroke()});
+ ['prot','dis','aff','stat','mate','kin','out'].forEach(id=>{const n=N[id];ov.fillStyle='rgba(4,4,4,.82)';ov.beginPath();ov.arc(n.x,n.y,n.r,0,Math.PI*2);ov.fill();
+  ov.setLineDash(n.st==='obs'?[]:n.st==='inf'?[4,3]:[2,4]);ov.strokeStyle=n.st==='unk'?'rgba(138,144,163,.7)':n.st==='inf'?'rgba(214,212,245,.9)':'#fff';ov.lineWidth=1.3;
+  ov.beginPath();ov.arc(n.x,n.y,n.r,0,Math.PI*2);ov.stroke();ov.setLineDash([]);
+  if(n.st==='unk'){ov.fillStyle='rgba(138,144,163,.9)';ov.font='11px Space Mono';ov.textAlign='center';ov.fillText('?',n.x,n.y+4)}});
+ dial(N.D1,dv.D1,T);dial(N.D2,dv.D2,T+1);
+ miller(sim);
+ requestAnimationFrame(frame)}
+// ---------- Miller gradients ----------
+const mc=document.getElementById('mil').getContext('2d');let kAv=1.5;
+function miller(){const w=314,h=168,L=30,B=138,Rr=304,Tp=10;kAv+=((sim?.55:1.5)-kAv)*.03;
+ const X=x=>L+x*(Rr-L),Y=v=>B-v*(B-Tp);const A=x=>.3+.4*x,V=x=>.04+kAv*Math.pow(x,2.2);
+ mc.clearRect(0,0,w,h);mc.strokeStyle='#262A36';mc.lineWidth=1;mc.beginPath();mc.moveTo(L,Tp);mc.lineTo(L,B);mc.lineTo(Rr,B);mc.stroke();
+ mc.font='9.5px Space Mono';mc.fillStyle='#8A90A3';mc.textAlign='left';mc.fillText('loin',L,B+13);mc.textAlign='right';mc.fillText('lien direct',Rr,B+13);
+ mc.save();mc.translate(10,B);mc.rotate(-Math.PI/2);mc.textAlign='left';mc.fillText('force',0,0);mc.restore();
+ const line=(f,c)=>{mc.strokeStyle=c;mc.lineWidth=2;mc.beginPath();for(let i=0;i<=60;i++){const x=i/60,v=Math.min(1,f(x));i?mc.lineTo(X(x),Y(v)):mc.moveTo(X(x),Y(v))}mc.stroke()};
+ line(A,'#FEB800');line(V,'#2F6BFF');
+ let xc=null;for(let i=0;i<=200;i++){const x=i/200;if(V(x)>=A(x)){xc=x;break}}
+ if(xc!==null){mc.strokeStyle='rgba(228,85,155,.8)';mc.setLineDash([3,3]);mc.beginPath();mc.moveTo(X(xc),Tp);mc.lineTo(X(xc),B);mc.stroke();mc.setLineDash([]);
+  mc.fillStyle='#F08BBE';mc.textAlign=xc>.6?'right':'left';mc.fillText("point d'arrêt",X(xc)+(xc>.6?-5:5),Tp+10)}
+ [[.3,'jeu','#fff',1],[.45,'déjeuner','#fff',1],[.9,'direct ?','#8A90A3',0]].forEach(([x,t,c,o])=>{mc.fillStyle=c;mc.beginPath();mc.arc(X(x),B-4,o?3.5:3,0,Math.PI*2);o?mc.fill():(mc.strokeStyle=c,mc.stroke());mc.textAlign='center';mc.fillText(t,X(x),B-12)});
+ mc.textAlign='left';mc.fillStyle='#FEB800';mc.fillText('approche',X(.02),Y(A(0))-6);mc.fillStyle='#7FA0FF';mc.fillText('évitement',X(.62),Y(Math.min(1,V(.72)))+2)}
+document.getElementById('simb').onclick=e=>{sim=!sim;e.target.classList.toggle('on',sim);
+ document.getElementById('simp').textContent=sim?"Prédiction : votre invitation est un retour d'inclusion, qui remonte vers la valeur de soi. Le gradient d'évitement s'aplatit, le point d'arrêt disparaît et l'élan va jusqu'au lien direct, sans passer par la sélection de situation. Marc accepterait, avec une retenue passagère.":"Votre invitation serait un retour d'inclusion. On pourra ensuite comparer la prédiction avec ce qui se passe vraiment."};
+if(location.search.includes('sim')){E.forEach((e,i)=>cur[i]=e[4]);dv.D1=N.D1.vs;dv.D2=N.D2.vs;kAv=.55;document.getElementById('simb').click()}
+frame();
+</script>
+</body>
+</html>

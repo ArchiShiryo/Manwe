@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MANWË — Jewel case, couleurs signifiantes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{
+ --bg:#040404;--panel:#0B0C12;--line:#1C1F29;--line2:#2A2E3B;
+ --tx:#ECEFF5;--tx2:#B4BACA;--tx3:#8A90A3;
+ --work:#2A66F0;--play:#DFBA23;--close:#D14523;--kin:#24A642;
+ --form:#9AB322;--comm:#1F9FB8;--intime:#A8347A;--voisin:#DD771B;
+ --lilac:#C9C3E0;--accent:#DD771B;--frame:#4A3CC0;
+ --rainbow:linear-gradient(90deg,#D14523,#DD771B,#DFBA23,#9AB322,#24A642,#1F9FB8,#2061B6,#392CA4,#882554);
+ --bands:linear-gradient(180deg,#D14523 0.0% 11.1%, #DD771B 11.1% 22.2%, #DFBA23 22.2% 33.3%, #9AB322 33.3% 44.4%, #24A642 44.4% 55.6%, #1F9FB8 55.6% 66.7%, #2061B6 66.7% 77.8%, #392CA4 77.8% 88.9%, #882554 88.9% 100.0%);
+ --unk:#8A90A3;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+body{width:1440px;height:900px;overflow:hidden;position:relative;font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--tx)}
+.mono{font-family:'Space Mono',monospace}
+#cv{position:absolute;left:220px;top:56px;width:840px;height:844px}
+.scan{position:absolute;inset:0;pointer-events:none;z-index:8;background:repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 1px,transparent 1px 4px)}
+
+.side{position:absolute;left:0;top:0;width:220px;height:900px;padding:22px 16px;background:linear-gradient(180deg,#0B0C12,#050508);border-right:1px solid #262A36;display:flex;flex-direction:column;gap:4px;z-index:2}
+.logo{padding:0 10px 26px;font-family:'Chakra Petch';font-weight:600;font-size:26px;letter-spacing:.2em;color:#fff;text-shadow:-2px 0 var(--close),2px 0 var(--work)}
+.side a{display:flex;justify-content:space-between;align-items:center;height:40px;padding:0 10px;text-decoration:none;font-family:'Chakra Petch';font-size:15px;color:#A3A9BC;border-radius:3px}
+.side a.on{color:#fff;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.side a i{font-style:normal;font-family:'Space Mono';font-size:10px;color:var(--tx3)}
+.ctx{margin-top:26px;display:flex;flex-direction:column;gap:2px}
+.ctx .h{font-family:'Space Mono';font-size:10px;letter-spacing:.14em;color:#DD771B;padding:0 10px 8px}
+.ctx label{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;font-size:13.5px;color:var(--tx2)}
+.ctx label b{width:18px;height:3px;border-radius:2px}
+.ctx label.off{color:#6B7186;height:26px;font-size:12.5px}.ctx label.off b{opacity:.45}.ctx label i{margin-left:auto;font-style:normal;font-family:'Space Mono';font-size:10px;color:#4E5466}
+.win{margin-top:18px;padding:12px 10px;border-radius:4px;border:1px solid #262A36;display:flex;flex-direction:column;gap:7px}
+.win .h{font-family:'Space Mono';font-size:10px;letter-spacing:.14em;color:var(--accent)}
+.win .wt{font-family:'Chakra Petch';font-size:14px;color:#fff;line-height:1.25}
+.win .wb{height:9px;border-radius:2px;background:#161822;overflow:hidden}.win .wb span{display:block;height:100%;background:var(--bands)}
+.win .wm{font-size:11px;color:var(--tx3)}
+@keyframes shim{to{background-position:-250% 0}}
+.success{position:absolute;z-index:4;left:246px;top:66px;display:flex;align-items:center;gap:12px;padding:10px 14px 10px 12px;border-radius:4px;background:#08080B;box-shadow:0 0 0 1.5px #D14523,0 0 0 3.0px #DD771B,0 0 0 4.5px #DFBA23,0 0 0 6.0px #9AB322,0 0 0 7.5px #24A642,0 0 0 9.0px #1F9FB8,0 0 0 10.5px #2061B6,0 0 0 12.0px #392CA4,0 0 0 13.5px #882554;margin:14px}
+.success .ic{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#D14523 10.0px 11.2px, #DD771B 11.2px 12.4px, #DFBA23 12.4px 13.6px, #9AB322 13.6px 14.8px, #24A642 14.8px 16.0px, #1F9FB8 16.0px 17.2px, #2061B6 17.2px 18.4px, #392CA4 18.4px 19.6px, #882554 19.6px 20.8px);display:flex;align-items:center;justify-content:center}
+.success .ic span{width:18px;height:18px;border-radius:50%;background:#08080B;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+.success .k2{font-family:'Space Mono';font-size:10px;letter-spacing:.12em;color:#DFBA23}
+.success .t2{font-family:'Chakra Petch';font-size:14.5px;color:#fff}
+.serial{margin-top:auto;font-family:'Space Mono';font-size:10px;line-height:1.7;color:#1F9FB8}
+.barcode{height:24px;width:130px;margin-top:10px;background:repeating-linear-gradient(90deg,#C9CEDA 0 2px,transparent 2px 3px,#C9CEDA 3px 4px,transparent 4px 7px,#C9CEDA 7px 10px,transparent 10px 12px);opacity:.7}
+
+.top{position:absolute;left:220px;top:0;width:840px;height:56px;padding:0 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);z-index:2}
+.top h1{margin:0;font-family:'Chakra Petch';font-weight:500;font-size:22px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.top span{font-family:'Space Mono';font-size:11px;color:var(--tx3);white-space:nowrap}
+.seg{margin-left:auto;display:flex;gap:4px}
+.seg b{font-weight:400;font-family:'Chakra Petch';font-size:13px;padding:6px 10px;border:1px solid transparent;color:var(--tx2);border-radius:3px}
+.seg b.on{border-color:#333848;color:#fff;background:#12141C}
+
+.node{position:absolute;z-index:3;display:flex;flex-direction:column;align-items:center;gap:6px;transform:translate(-50%,-50%)}
+.node .d{border-radius:50%;border:3px solid transparent;display:flex;align-items:center;justify-content:center;font-family:'Chakra Petch';font-weight:500;color:#fff}
+.node .lb{position:absolute;top:100%;margin-top:6px;display:flex;flex-direction:column;align-items:center;white-space:nowrap}
+.node .n{font-family:'Chakra Petch';font-size:15px;background:var(--bg);padding:0 4px}
+.node .r{font-family:'Space Mono';font-size:10.5px;color:var(--tx3);background:var(--bg);padding:0 4px}
+.node.you .d{border-radius:10px;background:var(--panel);border:1px solid #6B7186;font-size:18px}
+.node.dim{opacity:.62}
+
+.hyp{position:absolute;z-index:3;left:244px;top:496px;width:232px;padding:12px 14px;border-radius:4px;border:1px dashed rgba(201,195,224,.55);background:rgba(11,12,18,.95)}
+.hyp .k{font-family:'Space Mono';font-size:10.5px;letter-spacing:.08em;color:#CFCBF2}
+.hyp .t{font-family:'Chakra Petch';font-size:17px;line-height:1.25;margin-top:6px;color:#fff}
+.hyp .m{font-size:12px;color:var(--tx2);margin-top:6px}
+
+.legend{position:absolute;z-index:3;left:778px;top:588px;width:268px;padding:14px 16px;background:rgba(6,5,4,.95);border:1px solid #4A3CC0;border-radius:4px;display:flex;flex-direction:column;gap:9px}
+.legend .h{font-family:'Space Mono';font-size:10px;letter-spacing:.14em;color:#DD771B}
+.legend .row{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--tx2)}
+.legend .row svg{flex:none}
+.legend .sep{height:1px;background:var(--line)}
+
+.composer{position:absolute;left:250px;top:830px;width:500px;height:52px;z-index:3;display:flex;align-items:center;gap:12px;padding:0 6px 0 16px;background:rgba(11,12,18,.94);border:1px solid rgba(255,255,255,.16);border-radius:6px}
+.composer span{flex:1;color:#80869A;font-size:14px}
+.composer em{font-style:normal;font-family:'Space Mono';font-size:11px;color:var(--tx3)}
+.composer b{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#fff;color:#000;border-radius:4px}
+
+.insp{position:absolute;left:1060px;top:0;width:380px;height:900px;padding:22px 26px;background:linear-gradient(180deg,#0B0C12,#07070B);border-left:1px solid #262A36;display:flex;flex-direction:column;gap:18px;z-index:2}
+.k{font-family:'Space Mono';font-size:10.5px;letter-spacing:.12em;color:#DD771B}
+.insp h2{margin:4px 0 0;font-family:'Chakra Petch';font-weight:500;font-size:26px;line-height:1.15}
+.bar{display:flex;height:8px;border-radius:2px;overflow:hidden;gap:2px;margin-top:8px}
+.barl{display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#4A3CC0;border:1px solid #4A3CC0}
+.grid div{background:#070605;padding:10px 10px 9px}
+.grid b{display:block;font-family:'Chakra Petch';font-weight:500;font-size:20px;color:#fff}
+.grid small{font-size:11px;color:var(--tx3)}
+.flux{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2)}
+.flux .track{flex:1;height:6px;border-radius:3px;background:#1A1D27;position:relative;overflow:hidden}
+.read{padding:12px 14px;border-radius:4px;display:flex;flex-direction:column;gap:6px}
+.read .t{font-family:'Chakra Petch';font-size:16px;line-height:1.3;color:#fff}
+.read .m{display:flex;gap:8px;align-items:center;font-family:'Space Mono';font-size:10.5px;color:var(--tx2)}
+.pill{padding:2px 7px;border-radius:2px;border:1px solid #333848}
+.roles{display:flex;gap:6px;align-items:flex-end}
+.roles div{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;font-family:'Space Mono';font-size:10px;color:var(--tx3)}
+.roles svg{display:block}
+.btns{margin-top:auto;display:flex;gap:8px}
+.btns span{flex:1;height:42px;display:flex;align-items:center;justify-content:center;font-size:13px;border:1px solid #333848;color:#DDE1EA;border-radius:4px}
+.btns span:first-child{background:#fff;color:#000;border-color:#fff}
+</style>
+</head>
+<body>
+<canvas id="cv" width="840" height="844"></canvas>
+<div class="scan"></div>
+
+<aside class="side">
+<div class="logo">MANWË</div>
+<a href="#"><span>Aujourd'hui</span><i>02</i></a>
+<a href="#" class="on"><span>Monde</span><i>04</i></a>
+<a href="#"><span>Personnes</span><i>04</i></a>
+<a href="#"><span>Intentions</span><i>01</i></a>
+<a href="#"><span>Mémoire</span><i>20</i></a>
+<div class="ctx">
+<div class="h">CONTEXTES = COULEURS</div>
+<label><b style="background:var(--work)"></b>Travail</label>
+<label><b style="background:var(--play)"></b>Loisirs · jeu</label>
+<label><b style="background:var(--close)"></b>Amitié · intime</label>
+<label><b style="background:var(--kin)"></b>Famille</label>
+<label class="off"><b style="background:var(--form)"></b>Formation<i>0</i></label>
+<label class="off"><b style="background:var(--comm)"></b>Communauté<i>0</i></label>
+<label class="off"><b style="background:var(--intime)"></b>Couple · intime<i>0</i></label>
+<label class="off"><b style="background:var(--voisin)"></b>Voisinage<i>0</i></label>
+</div>
+<div class="win"><div class="h">INTENTION</div><div class="wt">Faire grandir des amitiés plus proches</div><div class="wb"><span style="width:40%"></span></div><div class="wm">2 réussites sur 5 pas · dernière le 20.09</div>
+</div>
+<div class="serial">SLUS_973.25 · rév. 041<br>mode : sol-assisté<br>contrat cognition v1</div>
+<div class="barcode"></div>
+</aside>
+
+<header class="top">
+<h1>Mon monde</h1><span>démo · 4 personnes · 20 événements</span>
+<div class="seg"><b class="on">Relations</b><b>Lectures</b><b>Temps</b></div>
+</header>
+
+<!-- nodes : canvas coords + (220,56) -->
+<div class="node" style="left:440px;top:356px"><div class="d" style="width:62px;height:62px;background:linear-gradient(#0B0C12,#0B0C12) padding-box,conic-gradient(var(--work) 0 40%,var(--play) 40% 100%) border-box;box-shadow:0 0 28px rgba(42,102,240,.35)">MD</div><div class="lb"><span class="n">Marc Dupont</span><span class="r">3 épisodes · 12.09</span></div></div>
+<div class="node" style="left:780px;top:286px"><div class="d" style="width:50px;height:50px;background:linear-gradient(#0B0C12,#0B0C12) padding-box,conic-gradient(var(--work) 0 100%) border-box">LM</div><div class="lb"><span class="n">Léa Martin</span><span class="r">2 épisodes · 10.09</span></div></div>
+<div class="node" style="left:920px;top:526px"><div class="d" style="width:46px;height:46px;background:linear-gradient(#0B0C12,#0B0C12) padding-box,conic-gradient(var(--close) 0 100%) border-box">CM</div><div class="lb"><span class="n">Claire Morel</span><span class="r">1 impression · 09.09</span></div></div>
+<div class="node dim" style="left:410px;top:746px"><div class="d" style="width:46px;height:46px;background:linear-gradient(#0B0C12,#0B0C12) padding-box,conic-gradient(var(--kin) 0 100%) border-box">HB</div><div class="lb"><span class="n">Hugo</span><span class="r">frère · dernier : 07.08</span></div></div>
+<div class="node you" style="left:620px;top:536px"><div class="d" style="width:52px;height:52px">◉</div><div class="lb"><span class="n">VOUS</span></div></div>
+
+<div class="success"><div class="ic"><span>✓</span></div><div><div class="k2">RÉUSSITE · 20.09 · INTENTION</div><div class="t2">Vous avez proposé un café à Léa, hors du travail. Elle a accepté.</div></div></div>
+<div class="hyp"><div class="k">◇ LECTURE · D2 · PLAUSIBLE</div><div class="t">Marc étend le lien au-delà du travail</div><div class="m">confiance modérée · 2 appuis · 1 contre-exemple</div></div>
+
+<div class="legend">
+<div class="h">LIRE LE GRAPHE</div>
+<div class="row"><svg width="34" height="10"><line x1="0" y1="3" x2="34" y2="3" stroke="#2A66F0" stroke-width="2"/><line x1="0" y1="7" x2="34" y2="7" stroke="#DFBA23" stroke-width="2"/></svg>Couleur = contexte, brins = part des épisodes</div>
+<div class="row"><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="#DDE1EA" stroke-width="2"/></svg>Plein : observé, cité</div>
+<div class="row"><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="#DDE1EA" stroke-width="2" stroke-dasharray="1 5" stroke-linecap="round"/></svg>Pointillé : votre impression ≈</div>
+<div class="row"><svg width="34" height="10" style="flex:none"><path d="M0 3 Q9 1 17 3 T34 3" fill="none" stroke="#D6D4F5" stroke-opacity=".7" stroke-dasharray="3 3"/><path d="M0 7 Q9 9 17 7 T34 7" fill="none" stroke="#D6D4F5" stroke-opacity=".7" stroke-dasharray="3 3"/></svg>Double trait qui vibre : lecture de MANWË ◇ (plus ça tremble, moins c'est sûr)</div>
+<div class="row"><span style="flex:none;width:34px;height:9px;background:var(--bands)"></span>Arc-en-ciel : réussite, prédiction confirmée</div>
+<div class="sep"></div>
+<div class="row"><svg width="34" height="10"><line x1="0" y1="5" x2="16" y2="5" stroke="#DDE1EA" stroke-width="2"/><line x1="18" y1="5" x2="34" y2="5" stroke="#DDE1EA" stroke-opacity=".3" stroke-width="2"/></svg>Éclat : récence du dernier épisode</div>
+</div>
+
+<div class="composer"><span>raconter · demander · corriger une lecture…</span><em>focus : Vous ↔ Marc</em><b>↑</b></div>
+
+<aside class="insp">
+<div>
+<div class="k">RELATION · DYADE</div>
+<h2>Vous <span style="color:var(--tx3)">↔</span> Marc Dupont</h2>
+<div class="bar"><span style="width:40%;background:var(--work)"></span><span style="width:60%;background:var(--play)"></span></div>
+<div class="barl"><span style="color:var(--work)">Travail · 40 %</span><span style="color:var(--play)">Jeu · 60 %</span></div>
+</div>
+
+<div class="grid">
+<div><b>3</b><small>épisodes</small></div>
+<div><b>~6</b><small>/ 30 jours</small></div>
+<div><b>1</b><small>contre-exemple</small></div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="k">QUI INITIE</div>
+<div class="flux"><span style="width:52px">Marc</span><div class="track"><span style="position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,var(--work),var(--play))"></span></div><span class="mono" style="font-size:12px;color:#fff">2</span></div>
+<div class="flux"><span style="width:52px">Vous</span><div class="track"><span style="position:absolute;left:0;top:0;bottom:0;width:50%;background:var(--play);opacity:.6"></span></div><span class="mono" style="font-size:12px;color:#fff">1</span></div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="k">RÔLES PAR ÉPISODE</div>
+<div class="roles">
+<div><svg width="22" height="22"><path d="M11 3 L19 18 L3 18 Z" fill="none" stroke="#DFBA23" stroke-width="1.6"/></svg>08.09<br>jeu</div>
+<div><svg width="22" height="22"><path d="M11 3 L19 18 L3 18 Z" fill="#0092F9" stroke="#2A66F0" stroke-width="1.6"/></svg>10.09<br>déjeuner</div>
+<div><svg width="22" height="22"><path d="M11 3 L19 18 L3 18 Z" fill="#FEB800" stroke="#DFBA23" stroke-width="1.6"/></svg>12.09<br>invitation</div>
+<div><svg width="22" height="22"><circle cx="11" cy="11" r="7" fill="none" stroke="#8A90A3" stroke-width="1.4" stroke-dasharray="2 3"/></svg>—<br>sans activité ?</div>
+</div>
+<div style="font-size:11.5px;color:var(--tx3)">▲ plein : Marc initie · ▲ creux : vous initiez · ○ inconnu</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="k">LECTURES EN CONCURRENCE</div>
+<div class="read" style="border:1px dashed rgba(214,212,245,.55);background:#0E0F16">
+<div class="t">Marc étend le lien au-delà du travail</div>
+<div class="m"><span class="pill">#1</span><span class="pill">D2</span><span>plausible · modérée</span></div>
+</div>
+<div class="read" style="border:1px dashed #3A3F50;opacity:.85">
+<div class="t" style="color:var(--tx2)">Ses initiatives suivent les activités partagées</div>
+<div class="m"><span class="pill">#2</span><span class="pill">D1</span><span>ébauche · faible</span></div>
+</div>
+</div>
+
+<div class="btns"><span>Oui, plutôt</span><span>Corriger</span><span>Contexte +</span></div>
+</aside>
+
+<script>
+const cv=document.getElementById('cv'),g=cv.getContext('2d'),W=840,H=844,TAU=Math.PI*2;
+const C={work:[42,102,240],play:[223,186,35],close:[209,69,35],kin:[36,166,66]};
+const RAINBOW=['#D14523','#DD771B','#DFBA23','#9AB322','#24A642','#1F9FB8','#2061B6','#392CA4','#882554'];
+const YOU=[400,480],MARC=[220,300],LEA=[560,230],CLA=[700,470],HUGO=[190,690];
+// relations : strands = contexts & share, status, flux (who initiates), rate, recency
+const REL=[
+ {a:MARC,b:YOU,c:[260,440],strands:[['work',.4],['play',.6]],status:'obs',flux:[2,1],rec:1,w:1,hyp:true,conf:'moderate'},
+ {a:MARC,b:LEA,c:[400,210],strands:[['work',1]],status:'obs',flux:[1,1],rec:.8,w:.55},
+ {a:LEA,b:YOU,c:[520,380],strands:[['work',1]],status:'obs',flux:[1,1],rec:.8,w:.8},
+ {a:CLA,b:YOU,c:[560,500],strands:[['close',1]],status:'imp',flux:[0,0],rec:.9,w:.8},
+ {a:HUGO,b:YOU,c:[300,640],strands:[['kin',1]],status:'obs',flux:[0,1],rec:.3,w:.8},
+];
+const bez=(r,t)=>{const u=1-t;return[u*u*r.a[0]+2*u*t*r.c[0]+t*t*r.b[0],u*u*r.a[1]+2*u*t*r.c[1]+t*t*r.b[1]]};
+const nrm=(r,t)=>{const u=1-t,dx=2*u*(r.c[0]-r.a[0])+2*t*(r.b[0]-r.c[0]),dy=2*u*(r.c[1]-r.a[1])+2*t*(r.b[1]-r.c[1]),l=Math.hypot(dx,dy)||1;return[-dy/l,dx/l]};
+const rgba=(k,a)=>`rgba(${C[k][0]},${C[k][1]},${C[k][2]},${a})`;
+// noise
+const P=[];for(let i=0;i<512;i++)P[i]=Math.random();
+const hash=(x,y)=>P[((x*73856093)^(y*19349663))&511];
+function noise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,s=v=>v*v*(3-2*v);const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*s(xf)+(c-a)*s(yf)+(a-b-c+d)*s(xf)*s(yf)}
+// field grid: nearest relation color + strength, used to tint and bend scanlines
+const S=12,COLS=Math.ceil(W/S),ROWS=Math.ceil(H/S),F=[];
+const samples=[];REL.forEach(r=>{for(let i=0;i<=30;i++){const p=bez(r,i/30);samples.push([p[0],p[1],r.strands[i%r.strands.length][0],r.rec*r.w])}});
+for(let cx=0;cx<COLS;cx++)for(let cy=0;cy<ROWS;cy++){const x=cx*S,y=cy*S;let best=1e9,k=null,w=0;for(const q of samples){const d=Math.hypot(q[0]-x,q[1]-y);if(d<best){best=d;k=q[2];w=q[3]}}
+ F[cx*ROWS+cy]={k:best<110?k:null,f:best<110?Math.pow(1-best/110,1.5)*w:0,n:noise(x*.012,y*.012)}}
+const cell=(cx,cy)=>F[Math.min(COLS-1,Math.max(0,cx))*ROWS+Math.min(ROWS-1,Math.max(0,cy))];
+function field(x,y){const fx=x/S,fy=y/S,cx=Math.floor(fx),cy=Math.floor(fy),u=fx-cx,v=fy-cy;
+ const a=cell(cx,cy),b=cell(cx+1,cy),c=cell(cx,cy+1),d=cell(cx+1,cy+1);
+ const L=(p)=>a[p]*(1-u)*(1-v)+b[p]*u*(1-v)+c[p]*(1-u)*v+d[p]*u*v;
+ const near=[a,b,c,d].sort((m,n)=>n.f-m.f)[0];return{k:near.k,f:L('f'),n:L('n')}}
+let t=0;
+function strand(r,off,k,alpha,width,dash){
+ g.strokeStyle=rgba(k,alpha);g.lineWidth=width;g.setLineDash(dash||[]);g.lineCap='round';g.beginPath();
+ for(let i=0;i<=40;i++){const s=i/40,p=bez(r,s),n=nrm(r,s),e=Math.sin(Math.PI*s);g.lineTo(p[0]+n[0]*off*e,p[1]+n[1]*off*e)}
+ g.stroke();g.setLineDash([]);
+}
+function frame(){
+ t++;g.fillStyle='#050508';g.fillRect(0,0,W,H);
+ // scanline shading: horizontal lines, wavy displacement, posterized bands (refs)
+ const tt=t/160;
+ for(let y=2;y<H;y+=5){for(let x=0;x<W;x+=4){const c=field(x,y);
+   const dy=Math.sin(x*.035+t*.03+c.n*9)*(1+7*c.f);
+   const d=Math.hypot(x-YOU[0],y-YOU[1])/W;
+   const v=(Math.sin(TAU*(tt+c.n*1.6+d*1.2))+1)/2, band=Math.floor(v*4)/3;
+   g.fillStyle=c.k&&c.f>.02?rgba(c.k,.04+band*(.06+.6*c.f)):`rgba(216,214,208,${.03+band*.09})`;
+   g.fillRect(x,y+dy,4,1.4)}}
+ // relations
+ for(const r of REL){
+  const A=(.25+.75*r.rec)*r.w, dash=r.status==='imp'?[1,7]:null;
+  const n=r.strands.length;
+  r.strands.forEach(([k,share],i)=>{const off=(i-(n-1)/2)*5;strand(r,off,k,A*.18,6+share*6,dash);strand(r,off,k,A,1.2+share*2.4,dash)});
+  // prism overlay on the hypothesis part
+  // inferred reading: two pale dashed lines drifting in and out of phase; amplitude = uncertainty
+  if(r.hyp){const amp={low:9,moderate:5,high:2}[r.conf||'moderate'];
+   for(const sgn of [-1,1]){g.strokeStyle='rgba(224,222,255,.85)';g.lineWidth=1.3;g.setLineDash([4,4]);g.lineDashOffset=-t*.4*sgn;g.beginPath();
+    for(let i=0;i<=30;i++){const s=.25+i*.5/30,p=bez(r,s),n=nrm(r,s),e=Math.sin(Math.PI*(s-.25)/.5);
+     const o=sgn*(8+amp*Math.sin(t*.035+s*14+(sgn>0?0:1.7)))*e;g.lineTo(p[0]+n[0]*o,p[1]+n[1]*o)}
+    g.stroke()}g.setLineDash([]);g.lineDashOffset=0}
+ }
+ // "?" unknown on Claire relation
+ const q=bez(REL[3],.45);g.fillStyle='#050508';g.fillRect(q[0]-10,q[1]-10,20,20);g.strokeStyle='rgba(236,239,245,.7)';g.setLineDash([2,3]);g.strokeRect(q[0]-10,q[1]-10,20,20);g.setLineDash([]);
+ g.fillStyle='#ECEFF5';g.font='12px Space Mono';g.textAlign='center';g.fillText('?',q[0],q[1]+4);g.textAlign='left';
+ // connector hypothesis card -> link
+ const m=bez(REL[0],.5);g.strokeStyle='rgba(255,255,255,.35)';g.setLineDash([3,4]);g.lineWidth=1;g.beginPath();g.moveTo(m[0],m[1]);g.lineTo(140,440);g.stroke();g.setLineDash([]);
+ // success ribbon: 9 parallel hairlines, one per hue, across the link's width (transversal)
+ {const r=REL[2];RAINBOW.forEach((c,k)=>{const off=(k-4)*1.6+10;g.strokeStyle=c;g.lineWidth=1.2;g.beginPath();
+  for(let i=0;i<=50;i++){const s0=.08+i/50*.84,p=bez(r,s0),n=nrm(r,s0),e=Math.sin(Math.PI*s0)**.4;g.lineTo(p[0]+n[0]*off*e,p[1]+n[1]*off*e)}g.stroke()});
+  const m=bez(r,.5),n=nrm(r,.5);g.fillStyle='#fff';g.font='10px Space Mono';g.fillText('✓ 20.09',m[0]+n[0]*26+4,m[1]+n[1]*26)}
+ requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>

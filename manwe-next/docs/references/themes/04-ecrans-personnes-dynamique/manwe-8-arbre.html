@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MANWË — Arbre de l'équilibre interne</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{--bg:#040404;--tx:#ECEFF5;--tx2:#B4BACA;--tx3:#8A90A3;--bone:#D8D6D0;--indigo:#3E40C1;--inf:#D6D4F5;
+--app:#FEB800;--inh:#2F6BFF;--soc:#E4559B;--val:#009B9A;--line:#1C1F29}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg)}
+body{width:1440px;height:900px;overflow:hidden;position:relative;font-family:'IBM Plex Sans',sans-serif;color:var(--tx)}
+.side{position:absolute;left:0;top:0;width:220px;height:900px;padding:22px 16px;background:linear-gradient(180deg,#0B0C12,#040404);border-right:1px solid #262A36;display:flex;flex-direction:column;gap:4px}
+.logo{padding:0 10px 26px;font-family:'Chakra Petch';font-weight:600;font-size:26px;letter-spacing:.2em;color:#fff;text-shadow:-2px 0 var(--soc),2px 0 #0092F9}
+.side a{display:flex;justify-content:space-between;align-items:center;height:40px;padding:0 10px;text-decoration:none;font-family:'Chakra Petch';font-size:15px;color:#A3A9BC;border-radius:3px}
+.side a.on{color:#fff;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.side a i{font-style:normal;font-family:'Space Mono';font-size:10px;color:var(--tx3)}
+.serial{margin-top:auto;font-family:'Space Mono';font-size:10px;line-height:1.7;color:#009B9A}
+.k{font-family:'Space Mono';font-size:10.5px;letter-spacing:.12em;color:var(--bone)}
+.top{position:absolute;left:220px;top:0;width:860px;height:56px;padding:0 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);z-index:4;background:#040404}
+.top h1{margin:0;font-family:'Chakra Petch';font-weight:500;font-size:20px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.top span{font-family:'Space Mono';font-size:11px;color:var(--tx3);white-space:nowrap}
+.seg{margin-left:auto;display:flex;gap:4px}
+.seg b{font-weight:400;font-family:'Chakra Petch';font-size:13px;padding:6px 10px;border:1px solid transparent;color:var(--tx2);border-radius:3px}
+.seg b.on{border-color:#333848;color:#fff;background:#12141C}
+#gl,#ov{position:absolute;left:220px;top:56px;width:860px;height:844px}
+#ov{z-index:2}
+.lb{position:absolute;z-index:3;width:168px;pointer-events:none}
+.lb.l{text-align:right}
+.lb .ty{font-family:'Space Mono';font-size:9.5px;letter-spacing:.08em;color:var(--tx3)}
+.lb .nm{font-family:'Chakra Petch';font-size:14.5px;line-height:1.2;color:#fff}
+.lb .ds{font-size:11.5px;line-height:1.35;color:var(--tx2);margin-top:2px}
+.lb.unk .nm{color:var(--tx3)}
+.pil{position:absolute;top:66px;z-index:3;font-family:'Space Mono';font-size:10px;letter-spacing:.12em}
+.lvl{position:absolute;left:236px;z-index:3;font-family:'Space Mono';font-size:9.5px;letter-spacing:.1em;color:#4E5466;writing-mode:vertical-rl;transform:rotate(180deg)}
+.out{position:absolute;left:720px;top:790px;z-index:3;font-size:12px;line-height:1.7;color:var(--tx2)}
+.out b{font-weight:400;color:#fff}
+.pan{position:absolute;left:1080px;top:0;width:360px;height:900px;padding:20px 24px;border-left:1px solid #262A36;background:linear-gradient(180deg,#0B0C12,#060608);display:flex;flex-direction:column;gap:14px;z-index:4}
+.pan h2{margin:4px 0 4px;font-family:'Chakra Petch';font-weight:500;font-size:23px;line-height:1.15}
+.pan p{margin:0;font-size:13px;line-height:1.55;color:var(--tx2)}
+.pan p b{font-weight:500;color:var(--tx)}
+.bal{display:flex;flex-direction:column;gap:6px}
+.bal .r{display:grid;grid-template-columns:86px 1fr 34px;gap:8px;align-items:center;font-size:12px;color:var(--tx2)}
+.bal .tr{height:6px;background:#161822;border-radius:3px;overflow:hidden}
+.bal .tr span{display:block;height:100%;border-radius:3px;transition:width .6s}
+.bal .v{font-family:'Space Mono';font-size:11px;color:#fff;text-align:right}
+.sim{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--indigo);border-radius:4px}
+.sim button{height:42px;border-radius:4px;border:1px solid var(--app);background:transparent;color:#FFE19A;font-family:'Chakra Petch';font-size:14px;cursor:pointer}
+.sim button.on{background:var(--app);color:#000}
+.key{display:grid;grid-template-columns:14px 1fr;gap:5px 9px;align-items:start;font-size:11.5px;line-height:1.4;color:var(--tx2)}
+.key i{width:14px;height:4px;border-radius:2px;margin-top:6px}
+.key em{font-style:normal;color:var(--tx3)}
+.warn{font-size:11px;line-height:1.5;color:var(--tx3);border-top:1px solid var(--line);padding-top:10px}
+.scan{position:absolute;inset:0;pointer-events:none;z-index:8;background:repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 1px,transparent 1px 4px)}
+</style>
+</head>
+<body>
+<div class="scan"></div>
+<aside class="side">
+<div class="logo">MANWË</div>
+<a href="#"><span>Aujourd'hui</span><i>02</i></a>
+<a href="#"><span>Monde</span><i>04</i></a>
+<a href="#" class="on"><span>Personnes</span><i>04</i></a>
+<a href="#"><span>Intentions</span><i>01</i></a>
+<a href="#"><span>Mémoire</span><i>20</i></a>
+<div class="serial">SLUS_973.25 · rév. 041<br>mode : sol-assisté<br>lecture D3 · prompt v4</div>
+</aside>
+<header class="top"><h1>Marc Dupont</h1><span>équilibre interne · lecture #1</span>
+<div class="seg"><b>Signature</b><b>Épisodes</b><b class="on">Dynamique</b></div></header>
+
+<canvas id="gl" width="860" height="844"></canvas>
+<canvas id="ov" width="860" height="844"></canvas>
+<div class="pil" style="left:410px;color:#6F8BFF">RETENUE</div>
+<div class="pil" style="left:615px;color:#B9B7B0">INTÉGRATION</div>
+<div class="pil" style="left:835px;color:#E0B53A">ÉLAN</div>
+<div class="lvl" style="top:120px">SENS · IDENTITÉ</div>
+<div class="lvl" style="top:330px">LIEN SOCIAL</div>
+<div class="lvl" style="top:520px">INSTINCT</div>
+<div class="lvl" style="top:700px">EXPRESSION</div>
+<div id="labels"></div>
+<div class="out">● invite à jouer <b>×2</b><br>● déjeuner de groupe <b>×1</b><br><span style="color:var(--tx3)">? proposition directe : jamais</span></div>
+
+<aside class="pan">
+<div><div class="k" style="color:var(--inf)">◇ LECTURE D3 · CONFIANCE FAIBLE</div>
+<h2>Deux poussées, un compromis</h2>
+<p>Le besoin d'<b>affiliation</b>, nourri par la curiosité et l'envie d'être un ami proche, rencontre la <b>crainte du rejet</b>, nourrie par la vigilance sociale et une règle intérieure : « ne pas s'imposer ». Le <b>Soi régulateur</b> tranche par un compromis : approcher, mais sous couvert d'un cadre partagé. On observe ce compromis, pas les forces elles-mêmes.</p></div>
+
+<div class="bal"><div class="k">ÉQUILIBRE AU CENTRE</div>
+<div class="r"><span>Élan</span><div class="tr"><span id="ba" style="background:var(--app)"></span></div><span class="v" id="va"></span></div>
+<div class="r"><span>Retenue</span><div class="tr"><span id="bi" style="background:var(--inh)"></span></div><span class="v" id="vi"></span></div>
+<div class="r"><span>Tension</span><div class="tr"><span id="bt" style="background:var(--soc)"></span></div><span class="v" id="vt"></span></div>
+</div>
+
+<div class="sim"><div class="k">SIMULER</div>
+<button id="simb">Vous l'invitez, sans activité</button>
+<p id="simp">Votre geste serait un signal d'inclusion. On pourra ensuite vérifier si la prédiction se confirme.</p></div>
+
+<div class="key">
+<i style="background:var(--app)"></i><span>Élan : systèmes d'approche, recherche, jeu <em>(BAS, Gray ; SEEKING, PLAY, Panksepp)</em></span>
+<i style="background:var(--inh)"></i><span>Retenue : vigilance, inhibition, peur de la séparation <em>(BIS ; PANIC/GRIEF)</em></span>
+<i style="background:var(--soc)"></i><span>Lien : attachement et affiliation <em>(Bowlby ; CARE)</em></span>
+<i style="background:var(--bone)"></i><span>Résultante : ce que le Soi régulateur laisse passer <em>(modèle prédictif)</em></span>
+<i style="background:var(--val)"></i><span>Sens : valeurs, idéal, normes intériorisées</span>
+</div>
+<div class="warn">Flux continu : observé. Flux pulsé : inféré. Flux gris : inconnu. Le sociomètre (Leary), au centre du haut, reste caché tant qu'aucun épisode ne le renseigne. Ceci est une lecture de MANWË, pas un diagnostic.</div>
+</aside>
+
+<script>
+const W=860,H=844;
+// ---------- nodes : tree of three pillars ----------
+const X={l:250,c:430,r:610};
+const N={
+ keter:{x:X.c,y:96,r:22,st:'unk',t:'IDENTITÉ',nm:'Valeurs · sens',ds:'ce qui compte pour lui : ?',side:'r'},
+ binah:{x:X.l,y:180,r:22,st:'inf',t:'NORMES',nm:'« Ne pas s\'imposer »',ds:'règle intériorisée',side:'l'},
+ chok:{x:X.r,y:180,r:22,st:'inf',t:'IDÉAL',nm:'Être un ami proche',ds:'image qu\'il vise',side:'r'},
+ daat:{x:X.c,y:250,r:16,st:'unk',t:'SOCIOMÈTRE ?',nm:'Estime · jauge d\'inclusion',ds:'caché, non renseigné',side:'r'},
+ gev:{x:X.l,y:350,r:26,st:'inf',t:'LIEN · RETENUE',nm:'Crainte du rejet',ds:'détresse de séparation anticipée',side:'l'},
+ ches:{x:X.r,y:350,r:26,st:'inf',t:'LIEN · ÉLAN',nm:'Affiliation',ds:'besoin d\'appartenance, jeu',side:'r'},
+ tif:{x:X.c,y:450,r:34,st:'inf',t:'SOI RÉGULATEUR',nm:'Compromis',ds:'approcher, mais via un cadre',side:'r',sel:1},
+ hod:{x:X.l,y:560,r:24,st:'inf',t:'INSTINCT · RETENUE',nm:'Vigilance sociale',ds:'menace, évaluation par autrui',side:'l'},
+ netz:{x:X.r,y:560,r:24,st:'inf',t:'INSTINCT · ÉLAN',nm:'Recherche · curiosité',ds:'appétit de nouveauté, plaisir',side:'r'},
+ yes:{x:X.c,y:650,r:22,st:'inf',t:'CORPS',nm:'Activation',ds:'énergie disponible',side:'r'},
+ mal:{x:X.c,y:760,r:28,st:'obs',t:'EXPRESSION ●',nm:'Comportements',ds:'',side:'l'},
+};
+// ---------- channels : from, to, color(0 app,1 inh,2 soc,3 res,4 val), intensity now / simulated, status ----------
+const E=[
+ ['yes','netz',0,.65,.75,'inf'],['yes','hod',1,.45,.3,'inf'],
+ ['netz','ches',0,.8,.9,'inf'],['hod','gev',1,.55,.3,'inf'],
+ ['chok','ches',2,.5,.65,'inf'],['binah','gev',4,.6,.3,'inf'],
+ ['ches','tif',2,.9,.95,'inf'],['gev','tif',1,.85,.3,'inf'],
+ ['keter','binah',4,.25,.25,'unk'],['keter','chok',4,.25,.25,'unk'],['keter','daat',4,.2,.2,'unk'],['daat','tif',4,.12,.55,'unk'],
+ ['tif','yes',3,.7,.9,'inf'],['yes','mal',3,.75,.95,'obs'],
+ ['netz','mal',0,.6,.45,'obs'],['hod','mal',1,.35,.15,'obs'],
+ ['gev','MID',1,.6,.25,'inf'],['ches','MID',2,.7,.8,'inf'],
+];
+const MID={x:X.c,y:350};
+const pos=k=>k==='MID'?MID:N[k];
+const cur=E.map(e=>e[3]);let sim=false,t0=performance.now();
+
+// ---------- WebGL flow (cauldron-style domain warp advected along channels) ----------
+const gl=document.getElementById('gl').getContext('webgl',{antialias:false});
+const VS='attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+const FS=`precision highp float;
+uniform vec2 R;uniform float T;uniform vec4 S[18];uniform vec4 P[18];uniform vec4 K[2];
+vec3 pal(float i){if(i<.5)return vec3(1.,.66,.04);if(i<1.5)return vec3(.16,.38,1.);if(i<2.5)return vec3(.9,.28,.58);if(i<3.5)return vec3(.86,.85,.8);return vec3(0.,.62,.6);}
+float flow(vec2 q,float t){vec3 p=vec3(q,t*.25);float d=2.;for(int j=0;j<5;j++){d/=.8;p+=.6*cos(p.yzx*d-vec3(t,t*.6,t*.3))/d;}return .5+.5*sin(p.x*1.7+p.y*1.1+p.z);}
+vec3 th(vec3 x){vec3 e=exp(2.*x);return (e-1.)/(e+1.);}
+void main(){vec2 p=gl_FragCoord.xy;vec3 col=vec3(0.);
+ for(int i=0;i<18;i++){vec4 s=S[i];vec4 pr=P[i];vec2 a=s.xy,b=s.zw;vec2 ab=b-a;float L=length(ab);vec2 dir=ab/L;
+  float h=clamp(dot(p-a,dir),0.,L);vec2 q=p-(a+dir*h);float dist=length(q);
+  float w=5.+9.*pr.x;float m=exp(-dist*dist/(w*w));if(m<.003)continue;
+  float perp=dot(q,vec2(-dir.y,dir.x));float I=pr.x;
+  float f=flow(vec2(h*.03-T*(.8+2.2*I),perp*.13),T*.5);
+  float body=m*(.12+1.6*f*f)*I;
+  float edge=smoothstep(0.,18.,h)*smoothstep(0.,18.,L-h);body*=.35+.65*edge;
+  vec3 c=pal(pr.y);
+  if(pr.z>.5&&pr.z<1.5)body*=.5+.5*smoothstep(-.3,.7,sin(h*.07-T*2.6*(.4+I)));
+  if(pr.z>1.5){c=vec3(.5,.52,.6);body*=.45;}
+  col+=c*body;}
+ for(int k=0;k<2;k++){vec2 d=p-K[k].xy;float r=length(d);float a=atan(d.y,d.x);
+  float sw=flow(vec2(a*1.6+r*.05-T*.7,r*.06),T*.8);
+  float g=exp(-r*r/(K[k].w*K[k].w))*K[k].z;
+  col+=mix(pal(1.),pal(2.),sw)*g*(.4+1.4*sw);}
+ col=th(col*1.15);
+ col*=.9+.1*step(1.,mod(p.y,3.));
+ gl_FragColor=vec4(col,1.);}`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(o));return o}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const la=gl.getAttribLocation(pr,'a');gl.enableVertexAttribArray(la);gl.vertexAttribPointer(la,2,gl.FLOAT,false,0,0);
+const U=n=>gl.getUniformLocation(pr,n);
+gl.uniform2f(U('R'),W,H);
+const segs=new Float32Array(18*4);E.forEach((e,i)=>{const a=pos(e[0]),b=pos(e[1]);segs.set([a.x,H-a.y,b.x,H-b.y],i*4)});
+gl.uniform4fv(U('S'),segs);
+
+// ---------- overlay: nodes ----------
+const ov=document.getElementById('ov').getContext('2d');
+const lab=document.getElementById('labels');
+Object.values(N).forEach(n=>{const d=document.createElement('div');d.className='lb '+(n.side==='l'?'l ':'')+(n.st==='unk'?'unk':'');
+ d.style.top=(56+n.y-18)+'px';d.style.left=(n.side==='l'?220+n.x-n.r-178:220+n.x+n.r+12)+'px';
+ d.innerHTML=`<div class="ty">${n.t}</div><div class="nm">${n.nm}</div>${n.ds?`<div class="ds">${n.ds}</div>`:''}`;lab.appendChild(d)});
+function nodes(t){ov.clearRect(0,0,W,H);
+ // faint tree scaffold
+ ov.strokeStyle='rgba(216,214,208,.05)';ov.lineWidth=1;[X.l,X.c,X.r].forEach(x=>{ov.beginPath();ov.moveTo(x,70);ov.lineTo(x,800);ov.stroke()});
+ Object.values(N).forEach(n=>{ov.fillStyle='rgba(4,4,4,.82)';ov.beginPath();ov.arc(n.x,n.y,n.r,0,Math.PI*2);ov.fill();
+  ov.lineWidth=n.sel?2:1.3;ov.setLineDash(n.st==='obs'?[]:n.st==='inf'?[4,3]:[2,4]);
+  ov.strokeStyle=n.st==='unk'?'rgba(138,144,163,.8)':n.st==='inf'?'rgba(214,212,245,.9)':'rgba(236,239,245,1)';
+  ov.beginPath();ov.arc(n.x,n.y,n.r,0,Math.PI*2);ov.stroke();ov.setLineDash([]);
+  if(n.sel){ov.strokeStyle='rgba(254,184,0,.7)';ov.lineWidth=1;ov.beginPath();ov.arc(n.x,n.y,n.r+7+Math.sin(t*2)*1.5,0,Math.PI*2);ov.stroke()}
+  if(n.st==='unk'){ov.fillStyle='rgba(138,144,163,.95)';ov.font='13px Space Mono';ov.textAlign='center';ov.fillText('?',n.x,n.y+5)}});
+ // tension knot marker between the two social poles
+ ov.strokeStyle='rgba(228,85,155,.6)';ov.setLineDash([2,3]);ov.beginPath();ov.arc(MID.x,MID.y,12,0,Math.PI*2);ov.stroke();ov.setLineDash([]);
+ ov.fillStyle='rgba(228,85,155,.9)';ov.font='9.5px Space Mono';ov.textAlign='center';ov.fillText('TENSION',MID.x,MID.y-18);}
+
+// ---------- loop ----------
+function frame(){const T=(performance.now()-t0)/1000;
+ E.forEach((e,i)=>{cur[i]+=((sim?e[4]:e[3])-cur[i])*.03});
+ const P=new Float32Array(18*4);E.forEach((e,i)=>P.set([cur[i],e[2],{obs:0,inf:1,unk:2}[e[5]],0],i*4));gl.uniform4fv(U('P'),P);
+ const app=cur[6],inh=cur[7],ten=Math.min(app,inh);
+ gl.uniform4fv(U('K'),new Float32Array([N.tif.x,H-N.tif.y,ten*1.1,44, MID.x,H-MID.y,Math.min(cur[16],cur[17])*.9,26]));
+ gl.uniform1f(U('T'),T);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+ nodes(T);
+ [['a',app],['i',inh],['t',ten]].forEach(([k,v])=>{document.getElementById('b'+k).style.width=(v*100)+'%';document.getElementById('v'+k).textContent=v.toFixed(2)});
+ requestAnimationFrame(frame)}
+document.getElementById('simb').onclick=e=>{sim=!sim;e.target.classList.toggle('on',sim);
+ document.getElementById('simp').textContent=sim?"Prédiction : votre invitation renseigne le sociomètre (« je suis voulu »). La crainte du rejet retombe, la règle « ne pas s'imposer » n'a plus d'objet et la tension au centre se relâche. L'élan passe davantage en direct : Marc accepterait, avec une retenue passagère.":"Votre geste serait un signal d'inclusion. On pourra ensuite vérifier si la prédiction se confirme."};
+if(location.search.includes('sim')){E.forEach((e,i)=>cur[i]=e[4]);document.getElementById('simb').click()}
+frame();
+</script>
+</body>
+</html>

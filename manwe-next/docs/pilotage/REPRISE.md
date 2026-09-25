@@ -35,6 +35,8 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **Prochaine étape** : (les relations et leurs indicateurs s'affichent dans l'inspecteur depuis le 25 septembre) R4.0e est validé ; le registre ontologique (R4.0d) est amorcé : `packages/cognition/src/ontology.ts` (types, liens, actions, vocabulaires) et `tests/ontology.test.mjs`, qui échoue si le contrat, le prompt ou le stockage divergent. Reste à en faire dériver le prompt et le paquet, puis le graphe et le graphe R4. La sur-lecture de l'utilisateur est corrigée par le prompt v6 ([RAPPORT-007](./rapports/RAPPORT-007.md)). La pull request [ArchiShiryo/Manwe#1](https://github.com/ArchiShiryo/Manwe/pull/1) attend d'être fusionnée dans `main`.
 
+**Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
+
 **Méthode à conserver pour chaque lot** :
 
 1. écrire et sceller les attentes d'un lot de contrôle **avant** de coder ;
