@@ -323,3 +323,113 @@ test("une analyse rejetée reste en attente de sa seconde tentative ; l’artefa
     rmSync(qaDir, { recursive: true, force: true });
   }
 });
+
+test("le mode auto interroge le fournisseur, enregistre la réponse brute et ses métadonnées, puis avance", async () => {
+  const { createServer } = await import("node:http");
+  const { spawn } = await import("node:child_process");
+  const directory = mkdtempSync(join(tmpdir(), "manwe-auto-"));
+  const runDir = join(directory, `run-${randomUUID()}`);
+  const qaDir = join(process.cwd(), ".qa", basename(runDir));
+  const fixturePath = join(directory, "fixture.json");
+  const date = "2026-05-12T12:00:00-03:00";
+  writeFileSync(
+    fixturePath,
+    JSON.stringify({
+      schemaVersion: "1.0",
+      scenarios: [
+        {
+          id: "T3",
+          steps: [
+            {
+              id: "T3-1",
+              type: "capture",
+              command: {
+                idempotencyKey: "scenario-test:T3-1",
+                title: "Étape T3-1",
+                text: "Karim a mis deux jours à répondre.",
+                recordedAt: date,
+                narratedAt: date,
+                occurredStart: date,
+                occurredEnd: null,
+                temporalPrecision: "day",
+                context: "Test",
+              },
+            },
+            { id: "T3-A1", type: "analyze", task: "extract", focus: null },
+          ],
+        },
+      ],
+    }),
+    "utf8",
+  );
+  const requests = [];
+  const server = createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      const payload = JSON.parse(body);
+      requests.push(payload);
+      const packet = JSON.parse(
+        payload.messages[0].content.slice(
+          payload.messages[0].content.lastIndexOf('\n{\n  "schemaVersion"') + 1,
+        ),
+      );
+      response.setHeader("content-type", "application/json");
+      response.end(
+        JSON.stringify({
+          model: "deepseek-flash",
+          choices: [
+            {
+              finish_reason: "stop",
+              message: {
+                content: answer(packet, []),
+                reasoning_content: "Raisonnement simulé.",
+              },
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5 },
+        }),
+      );
+    });
+  });
+  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  try {
+    execute("prepare", fixturePath, runDir);
+    const child = spawn(
+      process.execPath,
+      [script, "auto", runDir, "--concurrency", "2"],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          DEEPSEEK_BASE_URL: `http://127.0.0.1:${server.address().port}`,
+          HTTPS_PROXY: "",
+          https_proxy: "",
+        },
+      },
+    );
+    let output = "";
+    child.stdout.on("data", (chunk) => (output += chunk));
+    child.stderr.on("data", (chunk) => (output += chunk));
+    const code = await new Promise((done) => child.on("close", done));
+    assert.equal(code, 0, output);
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].model, "deepseek-flash");
+    assert.equal(requests[0].response_format.type, "json_object");
+    const stepDir = join(runDir, "T3", "T3-A1");
+    assert.equal(read(join(stepDir, "receipt.json")).status, "no_change");
+    assert.equal(
+      read(join(stepDir, "call.json")).servedModel,
+      "deepseek-flash",
+    );
+    assert.equal(
+      readFileSync(join(stepDir, "reasoning.txt"), "utf8"),
+      "Raisonnement simulé.",
+    );
+    assert.equal(read(join(runDir, "T3", "state.json")).pending, null);
+  } finally {
+    server.close();
+    rmSync(directory, { recursive: true, force: true });
+    rmSync(qaDir, { recursive: true, force: true });
+  }
+});

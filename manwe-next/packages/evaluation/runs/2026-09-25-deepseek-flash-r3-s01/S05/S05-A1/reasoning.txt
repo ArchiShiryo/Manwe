@@ -1,0 +1,712 @@
+We need to produce a single JSON CognitiveProposal. Let's analyze the context.
+
+Three events (unclassified_note) about Théo and the user:
+
+1. 2026-04-18 (approx): "Théo m'a demandé trois fois cette semaine avec qui j'étais sorti samedi." — Théo asked three times this week who I went out with Saturday.
+2. 2026-03-14: "Quand j'ai dit à Théo que je partais en vacances avec Rémi, il a répondu « ah, tu as des nouveaux amis maintenant »." — When I told Théo I was going on vacation with Rémi, he replied "ah, you have new friends now".
+3. 2026-02-07: "Théo a fait la tête toute la soirée parce que j'étais arrivé avec des collègues à son anniversaire." — Théo sulked all evening because I arrived with colleagues at his birthday.
+
+We have focus events: dd4b7fe9 (S05-3), 0432ecc8 (S05-2), 9f9aa4ec (S05-1).
+
+No claims, hypotheses, annotations, questions in packet. So we propose everything.
+
+We need to produce claims, events (the events already exist in packet as entities? The rules: "Un fait accompli donne un propose_event ET un propose_claim qui porte sa provenance." But the events already exist as entities in the packet. Hmm. The operations allowed include propose_event. Since the packet already contains these events as entities (focus events), maybe we don't need to propose events for them again? The instruction says "Un fait accompli donne un propose_event ET un propose_claim". But if the event already exists in the packet... Typically in these tasks, the focus entities are events already recorded, and we propose claims and hypotheses. But the rule 4 says a fait accompli gives propose_event and propose_claim. However, if the event is already in the packet as an entity, re-proposing might create duplicates. Usually in this system, the analyst proposes new events only if not present. Given the focus lists events, and they exist in entities, I think we should not duplicate propose_event; instead we should propose claims attached to these existing events. But claims need citations, and evidence references can be claims. Actually, claims proposed can cite sources. The events already exist; evidence can reference claims by id if in packet (none) or by proposalKey for claims proposed here. So we can propose claims and reference them as evidence.
+
+Actually, re-reading rule 4: "Un fait accompli donne un propose_event ET un propose_claim qui porte sa provenance." That's a general rule. But the packet already has events. The focus is on events. Maybe the task is to interpret those events. We might still propose claims only, since events exist. But to be safe, maybe propose events? That would duplicate. I think the intent is: for each focus event, propose claims about it (explicit statements, observations, etc.). The events themselves are already recorded; we don't need to re-propose them. I'll not propose duplicate events.
+
+Actually, looking at the allowedOperations includes propose_event. But "operations doit être non vide". We can propose claims and hypotheses.
+
+Let's define what's in the text:
+
+Event 1 (2026-04-18): "Théo m'a demandé trois fois cette semaine avec qui j'étais sorti samedi."
+- The user is the "m'" (me). Théo asked three times. This is a reported observation? Actually the user says it: "Théo m'a demandé..." — the user reports Théo's behavior. Category: sourced_observation? The user saw/heard Théo asking. Or explicit_statement? It's the user stating a fact about Théo's behavior. According to categories:
+  - explicit_statement = a person said or wrote it (including user talking about himself)
+  - sourced_observation = user saw or heard himself
+  - reported_observation = a third party reports a behavior
+
+Here, the user is reporting Théo's behavior that the user directly experienced (Théo asked him). So it's a sourced_observation (the user heard Théo ask). But it's also the user's statement. The categories are about provenance. Since the user directly observed Théo asking, it's sourced_observation. However, "explicit_statement" is for when a person said/wrote it. The user wrote this note. Hmm. The text is the user's own note. The fact that Théo asked is something the user observed. I'd say category "sourced_observation" because it's the user's direct observation of Théo's behavior. But the user is also stating it. Let me check the examples: In the prompt, "explicit_statement = une personne l'a dit ou écrit (y compris l'utilisateur parlant de lui-même)". So if the user says "Théo m'a demandé...", that's the user's explicit statement about Théo's action. But is it an observation? The user observed Théo asking. Both could apply. Typically, for reported behavior of others, it's "sourced_observation" if the user witnessed it, or "reported_observation" if someone else told the user. Here the user directly witnessed it. I'll use "sourced_observation" for the fact that Théo asked. Alternatively, could be "explicit_statement" since the user is stating it. The distinction: explicit_statement is about what a person said/wrote (their own words/actions?). Actually category is provenance of the information. If the user says "Théo m'a demandé...", the information is the user's statement. But the content is an observation of Théo's action. The rules: "sourced_observation = l'utilisateur l'a vu ou entendu lui-même". Yes, the user heard Théo ask. So sourced_observation.
+
+Event 2: "Quand j'ai dit à Théo que je partais en vacances avec Rémi, il a répondu « ah, tu as des nouveaux amis maintenant »."
+- The user told Théo about vacation with Rémi. Théo replied with that quote. This is an explicit statement by Théo (he said it). Category: explicit_statement (Théo said it). The user heard it. Could also be sourced_observation. But since it's a quote of Théo's speech, explicit_statement fits better. Actually, explicit_statement is "une personne l'a dit ou écrit". Théo said it. So the claim that Théo said this is explicit_statement. The underlying fact that Théo said it is an observation by the user, but the content is Théo's statement. I'll use explicit_statement for Théo's utterance.
+
+Event 3: "Théo a fait la tête toute la soirée parce que j'étais arrivé avec des collègues à son anniversaire."
+- Théo sulked. The user observed. Also the user interprets cause ("parce que"). The sulking is an observation; the cause is an inference. Category for sulking: sourced_observation. The cause: inference (user's? or stated?). The user states "parce que" as if it's a fact, but it's an interpretation. We can propose a claim for the sulking as sourced_observation, and an inference claim for the cause.
+
+Also, there's mention of Rémi (a third person) and colleagues. Rémi is an entity? Not in entities. So we can mention by name.
+
+We need to create claims with citations. Each claim must have citations referencing sources. Sources are the three text blobs with spanStart/spanEnd covering entire text. So we can cite the entire source.
+
+Let's plan operations.
+
+We have three focus events. We need to propose claims for:
+
+1. Fact: Théo asked three times this week who the user went out with Saturday. (sourced_observation, actual)
+2. Fact: The user told Théo he was going on vacation with Rémi. (explicit_statement by user? The user said it; but it's the user's own action. Category: explicit_statement (user talking about himself). Or sourced_observation? "j'ai dit à Théo" — the user's own statement. explicit_statement fits.)
+3. Fact: Théo replied "ah, tu as des nouveaux amis maintenant". (explicit_statement by Théo, actual)
+4. Fact: Théo sulked all evening at his birthday because the user arrived with colleagues (sulking is observation; cause is inference). Split into two claims: one sourced_observation for sulking, one inference for the cause. Or one claim with category sourced_observation and modality actual for the sulking, and a separate inference claim for the causal interpretation.
+
+Also, maybe claim about the user's impression? Not explicit.
+
+We need hypotheses. Depth levels.
+
+Let's think about the pattern: Théo shows jealousy / possessiveness / fear of being replaced. Three episodes across Feb, March, April 2026. That's over ~2 months (Feb 7 to Apr 18). That's >30 days. So we can have high confidence if 3 independent episodes.
+
+Possible hypotheses:
+
+D2: Théo manifests jealousy/possessiveness toward the user's other relationships (initiative: questioning, sulking, sarcastic remark). This is observable relational pattern.
+
+D3: Théo has an anxious attachment style / fear of abandonment, needing exclusivity. Motive: insecurity, fear of losing the user's attention.
+
+D4: Théo has traits of anxious attachment / borderline? Or narcissistic? Let's think carefully. Framework: "attachement" or "psychodynamique". Construct: "anxiété d'abandon", "attachement anxieux". D4 requires 3 episodes over 30 days. We have 3 episodes: Feb 7, Mar 14, Apr 18. That's ~70 days. So D4 possible if we have 3 net anchored episodes. But we need to be careful: D4 is personality or psychodynamic formulation. A single pattern of jealousy across three events might support anxious attachment style, but is that D4? D4 is deeper, more stable traits. Could be "attachement anxieux" as a construct. But is that a personality trait? It's a relational pattern. Might be D3. D4 would be something like "trouble de la personnalité" or "traits narcissiques". Let's see: The behavior: asking repeatedly who the user went out with, sarcastic comment about new friends, sulking when the user brought colleagues to his birthday. This could indicate jealousy/possessiveness, fear of abandonment. Could be D3 (motives, needs, attachment). D4 could be "attachement insécure de type anxieux" as a psychodynamic formulation. Framework "attachement", construct "attachement anxieux". That seems reasonable. But we must provide an alternative hypothesis incompatible. Alternative: Théo is just going through a transient stressful period, or the user is misinterpreting normal friendly curiosity. Or cultural norm: close friendship involves asking about weekend plans. Or the relationship dynamic: the user has recently been less available, so Théo is reacting to real distancing. We need alternative for D3 and D4.
+
+Also, maybe hypothesis about the user? The user might be drifting away from Théo, seeking new friends (Rémi, colleagues). That's a D2/D3 about the user's behavior. Could propose hypothesis about the user's relational pattern: the user is expanding social circle, perhaps distancing from Théo. But the data is about Théo's reactions. The user's own behavior: went out Saturday (with whom? unknown), going on vacation with Rémi, brought colleagues to Théo's birthday. These are the user's actions that trigger Théo. Could be a hypothesis that the user is less invested in the friendship with Théo. That's D2. But we need evidence: the user did these things; but no explicit statement of intent to distance. It's inference.
+
+We should propose multiple hypotheses at different depths.
+
+Let's structure:
+
+Claims:
+- c1: "Théo a demandé trois fois à l'utilisateur avec qui il était sorti le samedi précédent." category: sourced_observation, modality: actual, validFrom: 2026-04-18 (approx). citations: source 63f57aaa.
+- c2: "L'utilisateur a dit à Théo qu'il partait en vacances avec Rémi." category: explicit_statement (user's own statement), modality: actual, validFrom: 2026-03-14. citations: source 9090076a.
+- c3: "Théo a répondu à l'utilisateur : « ah, tu as des nouveaux amis maintenant »." category: explicit_statement, modality: actual, validFrom: 2026-03-14. citations: source 9090076a.
+- c4: "Théo a fait la tête toute la soirée lors de son anniversaire." category: sourced_observation, modality: actual, validFrom: 2026-02-07. citations: source 2f6923f1.
+- c5: "L'utilisateur est arrivé à l'anniversaire de Théo accompagné de collègues." category: sourced_observation (user's own action? Actually the user did it; explicit_statement? The user states it. It's an action by the user. category: explicit_statement? Or sourced_observation? The user did it, so it's a fact about himself. explicit_statement fits (user talking about himself). modality: actual. citations: source 2f6923f1.
+- c6: "Théo a fait la tête parce que l'utilisateur est arrivé avec des collègues." category: inference, modality: actual? The cause is inference. But the claim is that Théo sulked because... This is an inference about causation. So category: inference. modality: actual (it's presented as fact? Actually the text says "parce que", so it's the user's causal attribution. We can make it an inference claim). citations: source 2f6923f1.
+- c7: Maybe a claim about Théo's emotional state: "Théo semble éprouver de la jalousie ou de l'insécurité face aux autres relations de l'utilisateur." That's inference. But we can propose as claim? Or as hypothesis? Claims are supposed to be less interpretive than hypotheses. The categories include inference, so we can propose inference claims. But hypotheses are for deeper patterns. We can have both.
+
+We need to be careful: rule 4 says "Un fait accompli donne un propose_event ET un propose_claim". Since events exist, maybe we don't need propose_event. But we could propose events for the facts if not present. The packet has entities which are events. The focus is those events. I'll not duplicate events. I'll just propose claims. However, the allowedOperations includes propose_event. But operations non-empty is satisfied by claims and hypotheses.
+
+Now hypotheses.
+
+Hypothesis H1 (D2): Théo manifeste une jalousie/possessivité relationnelle envers l'utilisateur, se traduisant par des questions insistantes, des remarques sarcastiques et des bouderies lorsque l'utilisateur socialise avec d'autres personnes.
+- depth: D2
+- confidence: high? We have 3 episodes over >30 days. But we need to check independence: three separate events. All anchored by claims c1, c3, c4 (or c6). That's 3 episodes. So high confidence possible. But note: rule 11: "high" only from 3 episodes étalés sur au moins 30 jours, contre-preuves déduites. We have 3 episodes over Feb-Apr (70 days). Are there contrary evidence? Not really. But we should consider alternative explanations. For high, we need to have deduced counter-evidence. We can note that there's no contrary evidence, but the confidence can be high? The rule says "contre-preuves déduites" - meaning we should consider them. We can set confidence moderate or high. I'll set high for D2? Let's see: 3 episodes, independent, over 30 days. But are they independent? They are different instances. Yes. So high.
+
+But wait: D2 is observable relational pattern. Confidence high.
+
+Evidence: c1 (supports), c3 (supports), c4 (supports). Also c2 (user told Théo about vacation with Rémi — context). c5 (user arrived with colleagues). c6 (cause inference). For H1, supports: c1, c3, c4. Maybe c6 supports the pattern? But c6 is inference. Rule 10: "Une inférence n'est jamais un ancrage." So we cannot use inference claims as evidence anchors. So evidence must be claims that are not inference. c1 is sourced_observation, c3 explicit_statement, c4 sourced_observation. Good. c6 is inference, cannot be used as anchor. So evidence: c1, c3, c4.
+
+Hypothesis H2 (D3): Théo éprouve une angoisse d'abandon ou un besoin d'exclusivité dans sa relation avec l'utilisateur, qui le pousse à surveiller les relations extérieures de l'utilisateur et à réagir négativement quand il se sent remplacé.
+- depth: D3
+- framework: "attachement" (or "psychodynamique")
+- construct: "anxiété d'abandon" / "attachement anxieux"
+- confidence: moderate? D3 requires 2 episodes anchored for plausible. For confidence, rule 11: moderate from 2 episodes. We have 3 episodes, so moderate or high? For D3, high requires 3 episodes over 30 days. We have that. But we need to consider counter-evidence. Also D3 requires alternative hypothesis. We'll propose H2 as D3 with moderate or high. I'll set moderate to be safe, since it's more interpretive. Actually rule 11 doesn't distinguish depth for confidence, just episodes. So high is allowed if 3 episodes. But we might not have deduced counter-evidence. I'll set moderate for D3 to be cautious, but we can set high. Let's think: The behavior could also be explained by Théo being a very close friend who feels neglected. But the pattern of jealousy is fairly clear. I'll set moderate.
+
+Hypothesis H3 (D4): Théo présente des traits d'attachement insécure de type anxieux, possiblement avec des traits de personnalité dépendante ou des traits narcissiques vulnérables, qui se manifestent par une hypersensibilité au rejet et un besoin de contrôle relationnel.
+- depth: D4
+- framework: "attachement" ou "psychodynamique"
+- construct: "attachement anxieux" ou "traits de personnalité dépendante"
+- confidence: low or moderate? D4 requires 3 episodes over 30 days for plausible. For confidence, high requires 3 episodes. We have 3 episodes. But D4 is a deeper claim about personality. We should be careful. I'll set low or moderate. Rule 11: low with less than 2 independent episodes anchored; moderate from 2; high from 3. We have 3 episodes. So moderate or high. But for D4, we might need more evidence. I'll set low? Actually, we have 3 episodes, so moderate is allowed. But D4 is a strong claim. I'll set low to be safe, or moderate. The instruction says "Ne t'abstiens pas par prudence". So we should propose it. I'll set moderate with clear limits.
+
+Also we need alternative hypotheses for D3 and D4. Rule 9: "Dès D3, propose aussi une hypothèse ALTERNATIVE incompatible (état transitoire, contexte, norme de groupe, dynamique propre à la relation…) reliée par alternativeTo, dans la même réponse si elle n'existe pas déjà."
+
+So for H2 (D3), we need an alternative hypothesis, say H4: "Théo réagit à un contexte relationnel précis : l'utilisateur s'éloigne ou est moins disponible, et les réactions de Théo sont une réponse légitime à une perte de proximité, non un trait stable." depth D2 or D3? The alternative can be at same or different depth. It should be incompatible. It says "état transitoire, contexte, norme de groupe, dynamique propre à la relation". So maybe D2: "Le comportement de Théo s'explique par une dynamique relationnelle actuelle où l'utilisateur est moins disponible, et non par un trait d'attachement anxieux." We can link alternativeTo H2.
+
+For H3 (D4), alternative: H5: "Les manifestations de Théo relèvent d'un état réactionnel transitoire (stress, période difficile) plutôt que d'un trait de personnalité stable." depth D3 or D2. Link alternativeTo H3.
+
+Also we need a "passe critique" (propose_critique) for D3 and D4? Rule 13: "Dès D3, une hypothèse ne devient "plausible" qu'après une passe critique suivie d'un revise_hypothesis, qui peut figurer dans la même réponse que la critique." But our hypotheses are new (draft). The rule applies to making an existing hypothesis "plausible". For new hypotheses, we propose them as draft. We don't need to revise to plausible unless we want to. But we can propose critiques on existing hypotheses (none in packet). So we don't need propose_critique unless we want to critique our own? The allowedOperations includes propose_critique. Since there are no hypotheses in packet, we can't critique existing ones. We could critique our own proposed hypotheses? The schema for propose_critique targets a hypothesis by id, which would be a packet id. So no. So we skip critiques.
+
+But wait: Rule 13 says "Dès D3, une hypothèse ne devient "plausible" qu'après une passe critique suivie d'un revise_hypothesis". Since we propose new hypotheses, they are "draft". We don't set status; propose_hypothesis doesn't have status. The status is implicit "draft". So that's fine.
+
+Now, we also need to consider the user's own behavior. Could propose a hypothesis about the user: The user is expanding his social network and perhaps distancing from Théo, which triggers Théo's reactions. That's a D2 hypothesis about the relationship dynamics. We can propose H6: "L'utilisateur diversifie ses relations (Rémi, collègues) et s'éloigne progressivement de Théo, ce qui alimente les réactions de jalousie de Théo." But evidence: c2 (told about vacation with Rémi), c5 (arrived with colleagues), c1 (went out Saturday with unknown). But we don't know if the user is intentionally distancing. This is inference. Could be a hypothesis. Depth D2. Subjects: self and Théo. But maybe too speculative. However, the instruction says to include all readings. We can propose it as a hypothesis with moderate confidence.
+
+Also, a D1 hypothesis: "Théo se sent menacé par les nouvelles relations de l'utilisateur." That's more surface.
+
+Let's not overload. We need to ensure all operations are valid.
+
+Let's define claims first.
+
+Claims:
+c1: "Théo a demandé trois fois cette semaine à l'utilisateur avec qui il était sorti le samedi précédent."
+- category: sourced_observation (user heard Théo ask)
+- modality: actual
+- validFrom: 2026-04-18T12:00:00-03:00 (approximate)
+- citations: source 63f57aaa, span 0-72, quote exact.
+c2: "L'utilisateur a annoncé à Théo qu'il partait en vacances avec Rémi."
+- category: explicit_statement (user talking about himself)
+- modality: actual
+- validFrom: 2026-03-14T12:00:00-03:00
+- citations: source 9090076a, span 0-116. But the quote includes the whole sentence. We can cite the whole source. The quote is the entire text. Good.
+c3: "Théo a répondu : « ah, tu as des nouveaux amis maintenant »."
+- category: explicit_statement (Théo's words)
+- modality: actual
+- validFrom: 2026-03-14T12:00:00-03:00
+- citations: source 9090076a, span 0-116 (or just the relevant part? The whole text includes both the user's statement and Théo's reply. We can cite the whole source. But the quote must be exact. We can use the whole source quote. That's fine.)
+c4: "Théo a fait la tête toute la soirée à son anniversaire."
+- category: sourced_observation
+- modality: actual
+- validFrom: 2026-02-07T12:00:00-03:00
+- citations: source 2f6923f1, span 0-99.
+c5: "L'utilisateur est arrivé à l'anniversaire de Théo accompagné de collègues."
+- category: explicit_statement (user's own action)
+- modality: actual
+- validFrom: 2026-02-07T12:00:00-03:00
+- citations: source 2f6923f1.
+c6: "Théo a fait la tête parce que l'utilisateur est arrivé avec des collègues."
+- category: inference
+- modality: actual (the user presents it as fact, but it's inference)
+- validFrom: 2026-02-07
+- citations: source 2f6923f1.
+
+c7: "La remarque de Théo « ah, tu as des nouveaux amis maintenant » peut être lue comme une expression de dépit ou de jalousie."
+- category: inference
+- modality: actual
+- validFrom: 2026-03-14
+- citations: source 9090076a. This is a non-literal reading. Rule 5: keep literal fact and add inference claim. We have literal c3 and inference c7.
+
+c8: "Le fait que Théo demande trois fois avec qui l'utilisateur est sorti suggère une insistance inhabituelle, possiblement liée à de l'inquiétude ou de la curiosité intrusive."
+- category: inference
+- modality: actual
+- validFrom: 2026-04-18
+- citations: source 63f57aaa.
+
+Maybe combine c7 and c8 into one? We can have separate.
+
+Now hypotheses.
+
+H1 (D2): "Théo manifeste de la jalousie ou de la possessivité envers l'utilisateur, réagissant négativement lorsque l'utilisateur socialise avec d'autres personnes (collègues, Rémi)."
+- depth: D2
+- framework: null (D2 no framework required)
+- construct: null
+- confidence: high
+- subjects: [ { "mention": "Théo" } , { "self": true } ]? The subjects field: can include mention for Théo and self for user. But Théo is not a person entity in packet; mention is the name as it appears. So { "mention": "Théo" }. Self: { "self": true }.
+- evidence: supports: c1, c3, c4. Also c2? c2 shows user told Théo about vacation with Rémi, which is context. But for H1, the pattern is jealousy; c2 shows Théo's reaction? Actually c2 is the user's statement, not Théo's reaction. c3 is Théo's reaction. c4 is Théo's sulking. c1 is the repeated questioning. So c1, c3, c4 supports.
+- limits: "Les données ne permettent pas de déterminer si cette jalousie est un trait stable ou une réaction contextuelle, ni si elle est dirigée uniquement vers l'utilisateur."
+- revisionConditions: "Si Théo réagit avec indifférence ou soutien lors de prochaines interactions où l'utilisateur socialise avec d'autres."
+- alternativeTo: null
+- validFrom: "2026-02-07T12:00:00-03:00" (first episode)
+- validTo: null
+
+H2 (D3): "Théo éprouve une angoisse d'abandon ou un besoin d'exclusivité dans sa relation avec l'utilisateur, ce qui le conduit à surveiller les relations extérieures de l'utilisateur et à réagir par la bouderie ou le sarcasme lorsqu'il se sent remplacé."
+- depth: D3
+- framework: "attachement"
+- construct: "anxiété d'abandon"
+- confidence: moderate
+- subjects: Théo, self.
+- evidence: supports: c1, c3, c4 (same). Maybe c6? c6 is inference, cannot be anchor.
+- limits: "On ne sait pas si Théo a vécu des expériences d'abandon ou si ce pattern est récent ; les données ne montrent pas son état interne."
+- revisionConditions: "Si Théo exprime verbalement une peur de l'abandon ou si l'insécurité disparaît quand l'utilisateur le rassure."
+- alternativeTo: H4 (we'll define H4)
+- validFrom: 2026-02-07
+- validTo: null
+
+H3 (D4): "Théo présente des traits d'attachement insécure de type anxieux, possiblement associés à des traits de personnalité dépendante ou à une vulnérabilité narcissique, qui se manifestent par une hypersensibilité au rejet et un besoin de contrôle relationnel."
+- depth: D4
+- framework: "attachement" ou "psychodynamique". Let's choose "attachement".
+- construct: "attachement anxieux" (or "traits de personnalité dépendante"). I'll use "attachement anxieux".
+- confidence: low (because D4 is deep and we have only 3 episodes; but rule says moderate from 2. I'll set low to be safe, or moderate. Let's set low. But the instruction says don't abstain by prudence. I'll set low with clear limits.)
+- subjects: Théo.
+- evidence: supports: c1, c3, c4.
+- limits: "Ces éléments ne suffisent pas à poser un diagnostic ; il faudrait des données sur l'histoire développementale, d'autres relations, et une évaluation clinique."
+- revisionConditions: "Si Théo montre des difficultés similaires dans d'autres relations, ou si un professionnel confirme un trouble de la personnalité."
+- alternativeTo: H5 (we'll define H5)
+- validFrom: 2026-02-07
+- validTo: null
+
+H4 (alternative to H2): "Le comportement de Théo s'explique par une dynamique relationnelle actuelle : l'utilisateur s'éloigne ou est moins disponible, et les réactions de Théo sont une réponse légitime à une perte de proximité, plutôt qu'un trait d'attachement anxieux."
+- depth: D2 (or D3). Let's set D3? Actually it's about the relationship dynamic, so D2 or D3. I'll set D2.
+- framework: null
+- construct: null
+- confidence: moderate
+- subjects: Théo, self.
+- evidence: supports: c2 (user going on vacation with Rémi, indicating new relationships), c5 (user brought colleagues to Théo's birthday, possibly reducing exclusive attention). c6? c6 is inference. c1? c1 shows Théo's concern, which could be a response to user's distancing. But that's the pattern. So supports: c2, c5. Maybe c1 as well (Théo asking because he senses distance). But c1 is Théo's behavior, not user's distancing. The user's distancing is inferred from c2 and c5. So evidence: c2, c5.
+- limits: "On ne sait pas si l'utilisateur a effectivement réduit sa disponibilité ou si Théo perçoit un éloignement qui n'existe pas."
+- revisionConditions: "Si l'utilisateur maintient une disponibilité constante et que Théo continue de réagir ainsi, cette alternative perd de sa force."
+- alternativeTo: H2
+- validFrom: 2026-02-07
+- validTo: null
+
+H5 (alternative to H3): "Les manifestations de Théo relèvent d'un état réactionnel transitoire (stress, période difficile, événement de vie) plutôt que d'un trait de personnalité stable."
+- depth: D2 or D3. Let's set D3? Actually it's an alternative explanation for D4, so could be D3. But it's about a transient state. D1? Let's set D2 (état transitoire, contexte). The rule says alternative can be "état transitoire, contexte, norme de groupe, dynamique propre à la relation". So D2.
+- framework: null
+- construct: null
+- confidence: low
+- subjects: Théo.
+- evidence: supports: none? We need at least one supports claim. We can use c6 (inference) but rule 10 says inference never anchor. So we need non-inference supports. Maybe c4 (sulking) and c1 (asking) could also support a transient state? But they are the same evidence as H3. That's problematic: the same evidence supports both. But that's okay; alternative hypotheses can share evidence. However, the alternative should be incompatible. We can say the evidence is equally compatible with a transient state. We need at least one supports. We can use c1, c3, c4 as supports? But then it's not really an alternative; it's the same evidence. The alternative hypothesis is that these behaviors are due to a transient state, not a stable trait. The evidence for the behaviors is the same. So we can list c1, c3, c4 as supports for H5 as well? But that would mean the same evidence supports both H3 and H5. That's fine; they are alternative explanations. But H5 needs evidence that it's transient. We don't have evidence of transience. Maybe we should say "supports" are the same behavioral claims, but the interpretation differs. However, rule 10: evidence must be claims. We can use c1, c3, c4 as supports for the occurrence of behaviors, which are the basis for both hypotheses. That's acceptable. But to be more precise, we could have no supports? The rule says "Au moins une preuve 'supports'". So we must include at least one. We'll include c4 (sulking) as supports for the behavior that might be transient. But then it's not really distinguishing. It's okay: the alternative hypothesis is that a single context (e.g., birthday stress) caused the sulking, and the other behaviors have other explanations. But we need to phrase it as incompatible with H3. H3 says trait; H5 says transient. The evidence for the behavior is the same. So we can use c1, c3, c4 as supports for H5, but note that they are also compatible with H5. That's fine.
+
+Actually, for alternative hypotheses, they often share evidence. The key is they are incompatible interpretations.
+
+H6 (D2): "L'utilisateur élargit son cercle social (Rémi, collègues) et pourrait être en train de prendre de la distance avec Théo, ce qui alimente les réactions de Théo."
+- depth: D2
+- framework: null
+- construct: null
+- confidence: moderate
+- subjects: self, Théo.
+- evidence: supports: c2 (vacation with Rémi), c5 (brought colleagues to birthday). Also c1 (Théo asking about Saturday, implying user went out without Théo). c1 doesn't explicitly say user went out without Théo, but Théo asks who he went out with. So supports: c1, c2, c5.
+- limits: "On ne sait pas si l'utilisateur cherche intentionnellement à s'éloigner ou s'il développe simplement d'autres relations."
+- revisionConditions: "Si l'utilisateur maintient une forte proximité avec Théo tout en développant d'autres amitiés, cette hypothèse serait affaiblie."
+- alternativeTo: null
+- validFrom: 2026-02-07
+- validTo: null
+
+Now, questions. Rule 16: pose a question only if it discriminates between hypotheses. We have H2 vs H4, H3 vs H5. A question could be: "Théo a-t-il exprimé verbalement une peur d'être abandonné ou remplacé par l'utilisateur ?" This would help discriminate between attachment anxiety (H2/H3) and relational dynamic (H4/H5). But is this question already in packet? No. We can propose a question. The question must target hypotheses. We can target H2 and H4. Or H3 and H5. Let's propose one question: "Depuis combien de temps Théo réagit-il ainsi lorsque l'utilisateur voit d'autres personnes, et cela se produit-il dans d'autres contextes ?" This helps distinguish transient vs stable. Or "Théo a-t-il d'autres relations proches, ou l'utilisateur est-il son principal soutien social ?" This would help assess dependence. Let's propose one or two.
+
+We need to be careful: questions should have targets (hypothesis refs). We can use proposalKey for our hypotheses. The schema: targets: [ RÉF_OU_CLÉ d'une hypothèse ]. So we can reference h2, h4, etc.
+
+Let's create question q1: "Théo a-t-il déjà exprimé explicitement une peur d'être abandonné ou remplacé par l'utilisateur ?"
+- targets: [ { "proposalKey": "h2" }, { "proposalKey": "h4" } ]
+- discriminatingInfo: "Si oui, cela soutient l'hypothèse d'une angoisse d'abandon (H2) ; si non, l'alternative relationnelle (H4) gagne en plausibilité."
+- whyNow: "Ces hypothèses sont en compétition et cette information permettrait de trancher."
+
+Another question q2: "Les réactions de Théo (bouderie, questions insistantes) se produisent-elles uniquement dans le contexte de la relation avec l'utilisateur, ou aussi avec d'autres amis ?"
+- targets: [ { "proposalKey": "h3" }, { "proposalKey": "h5" } ]
+- discriminatingInfo: "Si elles sont généralisées, cela soutient un trait stable (H3) ; si elles sont spécifiques à cette relation, cela soutient une dynamique relationnelle ou un état transitoire (H5)."
+
+Now, we need to ensure all citations are exact. Let's verify the sources.
+
+Source 1: sourceId "63f57aaa-6e34-472a-889c-00f2ec873306", contentHash "bfd2b4b126eb381be3484dcf7422271f06f9541c53f8b30f88b03a8af88ded80", spanStart 0, spanEnd 72, quote "Théo m'a demandé trois fois cette semaine avec qui j'étais sorti samedi." text same. Length: let's count. "Théo m'a demandé trois fois cette semaine avec qui j'étais sorti samedi." That's 72 characters? Let's count: T(1)h2 é3 o4 space5 m6 '7 a8 space9 d10 e11 m12 a13 n14 d15 é16 space17 t18 r19 o20 i21 s22 space23 f24 o25 i26 s27 space28 c29 e30 t31 t32 e33 space34 s35 e36 m37 a38 i39 n40 e41 space42 a43 v44 e45 c46 space47 q48 u49 i50 space51 j52 '53 é54 t55 a56 i57 s58 space59 s60 o61 r62 t63 i64 space65 s66 a67 m68 e69 d70 i71 .72 Yes 72. Good.
+
+Source 2: sourceId "9090076a-aee5-4ad4-a30f-30b75d1850d9", contentHash "e5a0c040ed11d03703581bb743717251a89863da607beffeb542d046afa1fa11", spanStart 0, spanEnd 116, quote "Quand j'ai dit à Théo que je partais en vacances avec Rémi, il a répondu « ah, tu as des nouveaux amis maintenant »." Let's count: Q1 u2 a3 n4 d5 space6 j7 '8 a9 i10 space11 d12 i13 t14 space15 à16 space17 T18 h19 é20 o21 space22 q23 u24 e25 space26 j27 e28 space29 p30 a31 r32 t33 a34 i35 s36 space37 e38 n39 space40 v41 a42 c43 a44 n45 c46 e47 s48 space49 a50 v51 e52 c53 space54 R55 é56 m57 i58 ,59 space60 i61 l62 space63 a64 space65 r66 é67 p68 o69 n70 d71 u72 space73 «74 space75 a76 h77 ,78 space79 t80 u81 space82 a83 s84 space85 d86 e87 s88 space89 n90 o91 u92 v93 e94 a95 u96 x97 space98 a99 m100 i101 s102 space103 m104 a105 i106 n107 t108 e109 n110 a111 n112 t113 space? Wait, the text: "« ah, tu as des nouveaux amis maintenant »." After "maintenant" there is a space then » then .? Actually the text: `« ah, tu as des nouveaux amis maintenant ».` Let's look: "il a répondu « ah, tu as des nouveaux amis maintenant »." The quote ends with `».` So after "maintenant" there is a space, then `»`, then `.`. Let's count from the given text: "Quand j'ai dit à Théo que je partais en vacances avec Rémi, il a répondu « ah, tu as des nouveaux amis maintenant »." The last part: `maintenant ».` So characters: m a i n t e n a n t = 10 letters, then space, then », then . . Let's count total. The spanEnd is 116. We'll trust the packet. The quote is exactly the text. So we can use the whole source as citation: sourceId, contentHash, spanStart 0, spanEnd 116, quote as given.
+
+Source 3: sourceId "2f6923f1-4153-4a61-bffb-d86ce35ad164", contentHash "848a2cc2348ed48420adc59ab54971120504a0a8a6f859ed73f85230b0b3b2aa", spanStart 0, spanEnd 99, quote "Théo a fait la tête toute la soirée parce que j'étais arrivé avec des collègues à son anniversaire." Count: T1 h2 é3 o4 space5 a6 space7 f8 a9 i10 t11 space12 l13 a14 space15 t16 ê17 t18 e19 space20 t21 o22 u23 t24 e25 space26 l27 a28 space29 s30 o31 i32 r33 é34 e35 space36 p37 a38 r39 c40 e41 space42 q43 u44 e45 space46 j47 '48 é49 t50 a51 i52 s53 space54 a55 r56 r57 i58 v59 é60 space61 a62 v63 e64 c65 space66 d67 e68 s69 space70 c71 o72 l73 l74 è75 g76 u77 e78 s79 space80 à81 space82 s83 o84 n85 space86 a87 n88 n89 i90 v91 e92 r93 s94 a95 i96 r97 e98 .99 Yes 99.
+
+Now citations: For each claim, we can cite the whole source. The rule says: "Une citation doit être EXACTEMENT text.slice(spanStart, spanEnd) de la source... Si tu n'es pas certain des offsets, cite la source entière en recopiant sourceId, contentHash, spanStart, spanEnd et quote tels qu'ils figurent dans sources[] du paquet." So we can just copy the source's citation fields. That's safe. So for each claim citing source 1, we use the exact object from sources. Similarly for others.
+
+Now, we need to ensure all operations have unique keys. We'll use c1, c2, c3, c4, c5, c6, c7, c8 for claims; h1..h6 for hypotheses; q1, q2 for questions.
+
+Let's decide on the exact set of claims. We don't need too many. Let's consolidate.
+
+Claims:
+c1: Théo a demandé trois fois cette semaine avec qui l'utilisateur était sorti le samedi précédent. (sourced_observation, actual)
+c2: L'utilisateur a annoncé à Théo qu'il partait en vacances avec Rémi. (explicit_statement, actual)
+c3: Théo a répondu : « ah, tu as des nouveaux amis maintenant ». (explicit_statement, actual)
+c4: Théo a fait la tête toute la soirée à son anniversaire. (sourced_observation, actual)
+c5: L'utilisateur est arrivé à l'anniversaire de Théo avec des collègues. (explicit_statement, actual)
+c6: Théo a fait la tête parce que l'utilisateur est arrivé avec des collègues. (inference, actual)
+c7: La réponse de Théo « ah, tu as des nouveaux amis maintenant » exprime probablement du dépit ou de la jalousie. (inference, actual)
+c8: L'insistance de Théo à demander trois fois avec qui l'utilisateur était sorti suggère une préoccupation inhabituelle. (inference, actual)
+
+We could also add a claim about the user's perception: "L'utilisateur interprète la bouderie de Théo comme liée à l'arrivée des collègues." But c6 covers that.
+
+Now, do we need to propose events? The packet already has these as entities. Focus is on events. But the operations include propose_event. If we don't propose events, the claims are still tied to the events via citations? The claims have citations, not event references. The evidence for hypotheses uses claims. So it's fine. The events exist; we don't need to re-propose. I'll skip propose_event to avoid duplication.
+
+Now, let's build the JSON.
+
+We must include modelDeclaration. declaredModel: I'll put "deepseek-chat" or something? The prompt says "<ton nom de modèle>". I'm an AI, I'll put "deepseek-v3" or "deepseek-flash"? The workspace includes "deepseek-flash-r3". I'll put "deepseek-flash". Or just "assistant". I'll put "deepseek".
+
+technicalId: null.
+
+Outcome: "proposed".
+
+Operations: list all.
+
+We need to ensure every operation has rationale.
+
+For claims, rationale short.
+
+For hypotheses, rationale short.
+
+For questions, rationale short.
+
+Let's write.
+
+First, claims.
+
+c1:
+{
+  "key": "c1",
+  "kind": "propose_claim",
+  "payload": {
+    "text": "Théo a demandé trois fois cette semaine à l'utilisateur avec qui il était sorti le samedi précédent.",
+    "category": "sourced_observation",
+    "modality": "actual",
+    "validFrom": "2026-04-18T12:00:00-03:00",
+    "validTo": null,
+    "citations": [
+      {
+        "sourceId": "63f57aaa-6e34-472a-889c-00f2ec873306",
+        "contentHash": "bfd2b4b126eb381be3484dcf7422271f06f9541c53f8b30f88b03a8af88ded80",
+        "spanStart": 0,
+        "spanEnd": 72,
+        "quote": "Théo m'a demandé trois fois cette semaine avec qui j'étais sorti samedi."
+      }
+    ]
+  },
+  "rationale": "Fait directement observé par l'utilisateur."
+}
+
+c2:
+{
+  "key": "c2",
+  "kind": "propose_claim",
+  "payload": {
+    "text": "L'utilisateur a annoncé à Théo qu'il partait en vacances avec Rémi.",
+    "category": "explicit_statement",
+    "modality": "actual",
+    "validFrom": "2026-03-14T12:00:00-03:00",
+    "validTo": null,
+    "citations": [
+      {
+        "sourceId": "9090076a-aee5-4ad4-a30f-30b75d1850d9",
+        "contentHash": "e5a0c040ed11d03703581bb743717251a89863da607beffeb542d046afa1fa11",
+        "spanStart": 0,
+        "spanEnd": 116,
+        "quote": "Quand j'ai dit à Théo que je partais en vacances avec Rémi, il a répondu « ah, tu as des nouveaux amis maintenant »."
+      }
+    ]
+  },
+  "rationale": "L'utilisateur rapporte sa propre déclaration."
+}
+
+c3:
+{
+  "key": "c3",
+  "kind": "propose_claim",
+  "payload": {
+    "text": "Théo a répondu à l'utilisateur : « ah, tu as des nouveaux amis maintenant ».",
+    "category": "explicit_statement",
+    "modality": "actual",
+    "validFrom": "2026-03-14T12:00:00-03:00",
+    "validTo": null,
+    "citations": [ same source 2 ]
+  },
+  "rationale": "Propos de Théo rapportés explicitement."
+}
+
+c4:
+{
+  "key": "c4",
+  "kind": "propose_claim",
+  "payload": {
+    "text": "Théo a fait la tête toute la soirée lors de son anniversaire.",
+    "category": "sourced_observation",
+    "modality": "actual",
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null,
+    "citations": [ source 3 ]
+  },
+  "rationale": "Comportement observé par l'utilisateur."
+}
+
+c5:
+{
+  "key": "c5",
+  "kind": "propose_claim",
+  "payload": {
+    "text": "L'utilisateur est arrivé à l'anniversaire de Théo accompagné de collègues.",
+    "category": "explicit_statement",
+    "modality": "actual",
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null,
+    "citations": [ source 3 ]
+  },
+  "rationale": "L'utilisateur rapporte son propre comportement."
+}
+
+c6:
+{
+  "key": "c6",
+  "kind": "propose_claim",
+  "payload": {
+    "text": "Théo a fait la tête parce que l'utilisateur est arrivé avec des collègues.",
+    "category": "inference",
+    "modality": "actual",
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null,
+    "citations": [ source 3 ]
+  },
+  "rationale": "Interprétation causale de l'utilisateur."
+}
+
+c7:
+{
+  "key": "c7",
+  "kind": "propose_claim",
+  "payload": {
+    "text": "La réponse de Théo « ah, tu as des nouveaux amis maintenant » exprime probablement du dépit ou de la jalousie.",
+    "category": "inference",
+    "modality": "actual",
+    "validFrom": "2026-03-14T12:00:00-03:00",
+    "validTo": null,
+    "citations": [ source 2 ]
+  },
+  "rationale": "Lecture non littérale de la remarque."
+}
+
+c8:
+{
+  "key": "c8",
+  "kind": "propose_claim",
+  "payload": {
+    "text": "L'insistance de Théo à demander trois fois avec qui l'utilisateur était sorti suggère une préoccupation inhabituelle.",
+    "category": "inference",
+    "modality": "actual",
+    "validFrom": "2026-04-18T12:00:00-03:00",
+    "validTo": null,
+    "citations": [ source 1 ]
+  },
+  "rationale": "Interprétation du caractère répétitif des questions."
+}
+
+Now hypotheses.
+
+h1: D2
+{
+  "key": "h1",
+  "kind": "propose_hypothesis",
+  "payload": {
+    "statement": "Théo manifeste de la jalousie ou de la possessivité envers l'utilisateur, réagissant négativement lorsque l'utilisateur socialise avec d'autres personnes (collègues, Rémi).",
+    "depth": "D2",
+    "framework": null,
+    "construct": null,
+    "confidence": "high",
+    "subjects": [
+      { "mention": "Théo" },
+      { "self": true }
+    ],
+    "evidence": [
+      { "claim": { "kind": "claim", "id": "c1" }, "stance": "supports" },
+      { "claim": { "kind": "claim", "id": "c3" }, "stance": "supports" },
+      { "claim": { "kind": "claim", "id": "c4" }, "stance": "supports" }
+    ],
+    "limits": "Les données ne permettent pas de déterminer si cette jalousie est un trait stable ou une réaction contextuelle, ni si elle est dirigée uniquement vers l'utilisateur.",
+    "revisionConditions": "Si Théo réagit avec indifférence ou soutien lors de prochaines interactions où l'utilisateur socialise avec d'autres.",
+    "alternativeTo": null,
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null
+  },
+  "rationale": "Trois épisodes distincts sur plus de 30 jours montrent un pattern de réactions négatives aux relations extérieures de l'utilisateur."
+}
+
+But wait: evidence claims are proposed in this same response. The schema for evidence: { "claim": <RÉF_OU_CLÉ> }. So we can use { "proposalKey": "c1" }. Or we can reference by claim id if they were in packet. Since they are new, we must use proposalKey. The example shows { "claim": <RÉF_OU_CLÉ> }. So we can put { "proposalKey": "c1" }. I'll use that.
+
+So evidence: [ { "claim": { "proposalKey": "c1" }, "stance": "supports" }, ... ]
+
+Yes.
+
+h2: D3
+{
+  "key": "h2",
+  "kind": "propose_hypothesis",
+  "payload": {
+    "statement": "Théo éprouve une angoisse d'abandon ou un besoin d'exclusivité dans sa relation avec l'utilisateur, ce qui le conduit à surveiller les relations extérieures de l'utilisateur et à réagir par la bouderie ou le sarcasme lorsqu'il se sent remplacé.",
+    "depth": "D3",
+    "framework": "attachement",
+    "construct": "anxiété d'abandon",
+    "confidence": "moderate",
+    "subjects": [
+      { "mention": "Théo" },
+      { "self": true }
+    ],
+    "evidence": [
+      { "claim": { "proposalKey": "c1" }, "stance": "supports" },
+      { "claim": { "proposalKey": "c3" }, "stance": "supports" },
+      { "claim": { "proposalKey": "c4" }, "stance": "supports" }
+    ],
+    "limits": "On ne sait pas si Théo a vécu des expériences d'abandon ou si ce pattern est récent ; les données ne montrent pas son état interne.",
+    "revisionConditions": "Si Théo exprime verbalement une peur de l'abandon ou si l'insécurité disparaît quand l'utilisateur le rassure.",
+    "alternativeTo": { "proposalKey": "h4" },
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null
+  },
+  "rationale": "Le pattern suggère une insécurité relationnelle, mais des preuves internes manquent."
+}
+
+h3: D4
+{
+  "key": "h3",
+  "kind": "propose_hypothesis",
+  "payload": {
+    "statement": "Théo présente des traits d'attachement insécure de type anxieux, possiblement associés à des traits de personnalité dépendante ou à une vulnérabilité narcissique, qui se manifestent par une hypersensibilité au rejet et un besoin de contrôle relationnel.",
+    "depth": "D4",
+    "framework": "attachement",
+    "construct": "attachement anxieux",
+    "confidence": "low",
+    "subjects": [
+      { "mention": "Théo" }
+    ],
+    "evidence": [
+      { "claim": { "proposalKey": "c1" }, "stance": "supports" },
+      { "claim": { "proposalKey": "c3" }, "stance": "supports" },
+      { "claim": { "proposalKey": "c4" }, "stance": "supports" }
+    ],
+    "limits": "Ces éléments ne suffisent pas à poser un diagnostic ; il faudrait des données sur l'histoire développementale, d'autres relations, et une évaluation clinique.",
+    "revisionConditions": "Si Théo montre des difficultés similaires dans d'autres relations, ou si un professionnel confirme un trouble de la personnalité.",
+    "alternativeTo": { "proposalKey": "h5" },
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null
+  },
+  "rationale": "Hypothèse profonde, mais les données restent limitées à trois épisodes."
+}
+
+h4: alternative to h2, D2
+{
+  "key": "h4",
+  "kind": "propose_hypothesis",
+  "payload": {
+    "statement": "Le comportement de Théo s'explique par une dynamique relationnelle actuelle : l'utilisateur s'éloigne ou est moins disponible, et les réactions de Théo sont une réponse légitime à une perte de proximité, plutôt qu'un trait d'attachement anxieux.",
+    "depth": "D2",
+    "framework": null,
+    "construct": null,
+    "confidence": "moderate",
+    "subjects": [
+      { "mention": "Théo" },
+      { "self": true }
+    ],
+    "evidence": [
+      { "claim": { "proposalKey": "c2" }, "stance": "supports" },
+      { "claim": { "proposalKey": "c5" }, "stance": "supports" }
+    ],
+    "limits": "On ne sait pas si l'utilisateur a effectivement réduit sa disponibilité ou si Théo perçoit un éloignement qui n'existe pas.",
+    "revisionConditions": "Si l'utilisateur maintient une disponibilité constante et que Théo continue de réagir ainsi, cette alternative perd de sa force.",
+    "alternativeTo": { "proposalKey": "h2" },
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null
+  },
+  "rationale": "Alternative relationnelle et contextuelle à l'hypothèse d'attachement."
+}
+
+h5: alternative to h3, D2 or D3. Let's set D2.
+{
+  "key": "h5",
+  "kind": "propose_hypothesis",
+  "payload": {
+    "statement": "Les manifestations de Théo relèvent d'un état réactionnel transitoire (stress, période difficile, événement de vie) plutôt que d'un trait de personnalité stable.",
+    "depth": "D2",
+    "framework": null,
+    "construct": null,
+    "confidence": "low",
+    "subjects": [
+      { "mention": "Théo" }
+    ],
+    "evidence": [
+      { "claim": { "proposalKey": "c4" }, "stance": "supports" }
+    ],
+    "limits": "Aucune donnée ne documente un stress actuel chez Théo ; l'hypothèse reste spéculative.",
+    "revisionConditions": "Si les réactions de Théo persistent sur plusieurs mois et dans divers contextes, l'hypothèse transitoire serait affaiblie.",
+    "alternativeTo": { "proposalKey": "h3" },
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null
+  },
+  "rationale": "Alternative transitoire pour expliquer les mêmes comportements."
+}
+
+h6: D2 about user's distancing.
+{
+  "key": "h6",
+  "kind": "propose_hypothesis",
+  "payload": {
+    "statement": "L'utilisateur élargit son cercle social (Rémi, collègues) et pourrait être en train de prendre de la distance avec Théo, ce qui alimente les réactions de Théo.",
+    "depth": "D2",
+    "framework": null,
+    "construct": null,
+    "confidence": "moderate",
+    "subjects": [
+      { "self": true },
+      { "mention": "Théo" }
+    ],
+    "evidence": [
+      { "claim": { "proposalKey": "c1" }, "stance": "supports" },
+      { "claim": { "proposalKey": "c2" }, "stance": "supports" },
+      { "claim": { "proposalKey": "c5" }, "stance": "supports" }
+    ],
+    "limits": "On ne sait pas si l'utilisateur cherche intentionnellement à s'éloigner ou s'il développe simplement d'autres relations.",
+    "revisionConditions": "Si l'utilisateur maintient une forte proximité avec Théo tout en développant d'autres amitiés, cette hypothèse serait affaiblie.",
+    "alternativeTo": null,
+    "validFrom": "2026-02-07T12:00:00-03:00",
+    "validTo": null
+  },
+  "rationale": "Les actions de l'utilisateur suggèrent une diversification relationnelle."
+}
+
+Now questions.
+
+q1:
+{
+  "key": "q1",
+  "kind": "propose_question",
+  "payload": {
+    "question": "Théo a-t-il déjà exprimé explicitement une peur d'être abandonné ou remplacé par l'utilisateur ?",
+    "targets": [
+      { "proposalKey": "h2" },
+      { "proposalKey": "h4" }
+    ],
+    "discriminatingInfo": "Si oui, cela soutient l'hypothèse d'une angoisse d'abandon (H2) ; si non, l'alternative relationnelle (H4) gagne en plausibilité.",
+    "whyNow": "Ces hypothèses sont en compétition et cette information permettrait de trancher."
+  },
+  "rationale": "Départage entre angoisse d'abandon et dynamique relationnelle."
+}
+
+q2:
+{
+  "key": "q2",
+  "kind": "propose_question",
+  "payload": {
+    "question": "Les réactions de Théo (bouderie, questions insistantes) se produisent-elles uniquement dans le contexte de la relation avec l'utilisateur, ou aussi avec d'autres amis ?",
+    "targets": [
+      { "proposalKey": "h3" },
+      { "proposalKey": "h5" }
+    ],
+    "discriminatingInfo": "Si elles sont généralisées, cela soutient un trait stable (H3) ; si elles sont spécifiques à cette relation, cela soutient une dynamique relationnelle ou un état transitoire (H5).",
+    "whyNow": "Permet de distinguer un trait de personnalité d'un état réactionnel."
+  },
+  "rationale": "Départage entre trait stable et état transitoire."
+}
+
+Now, check rules: Rule 13 says "Dès D3, une hypothèse ne devient "plausible" qu'après une passe critique suivie d'un revise_hypothesis". We are not setting any hypothesis to "plausible"; we propose new ones as draft. So no critique needed. Rule 9: "Dès D3, propose aussi une hypothèse ALTERNATIVE incompatible... reliée par alternativeTo". We did for h2 and h3. Good.
+
+Rule 12: status for new hypotheses is always "draft". The propose_hypothesis operation doesn't have status field, so it's implicitly draft. Good.
+
+Rule 10: Evidence must be claims. We used proposalKey. At least one supports. Good. We didn't add contradicts because we don't see any.
+
+Rule 11: Confidence. h1 high: 3 episodes over >30 days. h2 moderate: 3 episodes but D3, we set moderate. h3 low: D4, only 3 episodes, set low. That's allowed. h4 moderate, h5 low, h6 moderate. Fine.
+
+Rule 14: Subjects: mention for Théo, self for user. Good.
+
+Rule 16: Questions only if discriminating. We have two questions. They are not in packet. Good.
+
+Now, we need to ensure all citations are exact. We copied the source objects. For claims c2, c3, c7, we use source 2. For c4, c5, c6, source 3. For c1, c8, source 1. For c2, the quote includes the whole text. That's fine.
+
+One issue: c2 says "L'utilisateur a annoncé à Théo qu'il partait en vacances avec Rémi." The source text says "Quand j'ai dit à Théo que je partais en vacances avec Rémi, il a répondu...". So the claim is accurate.
+
+c3 says "Théo a répondu à l'utilisateur : « ah, tu as des nouveaux amis maintenant »." Accurate.
+
+c4: "Théo a fait la tête toute la soirée lors de son anniversaire." Source: "Théo a fait la tête toute la soirée parce que j'étais arrivé avec des collègues à son anniversaire." So yes.
+
+c5: "L'utilisateur est arrivé à l'anniversaire de Théo accompagné de collègues." Source: "...parce que j'étais arrivé avec des collègues à son anniversaire." Yes.
+
+c6: "Théo a fait la tête parce que l'utilisateur est arrivé avec des collègues." This is the causal interpretation. Category inference. Good.
+
+c7: inference about sarcasm/jealousy. Good.
+
+c8: inference about insistence. Good.
+
+Now, we need to ensure no extra fields. The output must be exactly the schema.
+
+We'll produce the JSON.
+
+Check allowedOperations: propose_event, propose_claim, propose_hypothesis, propose_question, propose_critique. We used propose_claim, propose_hypothesis, propose_question. All allowed.
+
+Now, modelDeclaration: declaredModel: "deepseek-flash" or "deepseek". I'll put "deepseek-v3" or just "deepseek". The workspace says "deepseek-flash-r3". I'll put "deepseek-flash". technicalId: null.
+
+Outcome: "proposed".
+
+Clarifications: [] (we have questions, but clarifications are for needs_context. We have proposed questions as operations. So clarifications can be empty.)
+
+Summary: short synthesis.
+
+Let's write the full JSON.
+
+We need to be careful with JSON formatting: no trailing commas.
+
+Let's assemble.
+
+Also, baseRevision: 3 (from packet). contextHash: "82223be4b1cbb6b32e96c35dd79cc69e6c7831dbe75b7321801b1f62af9175ed". schemaVersion: "1.2". requestId: "fba824b7-7f4d-452f-abe0-f007d07f49dd". workspaceId: "evaluation-2026-09-25-deepseek-flash-r3-s01-S05".
+
+Now, write operations array.
+
+I'll list all operations in order: c1..c8, h1..h6, q1, q2.
+
+Check evidence references: For h1, evidence uses { "claim": { "proposalKey": "c1" }, "stance": "supports" }. That's correct according to RÉF_OU_CLÉ: { "proposalKey": "<key>" }.
+
+For alternativeTo: { "proposalKey": "h4" }. That's correct.
+
+Now, ensure all keys are unique: c1,c2,c3,c4,c5,c6,c7,c8,h1,h2,h3,h4,h5,h6,q1,q2. Yes.
+
+Now, produce final JSON.
+
+One more thing: validFrom dates. We have occurredStart in entities. For claims, we set validFrom to the event date. For c1, 2026-04-18T12:00:00-03:00. For c2, 2026-03-14T12:00:00-03:00. For c3, same. c4, 2026-02-07T12:00:00-03:00. c5, same. c6, same. c7, 2026-03-14. c8, 2026-04-18. Good.
+
+For hypotheses, validFrom is the first episode date (2026-02-07). That's fine.
+
+Now, let's write.

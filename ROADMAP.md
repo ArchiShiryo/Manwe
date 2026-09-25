@@ -10,6 +10,8 @@ Cette roadmap organise l'exécution de la vision V3.0. Elle modifie l'ordre de c
 
 ### Point d’exécution — 25 septembre 2026
 
+Mise à jour du soir : R3-S01 est noté, **R3 non validé** ([RAPPORT-003](./manwe-next/docs/pilotage/rapports/RAPPORT-003.md)). Les évaluations passent en automatique avec DeepSeek V4.1-Flash (D-020) : un lot de 10 scénarios prend 4 minutes au lieu d'une journée d'allers-retours. Document de reprise pour toute nouvelle instance : [REPRISE.md](./manwe-next/docs/pilotage/REPRISE.md).
+
 R2 est validé en mode assisté. Le moteur de révision R3 est livré : hypothèses de toutes profondeurs, preuves pour et contre, épisodes indépendants, passe critique, effets des annotations, questions. L'évaluation à l'aveugle R3-S01 est en cours. Le pilotage est assuré par Claude, qui code aussi en l'absence de l'exécutant (D-011).
 
 Décisions structurantes issues des essais et des échanges avec l'utilisateur ([PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md), [ONTOLOGIE.md](./manwe-next/docs/pilotage/ONTOLOGIE.md), [MODELE-STRATEGIQUE.md](./manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md)) :
@@ -241,6 +243,7 @@ Le statut peut devenir « R2 validé — mode assisté » si tous ces critères 
 
 Ce contrôle transverse conserve les obligations d'intégration différées, sans les faire peser sur R1 à R5. DeepSeek et son harnais restent la cible prévue ; tout autre raccordement automatique fait l'objet d'une décision écrite, pas d'une substitution implicite.
 
+- [ ] IA-A.0 Évaluations automatiques par l'API DeepSeek dans le harnais multi-étapes (D-020). Fait le 25 septembre 2026 : `scenario-run.mjs auto`, test sur serveur simulé, run `2026-09-25-deepseek-flash-r3-s01`. Reste l'intégration dans l'application (IA-A.2).
 - [ ] IA-A.1 Vérifier les versions, l'accès au modèle, les autorisations de transmission et le cycle de vie Windows du fournisseur/harnais ; verrouiller la combinaison testée.
 - [ ] IA-A.2 Implémenter le fournisseur automatique derrière le même contrat ; prouver une invocation réelle de `memory.get_context` par le harnais, puis une proposition validée. Aucun accès arbitraire du modèle à la base ou au poste.
 - [ ] IA-A.3 Traiter clé invalide, quota, coupure réseau, réponse invalide, délai, annulation, reprise bornée et résultat tardif ; ne jamais remplacer silencieusement une erreur par Sol assisté ou une fixture.

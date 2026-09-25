@@ -7,6 +7,13 @@
 //   node scripts/scenario-run.mjs advance <runDir>
 //   node scripts/scenario-run.mjs summary <runDir>
 //   node scripts/scenario-run.mjs rewind <runDir> <stepId>
+//   node scripts/scenario-run.mjs auto <runDir> [--model m] [--effort e] [--concurrency n]
+//
+// « auto » remplace les allers-retours manuels : chaque analyse en attente est
+// envoyée à l'API DeepSeek (prompt complet, un seul message, sans mémoire), la
+// réponse brute est enregistrée telle quelle, puis le scénario avance. Les
+// scénarios tournent en parallèle ; les étapes d'un scénario restent en ordre.
+// Chaque appel laisse call.json (modèle servi, usage, durée) et reasoning.txt.
 //
 // Une analyse rejetée reste en attente de la seconde tentative autorisée
 // (proposal.retry.raw.json) ; le reçu regroupe les deux essais. « rewind »
@@ -26,6 +33,12 @@ import {
   parseCaptureCommand,
 } from "../packages/domain/src/memory.ts";
 import { SqliteMemoryStore } from "../packages/storage/src/sqliteStore.ts";
+import {
+  DEFAULT_EFFORT,
+  DEFAULT_MODEL,
+  callAnalyst,
+  withEnvProxy,
+} from "./lib/deepseek.mjs";
 
 const PROMPT_TEXT = readFileSync(
   new URL("../packages/cognition/prompts/analyst-v3.md", import.meta.url),
@@ -295,23 +308,113 @@ function prepare(fixturePath, runDirArgument) {
   console.log(status(runDir));
 }
 
+function advanceScenario(runDir, scenario) {
+  const statePath = paths(runDir, scenario.id).statePath;
+  const state = readJson(statePath);
+  if (!state.pending) return state;
+  const store = openStore(runDir, scenario.id, state);
+  try {
+    if (applyPending(runDir, scenario, state, store))
+      runUntilAnalysis(runDir, scenario, state, store);
+  } finally {
+    store.close();
+  }
+  writeJson(statePath, state);
+  return state;
+}
+
 function advance(runDirArgument) {
   const runDir = resolve(runDirArgument);
   const fixture = readJson(join(runDir, "fixture.json"));
-  for (const scenario of fixture.scenarios) {
-    const statePath = paths(runDir, scenario.id).statePath;
-    const state = readJson(statePath);
-    if (!state.pending) continue;
-    const store = openStore(runDir, scenario.id, state);
-    try {
-      if (applyPending(runDir, scenario, state, store))
-        runUntilAnalysis(runDir, scenario, state, store);
-    } finally {
-      store.close();
-    }
-    writeJson(statePath, state);
-  }
+  for (const scenario of fixture.scenarios) advanceScenario(runDir, scenario);
   console.log(status(runDir));
+}
+
+/** Fichier attendu pour l'étape en attente, ou null si rien n'est à demander. */
+function nextAttemptFile(stepDir) {
+  if (!existsSync(join(stepDir, RAW_PROPOSAL))) return RAW_PROPOSAL;
+  if (existsSync(join(stepDir, RETRY_PROPOSAL))) return null;
+  const receipt = join(stepDir, "receipt.json");
+  if (existsSync(receipt) && readJson(receipt).status === "rejected")
+    return RETRY_PROPOSAL;
+  return null;
+}
+
+async function driveScenario(runDir, scenario, options, log) {
+  for (;;) {
+    const state = readJson(paths(runDir, scenario.id).statePath);
+    if (!state.pending) return;
+    const stepDir = join(paths(runDir, scenario.id).scenarioDir, state.pending);
+    const file = nextAttemptFile(stepDir);
+    if (!file) {
+      const after = advanceScenario(runDir, scenario);
+      if (after.pending === state.pending) return; // rien ne bouge : on s'arrête
+      continue;
+    }
+    const suffix = file === RETRY_PROPOSAL ? ".retry" : "";
+    log(
+      `${state.pending} : appel ${options.model}${suffix ? " (seconde tentative)" : ""}`,
+    );
+    const call = await callAnalyst({
+      prompt: readFileSync(join(stepDir, "PROMPT.txt"), "utf8"),
+      model: options.model,
+      effort: options.effort,
+    });
+    writeFileSync(join(stepDir, file), call.content, "utf8");
+    writeJson(join(stepDir, `call${suffix}.json`), call.meta);
+    if (call.reasoning)
+      writeFileSync(
+        join(stepDir, `reasoning${suffix}.txt`),
+        call.reasoning,
+        "utf8",
+      );
+    const after = advanceScenario(runDir, scenario);
+    const receipt = readJson(join(stepDir, "receipt.json"));
+    log(
+      `${state.pending} : ${receipt.status} (${Math.round(call.meta.latencyMs / 1000)} s)`,
+    );
+    void after;
+  }
+}
+
+async function auto(runDirArgument, flags) {
+  const runDir = resolve(runDirArgument);
+  const fixture = readJson(join(runDir, "fixture.json"));
+  const options = {
+    model: flags.model ?? DEFAULT_MODEL,
+    effort: flags.effort ?? DEFAULT_EFFORT,
+    concurrency: Number(flags.concurrency ?? 10),
+  };
+  const queue = [...fixture.scenarios];
+  const log = (line) =>
+    console.log(`[${new Date().toISOString().slice(11, 19)}] ${line}`);
+  const failures = [];
+  const worker = async () => {
+    for (let scenario = queue.shift(); scenario; scenario = queue.shift()) {
+      try {
+        await driveScenario(runDir, scenario, options, log);
+      } catch (error) {
+        failures.push(scenario.id);
+        log(`${scenario.id} : arrêt (${error.message})`);
+      }
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.max(1, options.concurrency) }, worker),
+  );
+  console.log(status(runDir));
+  if (failures.length) process.exitCode = 1;
+}
+
+function parseFlags(list) {
+  const flags = {};
+  for (let index = 0; index < list.length; index += 2) {
+    const key = list[index];
+    if (!key?.startsWith("--") || list[index + 1] === undefined)
+      throw new Error(`Option invalide : ${key}`);
+    flags[key.slice(2)] = list[index + 1];
+  }
+  return flags;
 }
 
 function rewind(runDirArgument, stepId) {
@@ -471,14 +574,16 @@ function summary(runDirArgument) {
 
 const [command, first, second, third] = process.argv.slice(2);
 try {
-  if (command === "prepare" && first && second) prepare(first, second);
+  if (command === "auto" && first) {
+    if (!withEnvProxy()) await auto(first, parseFlags(process.argv.slice(4)));
+  } else if (command === "prepare" && first && second) prepare(first, second);
   else if (command === "advance" && first && !second) advance(first);
   else if (command === "summary" && first && !second) summary(first);
   else if (command === "rewind" && first && second && !third)
     rewind(first, second);
   else {
     console.error(
-      "Usage : scenario-run.mjs prepare <fixture> <runDir> | advance <runDir> | summary <runDir> | rewind <runDir> <stepId>",
+      "Usage : scenario-run.mjs prepare <fixture> <runDir> | advance <runDir> | summary <runDir> | rewind <runDir> <stepId> | auto <runDir> [--model m] [--effort e] [--concurrency n]",
     );
     process.exitCode = 2;
   }
