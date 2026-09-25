@@ -8,6 +8,18 @@ Cette roadmap organise l'exécution de la vision V3.0. Elle modifie l'ordre de c
 
 État actuel : UI de démonstration conservée et premier espace personnel relié à une mémoire SQLite transactionnelle ; intégration cognitive à construire. Les cases ne sont cochées que lorsque leurs preuves sont référencées.
 
+### Point d’exécution — 25 septembre 2026
+
+R2 est validé en mode assisté. Le moteur de révision R3 est livré : hypothèses de toutes profondeurs, preuves pour et contre, épisodes indépendants, passe critique, effets des annotations, questions. L'évaluation à l'aveugle R3-S01 est en cours. Le pilotage est assuré par Claude, qui code aussi en l'absence de l'exécutant (D-011).
+
+Décisions structurantes issues des essais et des échanges avec l'utilisateur ([PILOTAGE.md](./manwe-next/docs/pilotage/PILOTAGE.md), [ONTOLOGIE.md](./manwe-next/docs/pilotage/ONTOLOGIE.md)) :
+
+- **La relation devient un objet à part entière** (D-012). C'est un manque de la reconstruction par rapport à la spécification §11.
+- **Rôles souples** : extraits par épisode, et au niveau de la relation seulement sous forme d'hypothèse. Le timing n'est pas exigé (D-013).
+- **Registre ontologique unique** sur le modèle de l'Ontologie Palantir, dont découle le graphe R4 (D-014).
+- **Conclure plutôt qu'énumérer** : lecture principale classée, alternatives qui sont de vrais mécanismes concurrents, « plausible » possible dès la première analyse en D1 et D2, confiance plafonnée au lieu d'un rejet (D-015).
+- **Boucle d'action dans le monde réel** : objectif, pistes, action validée, résultat observé (D-016).
+
 ### Point d’exécution — 23 septembre 2026
 
 À la demande de commencer par l’UI, `manwe-next/` conserve une interface React/TypeScript indépendante : graphe contextuel, inspecteur sourcé, vues Personnes / Intentions / Mémoire et recherche. Elle possède désormais deux espaces séparés : démonstration fictive et mémoire personnelle SQLite via un service Node local (ports 5180/5181). Le lanceur dédié démarre les deux ; le prototype et son lanceur sont conservés.
@@ -157,21 +169,21 @@ Les sources sont préservées lors des corrections ordinaires ; une demande expl
 
 La charge ci-dessous indique l'ampleur relative, pas une durée promise. Moyenne correspond à un module avec son parcours de validation ; importante à plusieurs modules dépendants. Les durées seront réévaluées après R0 et le premier jalon livré. Les dates de sortie seront fondées sur les mesures et les validations, notamment les essais utilisateur et les appels API.
 
-| Jalon | Résultat démontrable                                        | Dépendance                  | Charge            | État                                                                                                      |
-| ----- | ----------------------------------------------------------- | --------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------- |
-| R0    | Nouveau socle et faisabilité Windows documentés             | Roadmap                     | Moyenne           | En cours : shell empaqueté et reprise Git manquants                                                       |
-| R1    | Mémoire locale qui survit au redémarrage                    | R0                          | Importante        | Validé                                                                                                    |
-| R2    | Ingestion et premier tour cognitif réel avec Sol assisté    | R1                          | Importante        | Validé — mode assisté (R2.4 complété à R3)                                                                |
-| R3    | Hypothèses sourcées et corrections durables                 | R2                          | Importante        | En cours : moteur livré (R3.1-2, R3.5-8) ; passe critique R3.4 et évaluation à l'aveugle R3-S01 restantes |
-| R4    | Texte, graphe et inspecteur synchronisés                    | R3                          | Importante        | À faire                                                                                                   |
-| R5    | PoC cognitif assisté avec question, problème et objectif    | R4                          | Moyenne           | À faire                                                                                                   |
-| IA-A  | Fournisseur automatique et harnais éprouvés, DeepSeek prévu | R2 ; corpus enrichi à R3/R5 | Importante        | Différé jusqu'au raccordement                                                                             |
-| R6    | Alpha Windows installable et récupérable                    | R5 + IA-A                   | Importante        | À faire                                                                                                   |
-| R7    | Bilan d'usage personnel sur plusieurs jours                 | R6                          | Dépend de l'usage | À faire                                                                                                   |
-| R8    | Modèles temporels, mémoire enrichie et Knowledge Space      | R7                          | Importante        | À cadrer après R7                                                                                         |
-| R9    | Perception choisie et recherche contextuelle                | R8                          | Importante        | À cadrer après R7                                                                                         |
-| R10   | Assistance et planification évaluées                        | R8 ; R9 si nécessaire       | Importante        | À cadrer après R7                                                                                         |
-| R11   | Extensions avancées et axes de recherche                    | R8 à R10 selon l'axe        | Exploratoire      | Hors alpha                                                                                                |
+| Jalon | Résultat démontrable                                        | Dépendance                  | Charge            | État                                                                                                        |
+| ----- | ----------------------------------------------------------- | --------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| R0    | Nouveau socle et faisabilité Windows documentés             | Roadmap                     | Moyenne           | En cours : shell empaqueté et reprise Git manquants                                                         |
+| R1    | Mémoire locale qui survit au redémarrage                    | R0                          | Importante        | Validé                                                                                                      |
+| R2    | Ingestion et premier tour cognitif réel avec Sol assisté    | R1                          | Importante        | Validé — mode assisté (R2.4 complété à R3)                                                                  |
+| R3    | Hypothèses sourcées et corrections durables                 | R2                          | Importante        | En cours : moteur livré (R3.1-2, R3.4-8) ; évaluation à l'aveugle R3-S01 en cours ; R3.9 (conclure) à faire |
+| R4    | Texte, graphe et inspecteur synchronisés                    | R3                          | Importante        | À faire                                                                                                     |
+| R5    | PoC cognitif assisté avec question, problème et objectif    | R4                          | Moyenne           | À faire                                                                                                     |
+| IA-A  | Fournisseur automatique et harnais éprouvés, DeepSeek prévu | R2 ; corpus enrichi à R3/R5 | Importante        | Différé jusqu'au raccordement                                                                               |
+| R6    | Alpha Windows installable et récupérable                    | R5 + IA-A                   | Importante        | À faire                                                                                                     |
+| R7    | Bilan d'usage personnel sur plusieurs jours                 | R6                          | Dépend de l'usage | À faire                                                                                                     |
+| R8    | Modèles temporels, mémoire enrichie et Knowledge Space      | R7                          | Importante        | À cadrer après R7                                                                                           |
+| R9    | Perception choisie et recherche contextuelle                | R8                          | Importante        | À cadrer après R7                                                                                           |
+| R10   | Assistance et planification évaluées                        | R8 ; R9 si nécessaire       | Importante        | À cadrer après R7                                                                                           |
+| R11   | Extensions avancées et axes de recherche                    | R8 à R10 selon l'axe        | Exploratoire      | Hors alpha                                                                                                  |
 
 Chemin du PoC assisté : R0 → R1 → R2 → R3 → R4 → R5. IA-A peut avancer après R2 et doit repasser le corpus enrichi avant R6. L'alpha exige R5 **et** IA-A : un import manuel réussi ne démontre pas une application autonome. Les contrats permettent de préparer le rendu UI et les corpus en avance, mais un jalon n'est pas validé avant ses dépendances. Aucun de ces jalons n'est validé par la seule mise à jour de ce document.
 
@@ -239,11 +251,12 @@ Objectif : transformer les événements en hypothèses inspectables et révisabl
 - [x] R3.1 Formaliser preuves favorables, contre-preuves, contexte, période de validité, alternatives et conditions de révision. (Preuve : migration 005, `revision.ts` ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [x] R3.2 Compter les épisodes indépendants ; détecter les doublons, les résumés du même épisode et les chaînes circulaires d'inférences. (Preuve : tests R3-5 et R3-6 ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [ ] R3.3 Commencer par les descriptions de surface et les régularités relationnelles observables, niveaux D0 à D2 de la spécification.
-- [ ] R3.4 Ajouter une passe critique ciblée : données ignorées, explications contextuelles, généralisation excessive et alternative réellement distincte.
+- [x] R3.4 Ajouter une passe critique ciblée : données ignorées, explications contextuelles, généralisation excessive et alternative réellement distincte. (Preuve : opération `propose_critique`, exigence dès D3, tests R3-7 et R3.4 ; migration 006.)
 - [x] R3.5 Traiter séparément une rectification factuelle, un contexte ajouté, un désaccord et un accord subjectif. L'accord seul ne promeut pas une hypothèse en fait. (Preuve : tests R3-2, R3-3, R3-9 ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [x] R3.6 Invalider les conclusions dépendantes lorsqu'une preuve est corrigée ou retirée ; créer une demande de réanalyse limitée à la partie affectée. En mode assisté, conserver « à réexaminer » jusqu'à l'import validé d'une nouvelle réponse de Sol ; ne pas feindre un recalcul automatique. (Preuve : test R3-2, réanalyse ciblée vérifiée dans l'UI ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [x] R3.7 Contrôler la version de départ des propositions ; rejeter ou réexaminer un résultat devenu obsolète pendant une correction. (Preuve : test R3-4 ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
 - [x] R3.8 Produire les questions ouvertes à partir des alternatives, avec possibilité de ne pas répondre et sans relance identique systématique. (Preuve : test R3-8 ; [RAPPORT-002](./manwe-next/docs/pilotage/rapports/RAPPORT-002.md).)
+- [ ] R3.9 Faire conclure le moteur : lecture principale classée par sujet et par relation, alternatives qui sont de vrais mécanismes concurrents, « plausible » possible dès la première analyse en D1 et D2, confiance plafonnée avec avertissement au lieu d'un rejet global (D-015, prompt v4).
 
 Passage : une contre-preuve peut affaiblir une hypothèse ; une correction conserve son effet après une nouvelle session ; « je suis d'accord » n'ajoute aucun épisode de preuve ; une réponse tardive ne restaure pas une conclusion invalidée.
 
@@ -253,6 +266,10 @@ Livrable essentiel : historique compréhensible de ce qui a changé et de l'info
 
 Objectif : faire des trois surfaces visuelles des représentations cohérentes de la même situation.
 
+- [ ] R4.0a Créer l'objet Relation (dyade, puis lien de groupe) avec révision, trajectoire et hypothèses dont elle est le sujet (D-012).
+- [ ] R4.0b Extraire les participants et leurs rôles par épisode, avec citation et correction en un geste ; le rôle relationnel reste une hypothèse agrégée (D-013).
+- [ ] R4.0c Calculer des indicateurs relationnels déterministes (part des initiatives, réciprocité, fréquence, délais explicites, contre-exemples) utilisables comme ancrages citables.
+- [ ] R4.0d Déclarer le registre ontologique unique d'où découlent le prompt, le paquet, les contrôles et le graphe ; un test vérifie leur cohérence (D-014).
 - [ ] R4.1 Définir `FocusContext` et `GraphProjection` avec identifiants métier et révision canonique ; retirer les branches conditionnelles propres à Marc.
 - [ ] R4.2 Construire les projections d'une personne, d'une relation, d'une hypothèse et d'une question. Limiter le nombre d'objets utiles affichés.
 - [ ] R4.3 Réintroduire styles, formes, inspecteur et navigation du prototype comme composants alimentés par des données.
@@ -273,6 +290,7 @@ Objectif : valider le parcours cognitif de la vision, avec de vraies transitions
 - [ ] R5.3 Permettre la correction sur une preuve, la réponse à une question et l'inspection de la révision produite.
 - [ ] R5.4 Faire émerger un problème et un objectif de la conversation ; rendre leur formulation modifiable immédiatement.
 - [ ] R5.5 Produire deux directions qualitatives liées aux données : hypothèses, conditions, effort, limites, signaux à observer et possibilité de ne rien entreprendre.
+- [ ] R5.5b Boucler l'action : action proposée validée par l'utilisateur, attente enregistrée avant l'essai, résultat observé, comparaison entre prédiction et réalité, puis révision des hypothèses concernées (D-016).
 - [ ] R5.6 Rejouer le parcours avec un autre groupe et d'autres noms, sans modifier le code, le contrat ni le prompt pour le scénario. Sol produit de nouvelles propositions à partir du seul paquet de contexte autorisé ; ne pas recopier les réponses attendues du corpus.
 - [ ] R5.7 Effectuer une démonstration utilisateur et noter les incompréhensions ainsi que les corrections nécessaires.
 
