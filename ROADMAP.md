@@ -443,6 +443,17 @@ Un jalon est terminé lorsque son parcours annoncé fonctionne, les vérificatio
 
 Statuts utilisés : à faire, en cours, à valider, validé, bloqué, différé. Pour R2 à R5, le rapport porte également le mode testé (`assisted` ou `automatic`) et l'état distinct de IA-A. « Validé avec limite » doit nommer la limite et ne peut pas masquer un critère de passage manquant. Les preuves sont des commandes, rapports, parcours ou retours datés, pas uniquement une déclaration de fin de travail.
 
+### 18.4 Phase de test sur des scripts de téléréalité
+
+Une fois le système complet et fonctionnel, il sera éprouvé et perfectionné sur des scripts de séries de téléréalité. Ce corpus offre :
+
+- de nombreux acteurs et groupes suivis sur des semaines, avec alliances, conflits, rôles et statuts ;
+- des jeux explicites, où chacun optimise sous contrainte (rester, gagner, être apprécié) : un terrain direct pour le modèle stratégique et la psychodynamique fine (D-017, D-019) ;
+- des prédictions vérifiables par les épisodes suivants, qui permettent de mesurer la calibration ;
+- aucune donnée personnelle réelle.
+
+Les références Palantir ([docs/references/palantir](./manwe-next/docs/references/palantir/README.md)) serviront à parfaire l'ontologie et les boucles d'action pendant cette phase.
+
 ## 19 Risques et décisions de pilotage
 
 | Risque concret                                           | Conséquence                                         | Réponse prévue                                                                                   | Jalon       |
