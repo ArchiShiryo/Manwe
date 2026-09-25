@@ -494,7 +494,7 @@ test("R5.4 · un objectif émerge de la conversation, reste à adopter, ne rempl
 test("RAPPORT-011 · une citation mal recopiée est refusée avec un message qui permet de la corriger", () =>
   withStore((store) => {
     setup(store);
-    const packet = store.prepareAnalysis({ task: "extract" });
+    const packet = store.prepareAnalysis({ task: "extract", context: "full" });
     const source = packet.sources[0];
     const quote = source.text.replace("crevé", "crevè");
     const preview = store.receiveAnalysis(
@@ -527,7 +527,7 @@ test("RAPPORT-011 · une citation mal recopiée est refusée avec un message qui
 test("D-025 · application partielle : l'opération mal citée et ses dépendantes sont écartées, le reste s'applique", () =>
   withStore((store) => {
     setup(store);
-    const packet = store.prepareAnalysis({ task: "interpret" });
+    const packet = store.prepareAnalysis({ task: "interpret", context: "full" });
     const source = packet.sources[0];
     const claim = (key, bad = false) => ({
       key,
@@ -592,7 +592,7 @@ test("D-025 · application partielle : l'opération mal citée et ses dépendant
     );
 
     // Plus de 20 % d'opérations écartées : rejet complet, comme avant.
-    const packet2 = store.prepareAnalysis({ task: "interpret" });
+    const packet2 = store.prepareAnalysis({ task: "interpret", context: "full" });
     const many = store.receiveAnalysis(
       proposal(packet2, [claim("x1", true), claim("x2", true), claim("x3")]),
     );

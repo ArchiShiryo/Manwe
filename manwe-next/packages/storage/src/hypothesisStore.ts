@@ -739,7 +739,13 @@ export class HypothesisStore {
     if (
       !context.packet.sources.some((source) =>
         plain(source.text).includes(plain(mention)),
-      )
+      ) &&
+      // D-026 : le prénom peut venir d'une note déjà analysée de l'espace.
+      !(
+        this.database
+          .prepare("SELECT content FROM sources WHERE workspace_id = ?")
+          .all(this.workspaceId) as SqlRow[]
+      ).some((row) => plain(String(row.content)).includes(plain(mention)))
     )
       throw new DomainError(
         "subject_not_in_sources",

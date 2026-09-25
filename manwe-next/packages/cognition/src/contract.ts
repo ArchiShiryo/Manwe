@@ -368,6 +368,8 @@ export type ContextPacket = {
   directions: unknown[];
   actions: unknown[];
   coverage: { included: string[]; omissions: string[]; truncated: boolean };
+  /** D-026 : mémoire de travail ou relecture complète. */
+  memory?: "working" | "full";
   allowedOperations: CognitiveOperationKind[];
   limits: { maxBytes: number; maxOperations: number };
 };
@@ -392,6 +394,12 @@ export type PrepareAnalysisCommand = {
   expiresAt?: string;
   mode?: AnalysisMode;
   providerId?: string;
+  /**
+   * D-026 : « working » (par défaut) envoie l'état compact du modèle du monde
+   * et le texte des seules notes non encore analysées ; « full » est la
+   * relecture complète du texte brut, contre l'ancrage.
+   */
+  context?: "working" | "full";
 };
 
 export type AnalysisPreview = {
@@ -1332,7 +1340,15 @@ export function parsePrepareAnalysisCommand(
   const input = object(value, "analysis.prepare");
   exactKeys(
     input,
-    ["task", "focus", "allowedOperations", "expiresAt", "mode", "providerId"],
+    [
+      "task",
+      "focus",
+      "allowedOperations",
+      "expiresAt",
+      "mode",
+      "providerId",
+      "context",
+    ],
     "analysis.prepare",
   );
   const tasks: AnalysisTask[] = ["extract", "interpret", "revise", "explore"];
@@ -1382,5 +1398,14 @@ export function parsePrepareAnalysisCommand(
       input.providerId === undefined
         ? undefined
         : text(input.providerId, "providerId", 160),
+    context:
+      input.context === undefined
+        ? undefined
+        : oneOf(
+            input.context,
+            ["working", "full"] as const,
+            "invalid_context",
+            "context vaut working ou full.",
+          ),
   };
 }

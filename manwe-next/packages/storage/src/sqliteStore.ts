@@ -1870,9 +1870,13 @@ export class SqliteMemoryStore {
         maxOperations: COGNITION_MAX_OPERATIONS,
       },
     };
+    const compact =
+      (command.context ?? "working") === "working"
+        ? this.workingMemory(packetWithoutHash, snapshot)
+        : { ...packetWithoutHash, memory: "full" as const };
     const packet: ContextPacket = {
-      ...packetWithoutHash,
-      contextHash: cognitionHash(packetWithoutHash),
+      ...compact,
+      contextHash: cognitionHash(compact),
     };
     this.database
       .prepare(
@@ -2284,6 +2288,160 @@ export class SqliteMemoryStore {
     };
   }
 
+  /**
+   * D-026 : mémoire de travail. Le paquet garde tout l'état du modèle du
+   * monde, mais sous forme compacte : les faits et rôles déjà extraits ne
+   * recopient plus leurs citations, les épisodes ne recopient plus leur
+   * texte, et seules les notes non encore analysées (ou apportées par une
+   * annotation) gardent leur texte intégral, citable. Le reste se cite par
+   * identifiant ou se consulte par requête (D-023).
+   */
+  private workingMemory(
+    packet: Omit<ContextPacket, "contextHash">,
+    snapshot: WorkspaceSnapshot,
+  ): Omit<ContextPacket, "contextHash"> {
+    const analysed = new Set<string>();
+    for (const claim of snapshot.claims)
+      for (const citation of claim.citations) analysed.add(citation.sourceId);
+    for (const role of snapshot.roles)
+      for (const citation of role.citations) analysed.add(citation.sourceId);
+    const annotationSources = new Set(
+      snapshot.annotations
+        .map((annotation) => annotation.sourceId)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const keepText = (sourceId: string) =>
+      !analysed.has(sourceId) || annotationSources.has(sourceId);
+    const omit = <T extends Record<string, unknown>>(item: T, keys: string[]) =>
+      Object.fromEntries(
+        Object.entries(item).filter(([key]) => !keys.includes(key)),
+      );
+    const technical = [
+      "workspaceId",
+      "createdAt",
+      "updatedAt",
+      "createdRevision",
+      "rowVersion",
+    ];
+    const sources = packet.sources.filter((source) =>
+      keepText(source.sourceId),
+    );
+    const omitted = packet.sources.length - sources.length;
+    // Un champ absent vaut null ou vide (le prompt le dit) : on ne transmet
+    // ni les valeurs nulles ni les listes vides.
+    const prune = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(prune);
+      if (value && typeof value === "object")
+        return Object.fromEntries(
+          Object.entries(value as Record<string, unknown>)
+            .filter(
+              ([, item]) =>
+                item !== null &&
+                item !== undefined &&
+                !(Array.isArray(item) && item.length === 0),
+            )
+            .map(([key, item]) => [key, prune(item)]),
+        );
+      return value;
+    };
+    const pruneItems = (items: unknown[]) => items.map(prune);
+    const compact = {
+      ...packet,
+      memory: "working" as const,
+      sources,
+      entities: packet.entities.map((entity) => {
+        const item = entity as Record<string, unknown>;
+        if (item.title === undefined) return omit(item, technical);
+        // Épisode : son texte est celui de la source ; on le garde seulement
+        // si la source n'a pas encore été analysée.
+        return omit(
+          item,
+          keepText(String(item.sourceId)) ? technical : [...technical, "text"],
+        );
+      }),
+      claims: packet.claims.map((claim) => {
+        const item = claim as Record<string, unknown> & {
+          citations?: Array<{ sourceId: string }>;
+        };
+        return {
+          ...omit(item, [...technical, "citations"]),
+          sourceIds: [
+            ...new Set(
+              (item.citations ?? []).map((citation) => citation.sourceId),
+            ),
+          ],
+        };
+      }),
+      roles: packet.roles.map((role) =>
+        omit(role as Record<string, unknown>, ["citations", "createdRevision"]),
+      ),
+      hypotheses: packet.hypotheses.map((hypothesis) => {
+        const item = hypothesis as Record<string, unknown> & {
+          evidence?: Array<{
+            claimId: string;
+            stance: string;
+            supersededRevision: number | null;
+          }>;
+          critiques?: Array<{ findings?: Array<{ kind: string }> }>;
+        };
+        return {
+          ...omit(item, [
+            ...technical,
+            "reviewSinceRevision",
+            "evidence",
+            "critiques",
+          ]),
+          evidence: (item.evidence ?? [])
+            .filter((entry) => entry.supersededRevision === null)
+            .map((entry) => ({ claimId: entry.claimId, stance: entry.stance })),
+          critiques: (item.critiques ?? []).map((critique) =>
+            (critique.findings ?? []).map((finding) => finding.kind),
+          ),
+        };
+      }),
+      // Une question close ne sert qu'à ne pas être reposée.
+      questions: packet.questions.map((question) => {
+        const item = question as Record<string, unknown>;
+        return item.status === "open"
+          ? omit(item, [...technical, "normalizedText"])
+          : omit(item, [
+              ...technical,
+              "normalizedText",
+              "discriminatingInfo",
+              "whyNow",
+              "answer",
+            ]);
+      }),
+      coverage: {
+        ...packet.coverage,
+        included: packet.coverage.included.filter(keepText),
+        omissions: [
+          ...packet.coverage.omissions,
+          ...(omitted
+            ? [
+                `${omitted} note(s) déjà analysée(s) : leurs faits sont dans claims et roles ; texte intégral sur requête (get_note).`,
+              ]
+            : []),
+        ],
+      },
+    };
+    // Les listes de premier niveau restent présentes, même vides ; seuls
+    // leurs éléments sont allégés.
+    return {
+      ...compact,
+      entities: pruneItems(compact.entities),
+      claims: pruneItems(compact.claims),
+      roles: pruneItems(compact.roles),
+      hypotheses: pruneItems(compact.hypotheses),
+      questions: pruneItems(compact.questions),
+      relations: pruneItems(compact.relations),
+      directions: pruneItems(compact.directions),
+      actions: pruneItems(compact.actions),
+      annotations: pruneItems(compact.annotations),
+      episodes: pruneItems(compact.episodes),
+    };
+  }
+
   /** IA-A.4 : usage, modèle servi et durée d'inférence d'une réponse automatique. */
   recordProviderUsage(
     responseId: string,
@@ -2426,6 +2584,21 @@ export class SqliteMemoryStore {
     };
   }
 
+  private workspaceSourceText(sourceId: string) {
+    const row = this.database
+      .prepare(
+        "SELECT content, content_hash FROM sources WHERE workspace_id = ? AND id = ?",
+      )
+      .get(this.workspaceId, sourceId) as SqlRow | undefined;
+    return row
+      ? {
+          sourceId,
+          contentHash: String(row.content_hash),
+          text: String(row.content),
+        }
+      : undefined;
+  }
+
   private validateCitations(
     operations: CognitiveOperation[],
     packet: ContextPacket,
@@ -2444,7 +2617,11 @@ export class SqliteMemoryStore {
             "Une citation est répétée dans la même opération.",
           );
         seen.add(key);
-        const source = sources.get(citation.sourceId);
+        // D-023, D-026 : une note de l'espace reste citable même si son texte
+        // n'est pas dans le paquet (mémoire de travail, requête du modèle).
+        const source =
+          sources.get(citation.sourceId) ??
+          this.workspaceSourceText(citation.sourceId);
         if (!source)
           throw new DomainError(
             "source_not_in_context",

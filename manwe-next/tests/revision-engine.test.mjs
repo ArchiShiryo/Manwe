@@ -706,7 +706,11 @@ test("R3-10 · une erreur du moteur ne laisse aucune mutation partielle", () =>
       "2026-08-03T12:00:00-03:00",
     );
     const before = store.snapshot();
-    const packet = interpretPacket(store, [claim]);
+    const packet = store.prepareAnalysis({
+      task: "interpret",
+      focus: [{ kind: "claim", id: claim }],
+      context: "full",
+    });
     const source = packet.sources[0];
     const preview = respond(store, packet, [
       {
