@@ -8,10 +8,12 @@ import { projectGraph } from "../packages/cognition/src/projection.ts";
 import {
   LAYOUT_HEIGHT,
   LAYOUT_WIDTH,
+  anchorLayout,
   focusFromNodeId,
   focusNodeId,
   layoutGraph,
   tremor,
+  visibleNodeIds,
 } from "../apps/desktop/src/graphLayout.ts";
 
 // Même données réelles que le test des projections (R4-S02, Q01).
@@ -79,4 +81,63 @@ test("recentrage et tremblement des lectures", () => {
   assert.equal(tremor(hypothesis("high")), "low");
   assert.equal(tremor(hypothesis("low")), "high");
   assert.equal(tremor({ ...hypothesis("low"), kind: "person" }), "none");
+});
+
+test("R4.4 · une nouvelle révision ne déplace pas ce qui est déjà affiché", () => {
+  const data = snapshot();
+  const projection = projectGraph(data, { kind: "self", id: "self" });
+  const before = layoutGraph(projection);
+  // Révision suivante simulée : deux nouvelles lectures sur l'utilisateur.
+  const extra = ["a", "b"].map((id) => ({
+    id: `hypothesis:new-${id}`,
+    kind: "hypothesis",
+    label: `nouvelle ${id}`,
+    style: "inferred",
+    meta: { confidence: "low", rank: null },
+  }));
+  const next = {
+    ...projection,
+    revision: projection.revision + 1,
+    nodes: [...projection.nodes, ...extra],
+    edges: [
+      ...projection.edges,
+      ...extra.map((node) => ({
+        id: `about:${node.id}->self`,
+        from: node.id,
+        to: "self",
+        kind: "about",
+        style: "inferred",
+      })),
+    ],
+  };
+  const after = anchorLayout(layoutGraph(next), before);
+  for (const node of before) {
+    const moved = after.find((item) => item.id === node.id);
+    assert.deepEqual([moved.x, moved.y], [node.x, node.y], node.id);
+  }
+  for (const node of extra) {
+    const placed = after.find((item) => item.id === node.id);
+    for (const other of after.filter((item) => item.id !== node.id))
+      assert.ok(
+        Math.hypot(other.x - placed.x, other.y - placed.y) >= 44,
+        `${node.id} trop près de ${other.id}`,
+      );
+  }
+  assert.deepEqual(anchorLayout(layoutGraph(next), before), after, "stable");
+});
+
+test("R4.4 · le zoom sémantique masque sans déplacer ni changer le focus", () => {
+  const data = snapshot();
+  const relation = data.relations[0];
+  const placed = layoutGraph(
+    projectGraph(data, { kind: "relation", id: relation.id }),
+  );
+  const full = visibleNodeIds(placed, "full");
+  const essential = visibleNodeIds(placed, "essential");
+  assert.equal(full.size, placed.length);
+  assert.ok(essential.size < full.size, "des épisodes sont masqués");
+  assert.ok(essential.has(`relation:${relation.id}`), "le focus reste");
+  for (const node of placed)
+    if (node.kind === "person" || node.kind === "self")
+      assert.ok(essential.has(node.id), node.id);
 });

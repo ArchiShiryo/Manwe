@@ -132,3 +132,70 @@ export function tremor(node: GraphNode) {
       ? "medium"
       : "high";
 }
+
+const MIN_DISTANCE = 44;
+
+/**
+ * R4.4 : après une nouvelle révision sur le même focus, les nœuds déjà
+ * visibles gardent leur place ; seuls les nouveaux sont posés, à l'endroit
+ * libre le plus proche de leur position calculée.
+ */
+export function anchorLayout(
+  placed: PlacedNode[],
+  previous: PlacedNode[] | null,
+): PlacedNode[] {
+  if (!previous?.length) return placed;
+  const before = new Map(previous.map((node) => [node.id, node]));
+  const kept = placed.map((node) => {
+    const old = before.get(node.id);
+    return old ? { ...node, x: old.x, y: old.y } : node;
+  });
+  const fixed = kept.filter((node) => before.has(node.id));
+  const free = (x: number, y: number) =>
+    fixed.every(
+      (other) => Math.hypot(other.x - x, other.y - y) >= MIN_DISTANCE,
+    );
+  const inside = (x: number, y: number) =>
+    x >= 40 && x <= LAYOUT_WIDTH - 40 && y >= 30 && y <= LAYOUT_HEIGHT - 30;
+  return kept.map((node) => {
+    if (before.has(node.id)) return node;
+    let spot = { x: node.x, y: node.y };
+    // Spirale déterministe autour de la position calculée.
+    for (let step = 0; step < 60 && !free(spot.x, spot.y); step += 1) {
+      const angle = step * 0.9;
+      const radius = MIN_DISTANCE * (1 + step / 6);
+      const x = Math.round(node.x + radius * Math.cos(angle));
+      const y = Math.round(node.y + radius * Math.sin(angle));
+      if (inside(x, y)) spot = { x, y };
+    }
+    const result = { ...node, ...spot };
+    fixed.push(result);
+    return result;
+  });
+}
+
+export type DetailLevel = "essential" | "full";
+
+/**
+ * Zoom sémantique (R4.4) : il masque des objets sans changer le focus ni
+ * déplacer ceux qui restent. « Essentiel » garde le focus, ses voisins
+ * directs, les personnes et relations, et les lectures principales (rang 1).
+ */
+export function visibleNodeIds(
+  placed: PlacedNode[],
+  level: DetailLevel,
+): Set<string> {
+  if (level === "full") return new Set(placed.map((node) => node.id));
+  return new Set(
+    placed
+      .filter(
+        (node) =>
+          node.ring <= 1 ||
+          node.kind === "self" ||
+          node.kind === "person" ||
+          node.kind === "relation" ||
+          (node.kind === "hypothesis" && node.meta.rank === 1),
+      )
+      .map((node) => node.id),
+  );
+}

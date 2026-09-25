@@ -4,7 +4,7 @@
 // double trait qui tremble = inféré (plus la confiance est basse, plus il
 // tremble), gris avec « ? » = inconnu. Jamais de couleur de réussite sur une
 // hypothèse ; au plus 7 relations par schéma (garanti par la projection).
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   FocusContext,
   GraphEdge,
@@ -15,10 +15,13 @@ import { memoryApi } from "./memoryApi.ts";
 import {
   LAYOUT_HEIGHT,
   LAYOUT_WIDTH,
+  anchorLayout,
   focusFromNodeId,
   focusNodeId,
   layoutGraph,
   tremor,
+  visibleNodeIds,
+  type DetailLevel,
   type PlacedNode,
 } from "./graphLayout.ts";
 
@@ -91,6 +94,10 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
   const [projection, setProjection] = useState<GraphProjection | null>(null);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [level, setLevel] = useState<DetailLevel>("full");
+  // Dernière disposition par focus : une nouvelle révision ne déplace pas
+  // ce qui était déjà à l'écran (R4.4).
+  const previous = useRef(new Map<string, PlacedNode[]>());
   const revision = snapshot.workspace.revision;
 
   useEffect(() => {
@@ -112,11 +119,23 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
     };
   }, [focus, revision]);
 
-  const placed = useMemo(
-    () => (projection ? layoutGraph(projection) : []),
-    [projection],
+  const placed = useMemo(() => {
+    if (!projection) return [];
+    const key = focusNodeId(projection);
+    const result = anchorLayout(
+      layoutGraph(projection),
+      previous.current.get(key) ?? null,
+    );
+    previous.current.set(key, result);
+    return result;
+  }, [projection]);
+  const visible = visibleNodeIds(placed, level);
+  const byId = new Map(
+    placed
+      .filter((node) => visible.has(node.id))
+      .map((node) => [node.id, node]),
   );
-  const byId = new Map(placed.map((node) => [node.id, node]));
+  const hidden = placed.length - byId.size;
   const detail = selected ? byId.get(selected) : undefined;
   const centerId = projection ? focusNodeId(projection) : "self";
 
@@ -151,6 +170,22 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
               {short(item.label, 18)}
             </button>
           ))}
+        </div>
+        <div className="segmented" aria-label="Niveau de détail">
+          <button
+            className={level === "essential" ? "active" : ""}
+            aria-pressed={level === "essential"}
+            onClick={() => setLevel("essential")}
+          >
+            Essentiel
+          </button>
+          <button
+            className={level === "full" ? "active" : ""}
+            aria-pressed={level === "full"}
+            onClick={() => setLevel("full")}
+          >
+            Détails
+          </button>
         </div>
         <div className="world-graph-legend" aria-label="Légende des traits">
           {(
@@ -212,57 +247,59 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
               />
             );
           })}
-          {placed.map((node) => {
-            const radius = nodeRadius(node);
-            const label =
-              node.kind === "question" ? `? ${node.label}` : node.label;
-            return (
-              <g
-                key={node.id}
-                className={`world-node world-node-${node.kind} world-node-${node.style} ${node.id === centerId ? "is-focus" : ""} ${node.id === selected ? "is-selected" : ""}`}
-                style={{ transform: `translate(${node.x}px, ${node.y}px)` }}
-                role="button"
-                tabIndex={0}
-                aria-label={`${KIND_LABELS[node.kind]} : ${node.label}`}
-                onClick={() => choose(node)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    choose(node);
-                  }
-                }}
-              >
-                {node.kind === "relation" ? (
-                  <rect
-                    x={-radius}
-                    y={-radius * 0.6}
-                    width={radius * 2}
-                    height={radius * 1.2}
-                    rx={radius * 0.6}
-                  />
-                ) : node.kind === "hypothesis" ? (
-                  <polygon
-                    points={`0,${-radius} ${radius},0 0,${radius} ${-radius},0`}
-                  />
-                ) : (
-                  <circle r={radius} />
-                )}
-                {node.kind === "hypothesis" && node.meta.rank === 1 && (
-                  <text className="world-node-rank" dy="4">
-                    1
+          {placed
+            .filter((node) => visible.has(node.id))
+            .map((node) => {
+              const radius = nodeRadius(node);
+              const label =
+                node.kind === "question" ? `? ${node.label}` : node.label;
+              return (
+                <g
+                  key={node.id}
+                  className={`world-node world-node-${node.kind} world-node-${node.style} ${node.id === centerId ? "is-focus" : ""} ${node.id === selected ? "is-selected" : ""}`}
+                  style={{ transform: `translate(${node.x}px, ${node.y}px)` }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${KIND_LABELS[node.kind]} : ${node.label}`}
+                  onClick={() => choose(node)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      choose(node);
+                    }
+                  }}
+                >
+                  {node.kind === "relation" ? (
+                    <rect
+                      x={-radius}
+                      y={-radius * 0.6}
+                      width={radius * 2}
+                      height={radius * 1.2}
+                      rx={radius * 0.6}
+                    />
+                  ) : node.kind === "hypothesis" ? (
+                    <polygon
+                      points={`0,${-radius} ${radius},0 0,${radius} ${-radius},0`}
+                    />
+                  ) : (
+                    <circle r={radius} />
+                  )}
+                  {node.kind === "hypothesis" && node.meta.rank === 1 && (
+                    <text className="world-node-rank" dy="4">
+                      1
+                    </text>
+                  )}
+                  {(node.style === "unknown" || node.kind === "question") && (
+                    <text className="world-node-unknown" dy="4">
+                      ?
+                    </text>
+                  )}
+                  <text className="world-node-label" y={radius + 14}>
+                    {short(label)}
                   </text>
-                )}
-                {(node.style === "unknown" || node.kind === "question") && (
-                  <text className="world-node-unknown" dy="4">
-                    ?
-                  </text>
-                )}
-                <text className="world-node-label" y={radius + 14}>
-                  {short(label)}
-                </text>
-              </g>
-            );
-          })}
+                </g>
+              );
+            })}
         </svg>
       )}
       {detail && (
@@ -307,6 +344,12 @@ export function WorldGraph({ snapshot }: { snapshot: WorkspaceSnapshot }) {
               })}
           </ul>
         </aside>
+      )}
+      {hidden > 0 && (
+        <p className="world-graph-note">
+          Vue essentielle : {hidden} élément{hidden > 1 ? "s" : ""} masqué
+          {hidden > 1 ? "s" : ""}, sans rien déplacer.
+        </p>
       )}
       {projection?.truncated && (
         <p className="world-graph-note">
