@@ -634,6 +634,37 @@ function PersonalHypothesisInspector({
           </div>
         </article>
       ))}
+      {snapshot.relations.length > 0 && (
+        <div className="personal-relations">
+          <strong>Relations (indicateurs calculés, jamais des preuves)</strong>
+          {snapshot.relations.map((relation) => {
+            const keys = relation.members.map((member) =>
+              member.kind === "self" ? "self" : `person:${member.personId}`,
+            );
+            const pair = (values: Record<string, number>) =>
+              keys.map((key) => values[key] ?? 0).join(" / ");
+            return (
+              <article className="personal-claim" key={relation.id}>
+                <div className="personal-event-meta">
+                  <span>
+                    {relation.members
+                      .map((member) => memberLabel(snapshot, member))
+                      .join(" – ")}
+                  </span>
+                  <span>{relation.indicators.episodes} épisode(s)</span>
+                </div>
+                <small>
+                  Initiatives {pair(relation.indicators.initiatives)} · demandes{" "}
+                  {pair(relation.indicators.requests)} · aides{" "}
+                  {pair(relation.indicators.help)} · refus{" "}
+                  {pair(relation.indicators.declinedRequests)} · contre-exemples{" "}
+                  {relation.indicators.counterexamples}
+                </small>
+              </article>
+            );
+          })}
+        </div>
+      )}
       <div className="personal-claim-list">
         {[...snapshot.hypotheses]
           // Lectures classées d'abord (1 = principale), puis les autres (D-015).
