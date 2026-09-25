@@ -14,7 +14,7 @@ import {
 } from "../apps/server/src/analystProvider.ts";
 
 const PROMPT_V6 = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v12.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v13.md", import.meta.url),
   "utf8",
 );
 
@@ -415,7 +415,7 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
     ).json();
     assert.equal(analysis.packet.providerId, "deepseek:test");
     assert.equal(analysis.packet.mode, "automatic");
-    assert.equal(analysis.promptVersion, "analyst-v12");
+    assert.equal(analysis.promptVersion, "analyst-v13");
     assert.equal(analysis.status, "applied");
     // Après un rechargement, l'interface retrouve la dernière analyse.
     const current = await (

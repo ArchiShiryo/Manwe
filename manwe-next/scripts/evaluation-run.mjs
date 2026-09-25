@@ -14,7 +14,7 @@ import {
 import { SqliteMemoryStore } from "../packages/storage/src/sqliteStore.ts";
 
 const PROMPT_PATH = new URL(
-  "../packages/cognition/prompts/analyst-v12.md",
+  "../packages/cognition/prompts/analyst-v13.md",
   import.meta.url,
 );
 const PROMPT_TEXT = readFileSync(PROMPT_PATH, "utf8");

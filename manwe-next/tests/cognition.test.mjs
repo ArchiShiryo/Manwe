@@ -102,11 +102,11 @@ test("un ContextPacket est figé, sourcé et son empreinte exclut uniquement con
     store.close();
   }));
 
-test("chaque demande enregistre l’empreinte du prompt analyst-v12 versionné", () =>
+test("chaque demande enregistre l’empreinte du prompt analyst-v13 versionné", () =>
   withStore((store) => {
     capturedStore(store, "prompt-hash");
     const prompt = readFileSync(
-      new URL("../packages/cognition/prompts/analyst-v12.md", import.meta.url),
+      new URL("../packages/cognition/prompts/analyst-v13.md", import.meta.url),
       "utf8",
     );
     const expectedHash = createHash("sha256")
@@ -118,8 +118,8 @@ test("chaque demande enregistre l’empreinte du prompt analyst-v12 versionné",
     ];
     for (const packet of requests) {
       const journal = store.getAnalysis(packet.requestId);
-      assert.equal(packet.promptVersion, "analyst-v12");
-      assert.equal(journal.promptVersion, "analyst-v12");
+      assert.equal(packet.promptVersion, "analyst-v13");
+      assert.equal(journal.promptVersion, "analyst-v13");
       assert.equal(journal.promptHash, expectedHash);
     }
     store.close();
@@ -127,7 +127,7 @@ test("chaque demande enregistre l’empreinte du prompt analyst-v12 versionné",
 
 test("le prompt analyst-v6 documente chaque champ exigé par le parseur strict", () => {
   const prompt = readFileSync(
-    new URL("../packages/cognition/prompts/analyst-v12.md", import.meta.url),
+    new URL("../packages/cognition/prompts/analyst-v13.md", import.meta.url),
     "utf8",
   );
   const required = [

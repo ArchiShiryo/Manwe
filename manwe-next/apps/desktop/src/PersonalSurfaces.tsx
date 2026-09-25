@@ -59,7 +59,7 @@ function AnalysisFallback({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 import { Directions } from "./Directions.tsx";
-import analystPrompt from "../../../packages/cognition/prompts/analyst-v12.md?raw";
+import analystPrompt from "../../../packages/cognition/prompts/analyst-v13.md?raw";
 import {
   claimModalityLabels,
   confidenceLabels,
