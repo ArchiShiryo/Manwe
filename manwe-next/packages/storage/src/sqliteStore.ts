@@ -68,11 +68,11 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
-const ANALYST_PROMPT_VERSION = "analyst-v4";
+const ANALYST_PROMPT_VERSION = "analyst-v5";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
     fileURLToPath(
-      new URL("../../cognition/prompts/analyst-v4.md", import.meta.url),
+      new URL("../../cognition/prompts/analyst-v5.md", import.meta.url),
     ),
     "utf8",
   ),
@@ -756,9 +756,24 @@ export class SqliteMemoryStore {
       // l'utilisateur : il devient une source citable (RAPPORT-003 §4.2).
       // L'accord n'en crée pas, car il n'est jamais une preuve (D-008).
       const citable = command.annotationType !== "agreement";
-      const sourceId = citable ? randomUUID() : null;
+      // Une même annotation portée sur plusieurs objets partage sa source
+      // (RAPPORT-004 §4.3) : on réutilise la source d'un texte identique.
+      const shared = citable
+        ? (this.database
+            .prepare(
+              "SELECT source_id FROM annotations WHERE workspace_id = ? AND text = ? AND annotation_type = ? AND source_id IS NOT NULL LIMIT 1",
+            )
+            .get(this.workspaceId, command.text, command.annotationType) as
+            | SqlRow
+            | undefined)
+        : undefined;
+      const sourceId = shared
+        ? String(shared.source_id)
+        : citable
+          ? randomUUID()
+          : null;
       const createdRefs: EntityRef[] = [];
-      if (sourceId) {
+      if (sourceId && !shared) {
         const eventId = randomUUID();
         this.database
           .prepare(

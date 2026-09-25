@@ -29,7 +29,7 @@ import type {
   ContextPacket,
 } from "../../../packages/cognition/src/contract.ts";
 import { MemoryApiError, memoryApi } from "./memoryApi.ts";
-import analystPrompt from "../../../packages/cognition/prompts/analyst-v4.md?raw";
+import analystPrompt from "../../../packages/cognition/prompts/analyst-v5.md?raw";
 import {
   claimModalityLabels,
   confidenceLabels,
