@@ -1,0 +1,176 @@
+Now I have enough. Let me design the directions.
+
+Goal: "Que la gestion de la coloc ne repose plus sur toi seul, sans quitter la colocation."
+
+Directions (at least 2 + do_nothing). I'll propose 4:
+
+d1 — change_reward on hypothesis 152681e5 (règle du « qui propose fait ») — mechanismKey "barrier" or "defenses". Action: au lieu de proposer un dispositif complet (tableau des tâches, qui déclenche « tu t'en occupes ? »), demander à chacun de nommer lui-même une tâche qu'il prend en charge, sans proposer de solution — l'utilisateur ne propose pas, il interroge. Hmm, is that change_reward or lower_barrier? The rule "qui propose fait" means naming a problem assigns it to you. Changing what repetition rewards: abstention being free. The lever change_reward would be: make abstention visible/costly — e.g., laisser la vaisselle de Jules et ne pas la faire, prévenir à l'avance « je ne ferai plus ta part » ; that changes what abstention earns. That's change_reward, mechanismKey "optimizes" (Jules optimizes keeping comfort without bearing tasks for free).
+
+Let me design:
+
+d1: change_reward, hypothesis de295ba4 (norme d'abstention récompensée), mechanismKey "barrier" (l'abstention est gratuite). Action (petit pas, graduated): choisir une seule tâche récurrente (la vaisselle de Jules) et cesser de la couvrir, en le disant une fois, calmement, sans reproche : « je ne fais plus ta vaisselle, je laisse la mienne à part ». Effort low. Signals: Jules lave sa vaisselle ou la laisse s'accumuler; Maya commente; demande d'explication. Predictions: Jules — surprise puis soit fait sa part (transitional 14j) soit laisse s'accumuler et teste (transitional 7j); Maya — va probablement demander une nouvelle fois à l'utilisateur (immediate 3j) car elle cherche un exécutant. learnsIfFails: si rien ne bouge et que la vaisselle pourrit, on apprend que l'abstention est bien gratuite et que le groupe ne se régule pas seul; si quelqu'un d'autre prend le relais, la norme n'était pas si stable.
+
+But careful: O5 says don't build a lever on D3 without solid evidence. de295ba4 is D3 draft with 4 supports / 1 contradict. Limits say "Le groupe n'est observé qu'à travers les notes de l'utilisateur". Hmm. Also I can cite c2100274 (D2 plausible, rank 1, relation) which is D2 and plausible. Using a D2 hypothesis is safer. c2100274: répartition asymétrique stable. mechanims null for that one though — mechanismKey must name a field of the mechanism; if mechanism null, mechanismKey should be null. Could use mechanismKey null.
+
+Actually the rule: "Chaque direction d'action actionne une lecture présente dans le paquet ou proposée dans la réponse (lever.hypothesis), ni 'superseded' ni 'contradicted', avec un type de levier". So D2 plausible hypotheses are fine and safest. Let me anchor most directions on c2100274 (D2 relation, plausible rank1), 152681e5 (D3, draft but with mechanism), 14ad77ca (D3 draft self), 4edd6edd (D2 plausible Karim), 6c091a02 (D2 draft Jules).
+
+O5 constraint applies with "peu de données (lectures D1, un seul épisode)" — we have plenty of episodes, so not restricted. But I should prefer D2 anchors.
+
+Let me build 4 directions + do_nothing:
+
+d1 — "Un seul "non" borné sur une tâche de Jules" — lever change_reward, hypothesis 6c091a02 (Jules: ni demande ni échange sur les tâches; D2 draft, rank1) or c2100274. Mechanism field? 6c091a02 mechanism null. Hmm. Use de295ba4 mechanismKey "barrier" for change_reward. Or use 152681e5 with mechanismKey "beliefs".
+
+Hmm, mechanismKey describes which mechanism field the lever targets. For change_reward on "l'abstention est gratuite", the relevant field is "barrier" ("l'abstention est gratuite et l'exécution renforce la présomption"). Yes, barrier fits.
+
+d1: lever change_reward, hypothesis de295ba4, mechanismKey "barrier". Action: cesser de couvrir une seule tâche laissée par Jules (sa vaisselle), et l'annoncer une fois sans reproche.
+
+Alternatively anchor on c2100274 (plausible D2) with mechanismKey null — safer, but then lever type less grounded. I think using de295ba4 (D3 draft) is fine given rich evidence; but rule O5's caution is about thin data. Also "n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides" — de295ba4 has 4 anchored supports over 31 days, arguably solid. OK.
+
+d2 — lower_barrier, hypothesis 152681e5, mechanismKey "defenses" (approuver chaleureusement en réattribuant / se taire). Action: demander à chacun de choisir sa tâche au lieu de proposer un dispositif; concrètement, envoyer un message unique : « je prends X ; qui prend quoi ? » — non pas un projet, mais une question ouverte qui n'attribue pas l'exécution à celui qui nomme le problème. Effort low. Predictions: Maya likely "bonne idée, tu t'en occupes ?" again (immediate ~2j) — which itself is information; Jules stays silent (immediate ~5j); then, if no one takes, user can name the asymmetry explicitly on a small scale.
+
+Hmm, but this is similar to the tableau des tâches which already failed. The point is to make it a question to each person rather than a device. It lowers the barrier of "nommer un problème = le porter". Good — this also tests hypothesis 152681e5.
+
+d3 — alternative_source, hypothesis 14ad77ca (porter comme prix de l'appartenance; D3 draft) mechanismKey "soothes" (reconnaissance publique / être hors de l'appart) or "optimizes". Action: relier la reconnaissance/le lien à une autre source que le portage — accepter la prochaine invitation de Karim (ou programmer une sortie), c'est-à-dire remettre du lien non-médié par la tâche. Effort low. Anchored also on 4edd6edd (Karim miroir, D2 plausible) — the relation exists as a real friendship with initiatives 3 each way, help 6 self. Predictions: Karim — réagit positivement, demande pourquoi le changement (immediate, 2j); self — réduit le temps passé sur la coloc? Hmm careful about predicting user's own behavior — the actor must be a MEMBER; self is allowed as member {self:true}. Yes predictions can be about self.
+
+Actually "alternative_source : offrir une autre source du même gain". The gain is recognition + belonging. Alternative source: le lien avec Karim (friendship where he is valued not for managing). Good.
+
+d4 — disconfirming_experience, hypothesis 50ba8df3 or 14ad77ca, mechanismKey "beliefs" ("demander créerait un conflit qui menacerait la vie commune"). Action: faire une demande minuscule et bornée à Maya (ex. « tu peux passer commande cette semaine, je suis pris ») et observer la réponse réelle. This is a test that disconfirms the belief that asking costs a conflict. But this is close to the existing question 1103623c etc. It's a direction, fine. Effort low. Predictions: Maya likely accepts quickly (immediate 2j) — since requests are her usual mode; if she declines or the atmosphere sours, the belief is confirmed. learnsIfFails: si Maya refuse ou si l'ambiance se dégrade, on apprend que la demande a bien un coût relationnel réel — information décisive pour la lecture.
+
+Hmm but this overlaps with d1/d2. Maybe better: d4 = change_game — changer le cadre: formaliser par un écrit partagé / une rotation écrite, ou inverser la règle « qui propose fait » en la rendant explicite devant les deux. Or change_game = involve an outsider? Hmm, risky/manipulative? Not manipulative.
+
+Maybe d4 = change_game, hypothesis 152681e5, mechanismKey "beliefs" ("celui qui soulève le problème en devient responsable"). Action: déplacer le lieu de la décision — proposer que la répartition soit décidée à trois avec une règle écrite et un tour de rôle nominal, et que l'utilisateur ne soit pas le secrétaire (demander à Maya de noter). Hmm, asks someone else to do something — it's the user's action though.
+
+Actually I think 4 directions is enough: 3 actions + do_nothing. But O1 says "au moins deux quand c'est possible". I'll give 4 actions + 1 do_nothing = 5. Good coverage. Maybe 3 actions + do_nothing is cleaner and stronger (rule 15: 2-3 strong readings per subject). Let me do 4 actions + do_nothing? Directions aren't hypotheses. I'll do 4 actions + do_nothing = 5 directions. Hmm, maybe 3 actions + do_nothing is better focused. Let me pick the strongest 4:
+
+1. change_reward (d1): cesser de couvrir une tâche de Jules, annoncée une fois.
+2. lower_barrier (d2): poser une question de répartition à chacun (petit, non-dispositif) — pour court-circuiter « qui propose fait ».
+3. disconfirming_experience (d3): faire une micro-demande à Maya et observer.
+4. alternative_source (d4): réinvestir le lien avec Karim (source de reconnaissance/lien hors tâche).
+5. do_nothing (d5).
+
+That's a good set: d1 change_reward, d2 lower_barrier, d3 disconfirming_experience, d4 alternative_source, d5 do_nothing.
+
+Hmm, d1 and d3 both are about refusing/asking; but one is toward Jules (stop covering) and one toward Maya (ask her to do a task). Distinct enough. Actually maybe merge: keep d3 as disconfirming_experience targeting the belief "demander coûte un conflit" via asking Maya for one small thing. Fine.
+
+do_nothing predictions: la charge reste, l'asymétrie se reconduit (c2100274 prediction), la fatigue signalée par Karim s'aggrave (852b27ea prediction), le ras-le-bol s'accumule jusqu'à envisager de partir plutôt que négocier (14ad77ca prediction). Effort low.
+
+For do_nothing, lever.hypothesis null.
+
+Now questions (propose_question). Need questions that discriminate and aren't already in paquet. Existing: vaisselle de Jules bon gré/coût; tableau des tâches issue; refus Karim ressenti; cadeau oui hésitation. 
+
+Candidate Q1: « Qu'est-ce que tu as déjà dit à Maya et Jules sur la répartition en dehors du tableau des tâches, et comment ont-ils réagi ? » Targets 152681e5, c2100274, de295ba4. Discriminating: whether the user ever voiced the charge and got a response — if he voiced it and got a relay, the "barrier" reading weakens; if never, supports 3b518f39. Hmm, claim 3b518f39 asserts no episode shows the user asking. Two existing questions already target this domain partly (20d66d88 targets the tableau). Mine is broader/new. Fine.
+
+Candidate Q2: « Quand tu as dit oui pour avancer la part de loyer de Jules, est-ce que tu l'as fait par choix ou parce que refuser te coûtait plus cher ? » — but existing 1103623c covers cadeau oui; similar but different episode. Maybe better target: does the user want the goal differently — e.g., what would he accept: "Qu'est-ce qui serait pour toi un changement acceptable : que chacun fasse sa part, ou que tu gardes l'organisation mais qu'on reconnaisse ?" Hmm that's a values question, discriminating between 14ad77ca/961ea886 vs 50ba8df3.
+
+Candidate Q3: about the goal's lever: "Si tu arrêtais de faire une des tâches communes (la vaisselle de Jules, les courses), qu'est-ce que tu penses qu'il se passerait?" — targets de295ba4, 14ad77ca, 50ba8df3, 2286dd1c. Discriminating: if he predicts collapse → supports beliefs of indispensability; if he predicts nothing serious → supports contextual/norm reading. This is a good predictive question — most useful for orienting direction d1. Yes.
+
+I'll propose 2-3 questions. The rule: pose a question only if it discriminates. Let's propose 3:
+
+q1: "Qu'est-ce que tu as déjà dit à Maya ou Jules sur la répartition, hors la proposition de tableau, et qu'ont-ils répondu ?" targets 152681e5, de295ba4, c2100274 (or 2286dd1c).
+
+q2: "Si tu ne faisais plus une seule tâche commune (la vaisselle de Jules, les courses), qu'est-ce que tu imagines qu'il se passerait ?" targets de295ba4, 14ad77ca, 50ba8df3, 2286dd1c.
+
+q3: maybe about Karim: "Quand Karim te dit que tu parles tout le temps de la coloc, qu'est-ce que ça te fait ?" — but 4241b5ba already asks about Karim's declined invitation's feeling. Close-ish. Maybe skip, or ask something different: "Est-ce que tu as envie de le voir davantage, ou est-ce que la coloc a pris la place ?" Hmm.
+
+I'll do 2 questions to stay focused: q1, q2. Maybe add q3 targeting the goal: "Qu'est-ce que tu serais prêt à lâcher en premier ?" That's useful for direction but descriptive not discriminating. Skip.
+
+Actually adding one more discriminating question is fine. Let me add q3 targeting 2286dd1c vs c2100274: "Parmi ces derniers mois, y a-t-il eu une période sans imprévu (facture, fuite, absence) où la répartition est restée la même ?" — that discriminates conjunctural vs stable. But paquet question? Not present. Good, it directly tests 2286dd1c's revision conditions. I'll include it. Hmm, three questions is fine.
+
+Now, outcome: "proposed". operations must be non-empty and only allowed ops: propose_question, propose_direction, propose_goal. Good.
+
+Do I need any citations? propose_direction and propose_question have no citations field. propose_goal would need citations but I'm not proposing (goal exists confirmed). So no citations needed. 
+
+Wait — the schema says operations list each with key/kind/payload/rationale. directions need all payload fields: goal, title, action, lever, conditions, effort, limits, signals, learnsIfFails, predictions. horizonDays can be null but prediction requires phase. predictions items: actor, response, phase, horizonDays.
+
+MEMBRE for predictions: {"self": true} or {"person": {"kind":"person","id":"..."}} or {"mention":"Maya"}. I'll use person refs with ids: Maya f69d547f-..., Jules 9146f8a8-..., Karim 51e02ad6-....
+
+Now write rationales short, citing indicators (R3).
+
+Let's write the JSON.
+
+summary: short synthesis.
+
+Let me draft each direction carefully.
+
+d1: 
+title: "Cesser de couvrir une seule tâche de Jules, annoncée une fois"
+action: "Choisir une seule tâche laissée par Jules (sa vaisselle) et ne plus la faire : annoncer une fois, calmement et sans reproche, « je lave ma vaisselle, je ne fais plus la tienne », puis s'y tenir une semaine."
+lever: {kind: "change_reward", hypothesis: {kind:"hypothesis", id:"de295ba4-..."}, mechanismKey: "barrier"}
+conditions: "Quand l'utilisateur veut tester ce qui sera vraiment fait sans lui ; utile seulement si une tâche régulière et clairement attribuable à Jules existe (la vaisselle)."
+effort: "low"
+limits: "Peut être lu comme une déclaration de guerre ; la cuisine peut rester sale ; ne règle pas la répartition globale ni les demandes de Maya."
+signals: ["Jules lave sa vaisselle sans qu'on le lui demande", "la vaisselle reste sale plusieurs jours", "Maya ou Jules demande à l'utilisateur de reprendre la tâche"]
+learnsIfFails: "Si la vaisselle reste et que personne ne se régule, l'abstention est bien gratuite et la norme ne se corrige pas d'elle-même ; si Jules prend le relais, l'équilibre tenait à ce que l'utilisateur couvrait en silence."
+predictions: [{Jules, "surprise, puis il laisse la vaisselle s'accumuler pour tester si l'utilisateur cédera", transitional, 7}, {Jules, "finit par laver sa part ou propose un accord (par ex. chacun la sienne)", equilibrium, 30}, {Maya, "demande à l'utilisateur de reprendre la tâche ou s'étonne du changement", immediate, 5}]
+
+d2:
+title: "Poser la répartition comme une question, pas comme un dispositif"
+action: "Au lieu de proposer un tableau ou un plan (ce qui déclenche « bonne idée, tu t'en occupes ? »), envoyer un message unique à Maya et Jules : « je fais X cette semaine ; qui prend les courses, qui prend la réunion proprio ? », sans solution à exécuter soi-même."
+lever: {kind: "lower_barrier", hypothesis: {id:"152681e5-..."}, mechanismKey: "defenses"}
+conditions: "Quand une tâche concrète et datée est en jeu (courses de la semaine, prochaine réunion), pas en général."
+effort: "low"
+limits: "Peut se heurter au silence (Jules) ; si personne ne répond, la tâche revient à l'utilisateur et la règle est confirmée ; ne crée pas de sanction si le silence reste gratuit."
+signals: ["une réponse nommée de Maya ou Jules avec une tâche précise", "silence ou réponse qui renvoie l'exécution", "l'utilisateur se retrouve à faire la tâche malgré la question"]
+learnsIfFails: "Un nouveau silence montre que la réattribution ne vient pas d'un manque de clarté mais du fait que l'abstention ne coûte rien ; une réponse nommée dément la règle « qui propose fait »."
+predictions: [{Maya, "approuve et renvoie l'exécution (« tu t'en occupes ? ») ou choisit une tâche de son côté", immediate, 3}, {Jules, "ne répond pas", immediate, 7}, {self, "se retrouve à faire la tâche faute de réponse et doit décider de la laisser", transitional, 10}]
+
+d3:
+title: "Une micro-demande à Maya, pour voir ce qu'un refus coûte vraiment"
+action: "Faire une demande minuscule et bornée à Maya sur une tâche ponctuelle (« tu peux passer commande cette semaine ? je ne peux pas »), sans la justifier ni proposer d'alternative, et observer sa réponse."
+lever: {kind: "disconfirming_experience", hypothesis: {kind:"hypothesis", id:"14ad77ca-..."}, mechanismKey: "beliefs"}
+conditions: "Quand une demande ponctuelle se présente et que l'utilisateur peut se permettre de ne pas la porter."
+effort: "low"
+limits: "Un seul épisode ne prouve rien sur les autres ; si Maya accepte, cela ne garantit pas que Jules suivra ; l'utilisateur peut se sentir en dette et compenser ensuite."
+signals: ["Maya accepte et fait la tâche", "Maya refuse ou le prend mal", "l'utilisateur culpabilise et reprend la tâche de lui-même"]
+learnsIfFails: "Si refuser une demande ponctuelle n'entraîne ni conflit ni dégradation de l'ambiance, la croyance « demander coûte un conflit » est démentie ; si l'ambiance se dégrade, le coût est réel et la lecture d'évitement est confirmée."
+predictions: [{Maya, "accepte la tâche (elle demande elle-même souvent) ou négocie un échange", immediate, 2}, {self, "éprouve une gêne/culpabilité puis observe que la tâche est faite", transitional, 7}]
+
+Hmm for d3, mechanismKey "beliefs" of 14ad77ca: "demander créerait un conflit qui menacerait la vie commune ; si je ne le fais pas, personne ne le fera". Good.
+
+d4:
+title: "Réinvestir le lien avec Karim, là où rien n'est demandé"
+action: "Accepter ou proposer une sortie avec Karim dans les deux semaines, et ne pas en faire une récompense conditionnelle au travail de la coloc."
+lever: {kind: "alternative_source", hypothesis: {kind:"hypothesis", id:"14ad77ca-..."}, mechanismKey: "soothes"}
+conditions: "Quand l'utilisateur peut dégager une soirée sans laisser les autres en plan (prévenir à l'avance)."
+effort: "low"
+limits: "Ne réduit pas la charge ; peut être vécu comme une fuite ; ne dit rien de la répartition."
+signals: ["l'utilisateur parle d'autre chose que de la coloc avec Karim", "il décline encore au nom des tâches", "il se sent plus détendu après"]
+learnsIfFails: "Si le lien avec Karim ne soutient pas le moral, l'idée que la reconnaissance de la coloc est la source principale d'estime est renforcée ; si la sortie allège la tension, la source peut être déplacée."
+predictions: [{Karim, "accueille favorablement et relève le changement", immediate, 3}, {self, "reste plus détendu et parle moins coloc", transitional, 14}, {Jules/Maya?} hmm keep 2-3.
+
+Wait but rule O5/O2: alternative_source lever targeting "soothes" of 14ad77ca. Fine.
+
+d5 do_nothing:
+title: "Ne rien changer"
+action: "Ne rien entreprendre : continuer à absorber comme aujourd'hui et voir."
+lever: {kind:"do_nothing", hypothesis: null, mechanismKey: null}
+conditions: "Si l'utilisateur veut d'abord observer sur un cycle complet (loyer, courses, ménage) avant d'agir."
+effort: "low"
+limits: "L'objectif reste hors d'atteinte ; la position se renforce ; risque de basculer vers le départ ou l'épuisement."
+signals: ["la vaisselle de Jules revient chaque semaine", "Karim redit que l'utilisateur est crevé", "Maya formule une nouvelle demande"]
+learnsIfFails: "Si rien ne change sans action, la répartition tient bien à la structure et non à un concours d'imprévus — ce qui oriente vers les leviers sur la norme plutôt que sur les tâches une à une."
+predictions: [{self, "ras-le-bol croissant, fatigue, envisage le départ plutôt que la négociation", transitional, 30}, {Maya, "reformule une demande d'exécution", equilibrium, 14}, {Jules, "laisse sa part sans être relancé", equilibrium, 14}]
+
+Good.
+
+Questions:
+
+q1: question: "Hors la proposition de tableau, qu'as-tu déjà dit à Maya ou Jules sur la répartition, et qu'est-ce qu'ils t'ont répondu ?" targets [152681e5, de295ba4, c2100274] discriminatingInfo: "Si une demande explicite a déjà été formulée et suivie d'un relais, la règle « qui propose fait » et la norme d'abstention sont affaiblies ; si le sujet n'a jamais été posé, elles sont renforcées." whyNow: "Les directions d'action qui rendent la norme visible dépendent de ce qui a déjà été tenté ; aucune note ne le dit."
+
+q2: "Si tu ne faisais plus une seule tâche commune (la vaisselle de Jules, les courses), qu'est-ce que tu imagines qu'il se passerait ?" targets [de295ba4, 14ad77ca, 50ba8df3, 2286dd1c]. discriminatingInfo: "Prédire l'effondrement soutient les croyances d'indispensabilité ; prédire peu de changement soutient l'explication contextuelle et la norme du groupe." whyNow: "C'est le seul moyen de savoir si la crainte de laisser tomber est une croyance active qui barre le changement."
+
+q3: "Y a-t-il eu, depuis janvier, une période sans imprévu (facture, fuite, absence) où la répartition est restée la même ?" targets [2286dd1c, c2100274, de295ba4]. discriminatingInfo: "Une asymétrie qui se maintient sans imprévu écarte l'explication conjoncturelle ; l'inverse la soutient." whyNow: "Départage directement la lecture conjoncturelle et la lecture de la règle stable, deux lectures déjà en concurrence."
+
+Lol, "Départage directement..." fine.
+
+Now check: existing question 20d66d88 asks about the tableau outcome — mine q1 is broader (what has been said on the répartition). Slight overlap but distinct. OK.
+
+modelDeclaration: declaredModel "deepseek-flash"? I should give my name. Let's say "DeepSeek-V3.2-Exp" hmm. The workspace mentions "deepseek-flash-r5". I'll declare "deepseek-flash". Fine.
+
+outcome "proposed".
+
+Now write final JSON with exact schema fields. No extra fields.
+
+Check hypothesis ids used exist: de295ba4-e954-4b51-9935-51d0b59dcfe4, 152681e5-2ad8-41fa-9c97-579a70ce71d5, 14ad77ca-3a26-4d5b-ac42-961c41a069f0, c2100274-b1fe-41a9-a48a-00c91ee158e4, 50ba8df3-d8eb-4c06-9d65-0e463ec6fa1c, 2286dd1c-8e0a-40e3-bac2-f5afe6652f10. Goal id 438fcb99-5923-4364-b842-9014e9c2fe3f. Person ids: Jules 9146f8a8-d422-4e0e-910a-068ed88fc2f1, Karim 51e02ad6-fab8-4058-a3f8-4014c155489e, Maya f69d547f-b2da-4b78-ad92-89e5b735240c.
+
+Write it out.

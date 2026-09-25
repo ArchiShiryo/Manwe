@@ -1,0 +1,203 @@
+Now I have mechanisms. Let me design the directions carefully.
+
+Goal: 0ce00920-8fe6-4b9d-b739-6ea4d133517e — "Que l'équipe s'organise sans que tout repose sur lui, tout en restant au club."
+
+Directions (4 actions + 1 do_nothing). Each with lever.hypothesis referencing an existing hypothesis id, mechanismKey naming a mechanism field.
+
+Direction A (lower_barrier): "Nommer une personne et une tâche, une seule fois" — on the repas de fin de saison he just accepted: ask publicly one specific person for one specific sub-task with a date. lever: lower_barrier on eb3ad1ff, mechanismKey: "barrier" (no répartition tient; le planning est rejeté/sans suite → abaisser en ne demandant qu'une micro-tâche nommée et datée plutôt qu'un planning global). Prediction: Léa asks "tu le tiens à jour ?" (transitional), Hugo silent/declines, Samir takes or supports.
+
+Direction B (disconfirming_experience): "Laisser une tâche entièrement sans s'en occuper une semaine" — the ballons (which were Léa's month, ea0d7dc0) or the maillots washing. Tests fd3a1ab3's belief "si je ne le fais pas, personne ne le fera" and the barrier (each défection increases cost of withdrawal). lever: disconfirming_experience on fd3a1ab3, mechanismKey "beliefs". Predictions: aggravation transitoire — Léa's reproach/agacement (as with maillots), Hugo nothing, Samir notices and asks; equilibrium: either someone does it or the task stays undone and no catastrophe.
+
+Hmm, but careful with O5 — fd3a1ab3 is D3 draft. "n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides". fd3a1ab3 has 4 anchored supports, 1 contradict, spanning 32 days. That is reasonably solid... but status draft. The D3 readings here are "draft" because they require a critical pass. Hmm, risky but the rule is about "preuves solides". I think using fd3a1ab3 is defensible; but alternatively I can anchor the disconfirming experience on 44bb3e5e (D2, plausible) whose mechanism lacks "beliefs" but has "barrier" ("aucun autre volontaire identifié, et des échéances qui ne se déplacent pas"). Actually a disconfirming experience that tests "aucun autre volontaire" fits 44bb3e5e nicely — leaving one task undone tests whether anyone else steps up. But 44bb3e5e is rank 2, an alternative contextual reading. Hmm, the lever should serve the goal; using the contextual reading is fine.
+
+I think better: use two hypotheses: fd3a1ab3 for the belief test, since the belief "si je ne le fais pas, personne ne le fera" is a mechanism content. But to respect O5, I could anchor on 44bb3e5e (plausible D2) with mechanismKey barrier and describe it as a test of the "aucun autre volontaire identifié" barrier. That's safer and equally useful. Let me do: disconfirming_experience on 44bb3e5e, mechanismKey "barrier".
+
+Hmm but the alternativeTo relation: 44bb3e5e is alternativeTo fd3a1ab3. Fine.
+
+Direction C (change_reward): "Cesser de compenser une défaillance de Hugo" — don't drive for the next covoiturage / don't chase the key; let the gap be visible (and ask Hugo directly). This changes what the repetition rewards — 25192554 (D2, plausible) mechanism key "barrier" ("Aucune défaillance n'a de conséquence... la réparation est immédiate"). lever change_reward on 25192554, mechanismKey "barrier" or "optimizes". Actually change_reward targets what the repetition rewards → mechanismKey "optimizes" (Hugo garde son temps et sa liberté). Hmm, the field named "barrier" describes what maintains the equilibrium. For change_reward, I'd say mechanismKey "optimizes". Let me use "barrier" for lower_barrier (Direction A) and "optimizes" for change_reward (Direction C).
+
+Predictions for C: Hugo reaggravates (a new cancellation, short-term tension, silence), transitional: Hugo asks someone else or doesn't come; equilibrium: either Hugo adjusts (asks in advance, repays) or the user accepts a lower level of reliability of Hugo. Also note it doesn't deceive anyone.
+
+Direction D (alternative_source / change_game): Hmm. Two candidate:
+- alternative_source: accept Samir's next invitation (cinema) to source belonging outside the "indispensable" channel. lever hypothesis: 6cdf4a54 (D2, plausible), mechanismKey "barrier" ("décliner le ciné est socialement gratuit — l'obligation est reconnue par tous — alors qu'accepter demanderait de lâcher une tâche"). Hmm, alternative_source: "offrir une autre source du même gain" — the gain is belonging/being seen. Accepting the outing replaces the recognition gained by being indispensable. This directly serves the goal: it lowers the need for the club role. But wait—O2 says "offrir une autre source du même gain" — this is about offering a substitute source. Yes.
+- change_game: formalize a rotation, i.e., change the club's frame from improvisation to rotation (eb3ad1ff barrier). But that's essentially Direction A extended. Hmm.
+
+Let me have:
+D direction: change_game on eb3ad1ff with mechanismKey "beliefs" ("le club a toujours tenu ainsi et celui qui est disponible s'en occupe") — e.g., ask each member at a moment (after a match) to pick one task for the end-of-season period, i.e., change the rule of the game from "no designation" to "each names one". Hmm, this is close to A. Maybe make A about a single named micro-task (one task, one person, one date) and D about a change of game: propose that the club delegate the organization to a shared tool/rotation with the person who organizes the meal... Hmm.
+
+Alternatively, D could be "changer de jeu" by giving the group a visible frame where not doing is noticed: e.g., post the meal organization as a shared checklist with names, in the group chat, before doing anything himself. That is different from the "one micro-task" step because it changes the public frame of the group (the empty case becomes visible to all rather than the task silently landing on him). Justify with eb3ad1ff mechanism "defenses" (reproche à celui qui n'a pas fait plutôt qu'attribution explicite) — change_game on "defenses" hmm, mechanismKey must name a field of the mechanism; "defenses" is fine. Actually change_game should change the frame: making attribution explicit instead of implicit. mechanismKey "defenses" ("invocation de la tradition et reproche à celui qui n'a pas fait plutôt qu'attribution explicite"). Good.
+
+And E (alternative_source): accept Samir's invitation to the cinema on the grounds of the link rather than the club — lever alternative_source on 6cdf4a54, mechanismKey "soothes" ("être nommé — épuisement remarqué, question posée"). Hmm the gain that the club role provides: "soothes": jouer avec eux et être reconnu indispensable (in b673cc65) — but I'm not using D3 b673cc65. In 6cdf4a54, mechanism "soothes": être nommé. alternative_source = offer another source of the same gain (being seen/named) outside the club task channel. Good.
+
+That's 4 action directions + do_nothing. Reasonable, maybe a bit many; O1 says all useful directions. I'll do 4 + 1.
+
+Actually, maybe trim to 3 actions + do_nothing to keep it tight and each strong. Hmm. The instruction: "Propose toutes les directions d'action que tu juges utiles pour l'objectif (au moins deux quand c'est possible), et UNE direction 'do_nothing'". I'll do 4 actions (A, B, C, E) plus... wait I also had D (change_game). Let me decide: keep A (lower_barrier, one named micro-task), B (disconfirming_experience, leave one task), C (change_reward, stop compensating Hugo), E (alternative_source, accept the outing with Samir). That's 4 actions + do_nothing = 5 directions. Fine.
+
+do_nothing: predict that à chaque tâche non attribuée la demande se dirigera vers lui; the load continues and rises at the tournament; eventually his fatigue expressed to no one, or a rupture/burnout. Predictions: Léa continues (equilibrium), Hugo's defections continue, Samir keeps remarking. horizonDays.
+
+Do I need questions? Maybe one: about whether a named-person request has been tried and what happened — discriminating eb3ad1ff vs 921e6c53 and 44bb3e5e. Targets hypotheses. But careful: question 22687abe is hypothetical about leaving a task. My question: "Quand tu as demandé quelque chose de précis à une personne (le planning, les ballons), qu'a-t-elle répondu ?" Hmm, the planning is covered in claims. Is this discriminating and useful? It would tell whether naming works, informing direction A. I'll include one question targeting eb3ad1ff, 921e6c53 and 44bb3e5e.
+
+Hmm, but rule 20: don't re-ask a question present in the packet. My question is distinct from all 5. OK.
+
+Also should I propose a goal? The goal already exists and confirmed → G3 says don't. So no propose_goal.
+
+Outcome: "proposed". operations non-empty.
+
+Now, format details for MEMBRE: {"mention": "Léa"} or {"person": {"kind":"person","id":"..."}} or {"self": true}. REF = {"kind": "...", "id": "..."}. For lever.hypothesis, use {"kind":"hypothesis","id":"..."}.
+
+Goal ref in direction payload: {"kind":"goal","id":"0ce00920-8fe6-4b9d-b739-6ea4d133517e"}.
+
+Predictions: actor is MEMBRE. Use {"person": {...}} or {"self": true} or {"mention": "..."}. I'll use person refs/self.
+
+Let me write with precise mechanismKeys:
+- A: lever lower_barrier, hypothesis eb3ad1ff, mechanismKey "barrier".
+- B: lever disconfirming_experience, hypothesis 44bb3e5e... hmm. Actually for B, "disconfirming_experience — une expérience qui dément une croyance". A belief field exists in fd3a1ab3 ("si je ne le fais pas, personne ne le fera") and eb3ad1ff. 44bb3e5e mechanism has no "beliefs" field. So mechanismKey "beliefs" wouldn't be valid for 44bb3e5e. Options: use mechanismKey "barrier" for 44bb3e5e ("aucun autre volontaire identifié"). That works with disconfirming_experience: the experience of leaving a task tests the barrier. Hmm, but is O2's mechanismKey meant to name the field aimed at; "barrier" for a disconfirming experience is acceptable.
+
+Alternatively use fd3a1ab3 with mechanismKey "beliefs". Given O5's caution about D3+ without solid evidence — fd3a1ab3 has 4 anchored supports across 32 days, but it's D3 draft. I'd rather base the disconfirming experience on the plausible D2 contextual reading 44bb3e5e & also mention it debunk the belief. Wait—for B, the disconfirming experience "dément une croyance": which belief? The contextual reading's implicit assumption is "aucun autre volontaire" — if nobody steps up, the context reading is supported; if someone does, the D3 belief "personne ne le fera" is disconfirmed. Both outcomes are informative: that's a great "learnsIfFails". Good — I'll frame B as a discriminative test between 44bb3e5e (context) and fd3a1ab3/b673cc65, lever hypothesis = 44bb3e5e with mechanismKey "barrier", and put the discriminant in `learnsIfFails` and limits. Hmm, but lever.hypothesis is the reading the lever acts on. Fine.
+
+Hmm, actually maybe better to use fd3a1ab3 for B since the belief-based test is the point, and D3 evidence is reasonably solid (4 supports, spanning 32 days, one of them the user's own expression of cost — allowed for self readings). The rule says "n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides" — 4 anchored supports × 32 days is solid enough. But status draft, and a plausible D2 alternative exists in the packet (44bb3e5e) with rank tensions. I'll go with 44bb3e5e to be safe and mention the discriminative value. Hmm... but then no direction acts on the D3 self readings; that's fine and prudent.
+
+Actually, hmm. The strongest, most useful lever for the goal is probably C (stop compensating Hugo) and A (name one person one task). B is the test. E is alternative source. Good spread.
+
+Let me now write the JSON.
+
+For each direction include: goal, title, action, lever{kind, hypothesis, mechanismKey}, conditions, effort, limits, signals[], learnsIfFails, predictions[1-5].
+
+Predictions must be observable & datable with horizonDays.
+
+Write them:
+
+A) "Une tâche, une personne, une date"
+action: "Sur le repas de fin de saison qu'il vient d'accepter, écrire une fois dans le fil du club : « Je m'occupe de la salle et du budget ; qui prend les boissons pour le 15 ? » — une seule tâche, nommée, avec une date, sans planning général."
+lever: lower_barrier, eb3ad1ff, "barrier".
+conditions: "Avoir une échéance réelle et une tâche découpable ; le faire une seule fois, sans y revenir soi-même si personne ne répond."
+effort: low.
+limits: "Si personne ne répond, la tentation sera de reprendre la tâche ; sans réponse, cela ne dit rien sur la volonté des autres mais teste la règle implicite."
+signals: ["une réponse nominative dans le fil", "Léa demande 'et tu tiens le planning ?'", "silence de Hugo", "quelqu'un se propose sans être relancé"].
+learnsIfFails: "Si personne ne prend, on apprend si l'absence de relais est une règle du groupe ou un simple manque d'information."
+predictions:
+ - self immediate 7: "il résiste à l'envie de reprendre la tâche et laisse la case vide" hmm actor self response. ok.
+ - Léa transitional 10: "demande si c'est lui qui tient le planning à jour, sans prendre de tâche".
+ - Hugo transitional 10: "ne répond pas, comme lors du planning".
+ - Samir equilibrium 21: "se propose ou relaie, et continue de nommer la charge".
+ - self equilibrium 30: "au moins une tâche du repas est portée par un autre".
+
+B) "Laisser une case vide une semaine"
+action: "Choisir une tâche non critique qui n'est pas la sienne (le rachat des ballons, qui était le mois de Léa) et ne pas s'en occuper cette semaine-là, sans relancer personne."
+lever: disconfirming_experience, 44bb3e5e, "barrier".
+conditions: "Choisir une tâche sans conséquence pour un match (pas le créneau du gymnase ni les inscriptions) ; prévenir que l'on ne s'en occupe pas, sans reproche."
+effort: low.
+limits: "L'agacement peut retomber sur lui (comme pour les maillots) ; si personne ne prend, la tâche reste en suspens sans que cela prouve un motif personnel."
+signals: ["la tâche est faite par quelqu'un d'autre", "la tâche reste vide et personne ne le remarque", "un reproche lui est adressé (comme pour les maillots)"].
+learnsIfFails: "Soit un autre volontaire apparaît (contexte sous-doté, pas une règle), soit la case reste vide et le coût de son retrait est confirmé ; les deux apprennent quelque chose."
+predictions:
+ - self immediate 3: "laisse la case vide, ressent l'envie de la remplir" hmm, "self" predictions are okay.
+ - Léa transitional 10: "s'en aperçoit et demande pourquoi ce n'est pas fait, plutôt que de le faire".
+ - Hugo transitional 14: "ne dit rien et ne prend pas la tâche".
+ - Samir transitional 14: "remarque l'absence et pose une question directe".
+ - self equilibrium 30: "sait, sans l'avoir compensée, ce qui se passe quand il ne le fait pas".
+
+C) "Ne plus réparer pour Hugo"
+action: "Sur la prochaine défaillance de Hugo (clé, covoiturage, remboursement), ne pas compenser et le lui demander directement une fois, en nommant la conséquence pour lui."
+lever: change_reward, 25192554, "optimizes".
+conditions: "Quand la défaillance ne met personne en danger : sans la clé ou la voiture d'un autre pour un match, s'abstenir et reporter."
+effort: moderate.
+limits: "Peut créer un froid ; si Hugo ne répare pas, la tâche peut rester en suspens ou retomber sur un tiers ; ne pas le faire devant le groupe."
+signals: ["Hugo rend/rembourse sans relance", "Hugo annule encore", "Hugo demande à un autre que lui", "Hugo exprime de l'agacement qu'on lui réclame"].
+learnsIfFails: "Si Hugo ne bouge pas, on apprend que sa fiabilité ne dépend pas du filet de sécurité mais de son rapport au club."
+predictions:
+ - Hugo immediate 14: "annule ou omet encore une fois, en comptant sur la compensation".
+ - self transitional 14: "tient la position et formule une demande directe, unique".
+ - Hugo equilibrium 45: "ajuste (prévient, rembourse) ou s'éloigne en assumant la conséquence visible".
+ - Samir equilibrium 30: "note le changement, sans forcément le commenter".
+
+D) — dropped? I said 4 actions: A, B, C, E. Yes drop the change_game one? Hmm, "change_game" is a valuable lever type and the goal is largely about the group's frame. Let me include it instead of E? Or keep both = 5 actions. Max operations 100, so fine. But quality over quantity. I think the "change_game" direction (explicit rotation/attribution frame) is very close to A and to some extent to the existing rejected planning. Actually a distinct change_game: "Faire porter la question par un autre" — ask Samir to co-sign / bring the question up as a group question... Hmm that's using an ally, "change_game: changer de cadre, de groupe, de jeu". E.g., propose that the club pick its organization method at a moment where the whole group is present, with the coach as witness — changing the frame from "improvised club" to "the club that names roles". The coach is part of the club context (Léa spoke to the coach). That would be a change of game: the acknowledgement happens in front of the coach, where Léa credits him; using that same public frame to name the rotation. Nice symmetry: the public recognition channel becomes the public attribution channel.
+
+I'll include that as direction D (change_game on 7c9ff8ce, mechanismKey "soothes" — "la reconnaissance publique et le fait d'être celui qu'on vient chercher"). Hmm, careful about O5 with D3 7c9ff8ce (3 supports, 1 contradict, has critiques circular_reasoning/overgeneralization). Its evidence is not pristine (a critique exists, contradictory claim). Safer: use eb3ad1ff (D5) with mechanismKey "soothes" ("le récit de la débrouille et la reconnaissance publique de l'utilisateur"). Still D5 draft. Hmm. But eb3ad1ff is already used for A. Using the same hypothesis twice with different mechanismKeys is fine (A: "barrier", D: "defenses"/"soothes").
+
+Hmm, actually maybe I should drop D and keep 4 actions + do_nothing, so A, B, C, E. E (accept the outing with Samir) — is it really serving the user's goal ("que l'équipe s'organise sans que tout repose sur lui")? Alternative_source: providing another source of the gain that the "indispensable" role provides, which lowers the need for the role → helps him say no / delegate. Yes, serves the goal. And E anchors on 6cdf4a54 (plausible D2). Good.
+
+I'll include 5 actions? Let me include A, B, C, D(change_game), E? That's a lot of prediction writing. I think 4 actions + do_nothing is good: A, B, C, E. Hmm, but D (change_game/public framing) is arguably the most direct lever for "que l'équipe s'organise" because it changes the group's rule. A is a micro-version of it (one task, one person, one date = naming instead of improvising). I'll skip separate change_game and instead make A's lever lower_barrier... Hmm. Actually, one could argue A is change_game (changing the club's rule from "no designation" to "designation"). But lower_barrier captures it: don't ask the group to adopt a planning (barrier: no répartition tient, planning rejeté), just one micro-step. I think lower_barrier is right for A.
+
+Let me finalize 4 actions + do_nothing. Wait — O1 says "Propose toutes les directions d'action que tu juges utiles". I judge these four useful. Fine.
+
+Hmm, but maybe add the change_game as a 5th since it's a genuinely distinct lever type and the packet's D5 readings point there. I'll add it — 5 actions + do_nothing = 6 directions. Predictions ~4 each = 26 predictions. That's fine length-wise? It might be long but acceptable. Let me consider size limits (1MB) — fine.
+
+Let me decide: include 5 action directions? I lean toward 4 (A, B, C, E) plus one change_game (D). OK, 5. Let's write D:
+
+D) "Nouer l'attribution à la reconnaissance publique"
+action: "Au moment où Léa le crédite devant le coach et l'équipe, répondre une fois : « Merci — et je veux bien que X prenne Y pour la suite, moi je prends Z » : convertir la reconnaissance en attribution nommée devant le même public."
+lever: change_game on eb3ad1ff, mechanismKey "defenses"? Hmm — the finding is the club defends by crediting instead of attributing. So mechanismKey "defenses" (reproche/attribution implicite). Hmm, "defenses": "invocation de la tradition (« toujours débrouillé ») et reproche à celui qui n'a pas fait plutôt qu'attribution explicite." Yes, mechanismKey "defenses" fits the change of game: from implicit reproach to explicit attribution.
+conditions: "Un moment public où l'utilisateur est crédité (comme devant le coach), et une tâche précise en cours (le repas)."
+effort: moderate (social).
+limits: "Peut être lu comme une revendication ou une critique du club ; risque de gêne et d'insistance avant tout partage ; ne pas le faire à chaud ni pour plusieurs tâches."
+signals: ["un membre nomme publiquement la tâche qu'il prend", "la réponse reste une formule de crédit sans engagement", "le silence d'un membre présent"].
+learnsIfFails: "Si la reconnaissance ne se convertit pas en tâche, on apprend que le crédit sert au groupe à éviter la répartition, pas à la préparer."
+predictions:
+ - Léa immediate 7: "confirme la reconnaissance sans prendre de tâche ('carrément')".
+ - Hugo transitional 14: "silence, comme lors de la proposition de planning".
+ - Samir transitional 21: "rebondit et prend une tâche précise".
+ - self equilibrium 45: "au moins une tâche est attribuée nommément devant témoin".
+
+E) "Reprendre une soirée à soi avec Samir"
+action: "Accepter la prochaine proposition de Samir (ou en refaire une) en le disant simplement : il n'est pas au club ce soir-là — et répondre en une phrase à sa question sur la répartition."
+lever: alternative_source on 6cdf4a54, mechanismKey "soothes".
+conditions: "Quand une proposition de sortie arrive et qu'aucune échéance du club n'est la veille d'un match ; commencer par une fois, sans rien annoncer au club."
+limits: "Ne réduit pas mécaniquement la charge ; le club peut réclamer ces heures ; si Samir n'est qu'un porte-voix, l'effet se limite au lien."
+signals: ["une sortie effectivement faite", "Samir repose la question de la répartition", "Samir propose de porter une tâche pour dégager la soirée"].
+learnsIfFails: "Si refuser n'est pas possible même pour une soirée, la contrainte n'est pas seulement la charge mais ce que le lien au club fournit."
+predictions:
+ - self immediate 5: "accepte une sortie et laisse une tâche en attente une demi-journée".
+ - Samir immediate 5: "propose à nouveau, sans commenter le club".
+ - self transitional 21: "au moins un refus du club est vécu sans rupture".
+ - Léa transitional 21: "reformule une demande le même soir, en s'attendant au même oui".
+
+do_nothing direction:
+title: "Ne rien changer"
+action: "Continuer comme aujourd'hui : porter les tâches, reformuler la fatigue quand elle devient trop forte, sans nommer de relais."
+lever: do_nothing, hypothesis null, mechanismKey null.
+conditions: "—" hmm conditions is required? The schema shows conditions as a string field, presumably required (only rank, mechanism, horizonDays may be null). I'll give text.
+predictions:
+ - self equilibrium 30: "accepte le repas, prépare le tournoi, et la fatigue reste dite sans destinataire". Hmm "equilibrium".
+ - Léa equilibrium 30: "les demandes continuent au même rythme et se densifient avant le tournoi".
+ - Hugo equilibrium 30: "les oublis continuent, compensés comme avant".
+ - Samir transitional 30: "repose la question ou observe le mieux-être absent, sans être entendu".
+limits: "Rien n'apprend rien ; le coût se paie en fatigue et en occasions propres perdues."
+learnsIfFails: null? learnsIfFails is a string (not marked nullable). Hmm the schema lists only rank, mechanism, horizonDays as nullable. I'll give a string: "Rien n'est appris, sinon la confirmation de la pente actuelle." Signals: ["nouvelle demande nominative à lui", "fatigue redite sans réponse", "aucun relais créé"].
+
+Wait, do_nothing: should lever.hypothesis be null — yes, allowed only for do_nothing.
+
+For do_nothing I need "conditions" text: "Si le tournoi est imminent et que aucun relais n'est mobilisable, c'est la ligne par défaut." effort: low? do_nothing effort "low".
+
+Now the question (one). Let's craft: targets eb3ad1ff, 921e6c53, 44bb3e5e. discriminatingInfo: whether a named request has ever been made and refused informs whether the absence of relais comes from an implicit rule (nothing is designated) or from people truly not available. whyNow: hmm.
+
+Actually, is a question needed? Rule 20: pose a question only if answer discriminates hypotheses. Mine does. But also could conflict with 22687abe (hypothetical about leaving a task). Mine is about the past: "As-tu déjà demandé à quelqu'un de précis de prendre une tâche, et qu'a-t-il répondu ?" Different.
+
+I'll include it.
+
+Also, should I include "clarifications"? clarifications is for needs_context basically. With outcome "proposed", I'll put the question as a propose_question operation and leave clarifications [].
+
+Now the summary: short.
+
+Also verify: no operations other than allowed (propose_question, propose_direction, propose_goal). Yes: q1, d1..d6.
+
+Direction keys: d1..d6.
+
+Let me double check lever.hypothesis ids exist in focus? Doesn't matter; must be present in the packet. eb3ad1ff ✓, 44bb3e5e ✓, 25192554 ✓, 6cdf4a54 ✓. None superseded/contradicted ✓.
+
+mechanismKey values must be one of the enumerated mechanism fields: "optimizes"|"protects"|"defenses"|"beliefs"|"triggers"|"soothes"|"barrier"|"prediction". Check each:
+- d1 A: eb3ad1ff has "barrier" ✓ → "barrier".
+- d2 B: 44bb3e5e has "optimizes","barrier","prediction" → "barrier" ✓.
+- d3 C: 25192554 has "optimizes","protects","defenses","beliefs","triggers","soothes","barrier","prediction" → "optimizes" ✓.
+- d4 D: eb3ad1ff "defenses" ✓.
+- d5 E: 6cdf4a54 has "optimizes","protects","soothes","barrier","prediction" → "soothes" ✓.
+
+Predictions actor MEMBRE. For "self": {"self": true}. For others use person refs: Léa ccad5730-9fae-4aa6-8e77-e8a04652bd4e, Hugo 3c74e7dd-c78d-4bb5-9084-3adebb1cf736, Samir c5b05ffe-917d-4a0f-a9a1-47f7731e0776. Using {"person":{"kind":"person","id":"..."}}.
+
+Now write the final JSON. Keep rationales short and grounded in operations (no claims beyond).
+
+modelDeclaration declaredModel: "deepseek-flash"? The workspace mentions deepseek-flash-r5. I'll put "deepseek-flash". Hmm, name of model. I'll say "deepseek-flash".
+
+baseRevision: 24 (number). contextHash: f270f185... schemaVersion "1.7". requestId, workspaceId copied.
+
+Let me write it.
