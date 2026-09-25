@@ -16,7 +16,7 @@ import { SqliteMemoryStore } from "../packages/storage/src/sqliteStore.ts";
 import { COGNITIVE_OPERATION_KINDS } from "../packages/cognition/src/contract.ts";
 
 const prompt = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v10.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v11.md", import.meta.url),
   "utf8",
 );
 const migrations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -181,7 +181,7 @@ test("R4.0d · le prompt versionné est exactement le rendu du gabarit depuis le
   assert.equal(
     renderPrompt(template),
     prompt,
-    "analyst-v10.md = rendu du gabarit",
+    "analyst-v11.md = rendu du gabarit",
   );
   assert.throws(() => renderPrompt("{{enum:inconnu}}"), /inconnu/);
 });

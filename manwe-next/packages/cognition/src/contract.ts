@@ -7,9 +7,15 @@ import {
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.7" as const;
+export const COGNITION_SCHEMA_VERSION = "1.8" as const;
 /** Versions acceptées : 1.4 reste valide (prompt v6), 1.5 ajoute les directions. */
-export const SUPPORTED_SCHEMA_VERSIONS = ["1.4", "1.5", "1.6", "1.7"] as const;
+export const SUPPORTED_SCHEMA_VERSIONS = [
+  "1.4",
+  "1.5",
+  "1.6",
+  "1.7",
+  "1.8",
+] as const;
 export const COGNITION_VALIDATOR_VERSION = "1.2.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;
@@ -36,7 +42,8 @@ export type CognitiveOperationKind =
   | "propose_critique"
   | "propose_role"
   | "propose_direction"
-  | "propose_goal";
+  | "propose_goal"
+  | "propose_person";
 
 export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_event",
@@ -48,6 +55,7 @@ export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_role",
   "propose_direction",
   "propose_goal",
+  "propose_person",
 ];
 
 /** Opérations proposées par défaut selon la tâche (contrat 1.2). */
@@ -55,7 +63,8 @@ export const DEFAULT_OPERATIONS: Record<
   AnalysisTask,
   CognitiveOperationKind[]
 > = {
-  extract: ["propose_event", "propose_claim", "propose_role"],
+  // D-030 : toute personne citée existe, dès l'extraction.
+  extract: ["propose_event", "propose_claim", "propose_role", "propose_person"],
   interpret: [
     "propose_event",
     "propose_claim",
@@ -64,6 +73,7 @@ export const DEFAULT_OPERATIONS: Record<
     "propose_question",
     "propose_critique",
     "propose_goal",
+    "propose_person",
   ],
   revise: [
     "propose_event",
@@ -73,6 +83,7 @@ export const DEFAULT_OPERATIONS: Record<
     "revise_hypothesis",
     "propose_question",
     "propose_critique",
+    "propose_person",
   ],
   // BRIEF-005 : explorer, c'est aussi proposer des directions pour un objectif.
   explore: ["propose_question", "propose_direction", "propose_goal"],
@@ -260,6 +271,18 @@ export type DirectionPayload = {
 };
 
 /** R5.4 : problème et objectif formulés avec les mots de l'utilisateur, cités. */
+/**
+ * D-030 : une personne citée, nommée ou seulement décrite par sa relation
+ * (« la femme d'un ami »). La mention est recopiée telle qu'elle figure dans
+ * une source ; elle peut être rattachée à une autre personne.
+ */
+export type PersonPayload = {
+  mention: string;
+  relatedTo: MemberInput | null;
+  relationLabel: string | null;
+  citations: SourceCitation[];
+};
+
 export type GoalPayload = {
   problem: string;
   goal: string;
@@ -319,6 +342,12 @@ export type CognitiveOperation =
       key: string;
       kind: "propose_goal";
       payload: GoalPayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_person";
+      payload: PersonPayload;
       rationale: string;
     };
 
@@ -1056,6 +1085,36 @@ function operation(value: unknown): CognitiveOperation {
   const key = text(input.key, "operation.key", 80);
   const rationale = text(input.rationale, "operation.rationale", 1500);
   const payload = object(input.payload, "operation.payload");
+  if (input.kind === "propose_person") {
+    exactKeys(
+      payload,
+      ["mention", "relatedTo", "relationLabel", "citations"],
+      "propose_person.payload",
+    );
+    const list = citations(payload.citations);
+    if (list.length > 3)
+      throw new DomainError(
+        "invalid_person",
+        "Une personne proposée porte entre 1 et 3 citations.",
+      );
+    return {
+      key,
+      kind: "propose_person",
+      rationale,
+      payload: {
+        mention: text(payload.mention, "person.mention", 120),
+        relatedTo:
+          payload.relatedTo === null || payload.relatedTo === undefined
+            ? null
+            : memberInput(payload.relatedTo),
+        relationLabel:
+          payload.relationLabel === null || payload.relationLabel === undefined
+            ? null
+            : text(payload.relationLabel, "person.relationLabel", 60),
+        citations: list,
+      },
+    };
+  }
   if (input.kind === "propose_goal") {
     exactKeys(
       payload,

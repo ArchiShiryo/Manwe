@@ -42,7 +42,7 @@ import { createDeepSeekCall } from "../apps/server/src/analystProvider.ts";
 import { MEMORY_TOOLS } from "../packages/cognition/src/memoryTools.ts";
 
 const PROMPT_TEXT = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v10.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v11.md", import.meta.url),
   "utf8",
 );
 const QA_ROOT = resolve(process.cwd(), ".qa");

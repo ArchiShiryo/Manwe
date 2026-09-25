@@ -130,7 +130,10 @@ export async function startManweServer(options: ServerOptions) {
     response.setHeader("access-control-allow-credentials", "true");
     response.setHeader("vary", "Origin");
     if (request.method === "OPTIONS") {
-      response.setHeader("access-control-allow-methods", "GET, POST, OPTIONS");
+      response.setHeader(
+        "access-control-allow-methods",
+        "GET, POST, PATCH, OPTIONS",
+      );
       response.setHeader("access-control-allow-headers", "Content-Type");
       response.writeHead(204);
       response.end();
@@ -357,6 +360,44 @@ export async function startManweServer(options: ServerOptions) {
               actionId: decodeURIComponent(outcomeRoute[1]),
             }),
           ),
+        );
+        return;
+      }
+      // D-030 : renommer ou rattacher une personne, rétrospectivement.
+      const personRoute = pathname.match(/^\/api\/persons\/([^/]+)$/);
+      if (personRoute && request.method === "PATCH") {
+        const body = (await readJson(request)) as Record<string, unknown>;
+        if (!body || typeof body !== "object" || Array.isArray(body))
+          throw new DomainError("invalid_body", "Corps JSON attendu.");
+        const key = body.idempotencyKey;
+        if (typeof key !== "string" || key.length < 8)
+          throw new DomainError(
+            "invalid_idempotency_key",
+            "Clé d’idempotence invalide.",
+          );
+        const optional = (name: string) => {
+          const value = body[name];
+          if (value === undefined) return undefined;
+          if (value === null || typeof value === "string") return value;
+          throw new DomainError("invalid_body", `${name} doit être un texte.`);
+        };
+        const displayName = optional("displayName");
+        json(
+          response,
+          200,
+          store.updatePersonIdentity({
+            idempotencyKey: key,
+            personId: decodeURIComponent(personRoute[1]),
+            ...(displayName !== undefined && displayName !== null
+              ? { displayName }
+              : {}),
+            ...(optional("relatedPersonId") !== undefined
+              ? { relatedPersonId: optional("relatedPersonId") ?? null }
+              : {}),
+            ...(optional("relationLabel") !== undefined
+              ? { relationLabel: optional("relationLabel") ?? null }
+              : {}),
+          }),
         );
         return;
       }

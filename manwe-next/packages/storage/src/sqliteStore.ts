@@ -72,11 +72,11 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
-const ANALYST_PROMPT_VERSION = "analyst-v10";
+const ANALYST_PROMPT_VERSION = "analyst-v11";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
     fileURLToPath(
-      new URL("../../cognition/prompts/analyst-v10.md", import.meta.url),
+      new URL("../../cognition/prompts/analyst-v11.md", import.meta.url),
     ),
     "utf8",
   ),
@@ -205,6 +205,15 @@ export class SqliteMemoryStore {
         new URL("./migrations/012_memory_queries.sql", import.meta.url),
       );
       this.database.exec(readFileSync(queriesMigrationPath, "utf8"));
+    }
+    const personsMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 13")
+      .get();
+    if (!personsMigration) {
+      const personsMigrationPath = fileURLToPath(
+        new URL("./migrations/013_described_persons.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(personsMigrationPath, "utf8"));
     }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
@@ -1218,6 +1227,124 @@ export class SqliteMemoryStore {
   }
 
   /** R5.4 : écarter un objectif proposé par l'analyse (jamais un objectif confirmé). */
+  /**
+   * D-030 : mise à jour rétrospective d'une identité. Renommer (« la femme
+   * d'un ami » devient « Julie ») garde l'ancien nom pour la résolution ;
+   * rattacher dit à qui la personne est liée (« conjointe » de Paul). Toutes
+   * les références suivent, puisqu'elles passent par l'identifiant.
+   */
+  updatePersonIdentity(command: {
+    idempotencyKey: string;
+    personId: string;
+    displayName?: string;
+    relatedPersonId?: string | null;
+    relationLabel?: string | null;
+  }): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "identity.resolve",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    return this.transaction(() => {
+      const row = this.database
+        .prepare("SELECT * FROM persons WHERE workspace_id = ? AND id = ?")
+        .get(this.workspaceId, command.personId) as SqlRow | undefined;
+      if (!row)
+        throw new DomainError(
+          "person_not_found",
+          "Cette personne n’existe pas.",
+          404,
+        );
+      const timestamp = nowIso();
+      const name = command.displayName?.trim();
+      if (command.displayName !== undefined && !name)
+        throw new DomainError("invalid_name", "Le nom ne peut pas être vide.");
+      if (name && name.length > 120)
+        throw new DomainError("invalid_name", "Nom trop long (120 au plus).");
+      if (name && name !== String(row.display_name)) {
+        const taken = this.database
+          .prepare(
+            "SELECT id FROM persons WHERE workspace_id = ? AND id <> ? AND lower(display_name) = lower(?)",
+          )
+          .get(this.workspaceId, command.personId, name) as SqlRow | undefined;
+        if (taken)
+          throw new DomainError(
+            "person_name_taken",
+            `« ${name} » désigne déjà une autre personne ; s’il s’agit de la même, il faut les fusionner.`,
+            409,
+          );
+        this.database
+          .prepare(
+            "INSERT INTO person_former_names(id, workspace_id, person_id, name, replaced_at) VALUES (?, ?, ?, ?, ?)",
+          )
+          .run(
+            randomUUID(),
+            this.workspaceId,
+            command.personId,
+            String(row.display_name),
+            timestamp,
+          );
+        this.database
+          .prepare(
+            "UPDATE persons SET display_name = ?, resolution_status = 'resolved' WHERE id = ?",
+          )
+          .run(name, command.personId);
+      }
+      if (command.relatedPersonId !== undefined) {
+        if (command.relatedPersonId === command.personId)
+          throw new DomainError(
+            "invalid_relation",
+            "Une personne ne peut pas être rattachée à elle-même.",
+          );
+        if (
+          command.relatedPersonId !== null &&
+          !this.database
+            .prepare("SELECT 1 FROM persons WHERE workspace_id = ? AND id = ?")
+            .get(this.workspaceId, command.relatedPersonId)
+        )
+          throw new DomainError(
+            "person_not_found",
+            "La personne de rattachement n’existe pas.",
+            404,
+          );
+        this.database
+          .prepare("UPDATE persons SET related_person_id = ? WHERE id = ?")
+          .run(command.relatedPersonId, command.personId);
+      }
+      if (command.relationLabel !== undefined)
+        this.database
+          .prepare("UPDATE persons SET relation_label = ? WHERE id = ?")
+          .run(command.relationLabel?.trim() || null, command.personId);
+      this.database
+        .prepare(
+          "UPDATE persons SET row_version = row_version + 1, updated_at = ? WHERE id = ?",
+        )
+        .run(timestamp, command.personId);
+      const ref: EntityRef = { kind: "person", id: command.personId };
+      const revision = this.advanceRevision(
+        "identity.resolve",
+        [ref],
+        timestamp,
+      );
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created: [],
+      };
+      this.saveReceipt(
+        "identity.resolve",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        timestamp,
+      );
+      return result;
+    });
+  }
+
   dismissGoal(command: {
     idempotencyKey: string;
     goalId: string;
@@ -1481,6 +1608,18 @@ export class SqliteMemoryStore {
         resolutionStatus: String(
           row.resolution_status,
         ) as Person["resolutionStatus"],
+        description: row.description ? String(row.description) : null,
+        relatedPersonId: row.related_person_id
+          ? String(row.related_person_id)
+          : null,
+        relationLabel: row.relation_label ? String(row.relation_label) : null,
+        formerNames: (
+          this.database
+            .prepare(
+              "SELECT name FROM person_former_names WHERE workspace_id = ? AND person_id = ? ORDER BY replaced_at",
+            )
+            .all(this.workspaceId, String(row.id)) as SqlRow[]
+        ).map((item) => String(item.name)),
         revision: Number(row.row_version),
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
@@ -2191,6 +2330,7 @@ export class SqliteMemoryStore {
       warnings: [],
     };
     const order: CognitiveOperationKind[] = [
+      "propose_person",
       "propose_event",
       "propose_claim",
       "propose_role",
@@ -2267,7 +2407,8 @@ export class SqliteMemoryStore {
         operation.kind === "propose_critique" ||
         operation.kind === "propose_role" ||
         operation.kind === "propose_direction" ||
-        operation.kind === "propose_goal"
+        operation.kind === "propose_goal" ||
+        operation.kind === "propose_person"
       ) {
         const result = this.hypotheses.applyOperation(operation, context);
         created.push(...result.created);

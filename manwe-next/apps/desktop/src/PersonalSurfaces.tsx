@@ -37,7 +37,7 @@ import { syncLabels, type ConnectionState } from "./syncLabels.ts";
 import { CORRECTED_LABEL, WorldGraph } from "./WorldGraph.tsx";
 import { AutomaticAnalysisPanel } from "./AutomaticAnalysis.tsx";
 import { Directions } from "./Directions.tsx";
-import analystPrompt from "../../../packages/cognition/prompts/analyst-v10.md?raw";
+import analystPrompt from "../../../packages/cognition/prompts/analyst-v11.md?raw";
 import {
   claimModalityLabels,
   confidenceLabels,

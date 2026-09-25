@@ -113,6 +113,13 @@ export type Person = {
   workspaceId: string;
   displayName: string;
   resolutionStatus: "resolved" | "candidate" | "ambiguous";
+  /** D-030 : description relationnelle (« la femme d'un ami »), sinon null. */
+  description: string | null;
+  /** Personne à laquelle elle est rattachée (« conjointe de Paul »). */
+  relatedPersonId: string | null;
+  relationLabel: string | null;
+  /** Noms ou descriptions remplacés, gardés pour la résolution. */
+  formerNames: string[];
   revision: number;
   createdAt: string;
   updatedAt: string;

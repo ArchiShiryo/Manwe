@@ -167,7 +167,7 @@ test("BRIEF-005 · directions : levier requis, aucun plafond (D-024), « ne rien
   withStore((store) => {
     const { hypothesisId, goalId } = setup(store);
     const packet = explorePacket(store, goalId, hypothesisId);
-    assert.equal(packet.schemaVersion, "1.7");
+    assert.equal(packet.schemaVersion, "1.8");
     assert.ok(packet.allowedOperations.includes("propose_direction"));
     assert.equal(packet.goals.length, 1);
     const { result } = respond(store, packet, [

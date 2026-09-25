@@ -118,6 +118,12 @@ export function describeOperation(operation: CognitiveOperation): {
           : operation.payload.role,
         text: operation.payload.citations[0]?.quote ?? "",
       };
+    case "propose_person":
+      return {
+        label: "personne",
+        classification: operation.payload.relationLabel ?? "citée",
+        text: operation.payload.mention,
+      };
     case "propose_event":
       return {
         label: "événement",

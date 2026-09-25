@@ -779,6 +779,15 @@ export class HypothesisStore {
       .all(this.workspaceId) as SqlRow[])
       if (plain(String(row.alias)) === plain(mention))
         candidates.add(String(row.person_id));
+    // D-030 : un ancien nom ou une ancienne description désigne toujours la
+    // même personne après un renommage.
+    for (const row of this.database
+      .prepare(
+        "SELECT person_id, name FROM person_former_names WHERE workspace_id = ?",
+      )
+      .all(this.workspaceId) as SqlRow[])
+      if (plain(String(row.name)) === plain(mention))
+        candidates.add(String(row.person_id));
     if (candidates.size > 1)
       throw new DomainError(
         "ambiguous_subject",
@@ -1192,6 +1201,67 @@ export class HypothesisStore {
         );
       context.keys.set(operation.key, { kind: "question", id });
       return { created: [{ kind: "question", id }], changed: [] };
+    }
+    if (operation.kind === "propose_person") {
+      // D-030 : toute personne citée existe, même décrite sans nom.
+      const { mention, relatedTo, relationLabel } = operation.payload;
+      const before = new Set(
+        (
+          this.database
+            .prepare("SELECT id FROM persons WHERE workspace_id = ?")
+            .all(this.workspaceId) as SqlRow[]
+        ).map((row) => String(row.id)),
+      );
+      const member = this.resolveSubject({ mention }, context);
+      if (member.kind !== "person") return { created: [], changed: [] };
+      const related = relatedTo
+        ? this.resolveSubject(relatedTo, context)
+        : null;
+      const relatedPersonId =
+        related?.kind === "person" && related.personId !== member.personId
+          ? related.personId
+          : null;
+      // Une description commence par un article ou un possessif (« la femme
+      // d'un ami », « mon cousin ») ; un nom propre, par une majuscule.
+      const described = !/^\p{Lu}/u.test(mention.trim());
+      const row = this.database
+        .prepare(
+          "SELECT description, related_person_id, relation_label FROM persons WHERE id = ?",
+        )
+        .get(member.personId) as SqlRow;
+      const text = (value: unknown) => (value ? String(value) : null);
+      const updates = {
+        description:
+          text(row.description) ?? (described ? mention.trim() : null),
+        related_person_id: text(row.related_person_id) ?? relatedPersonId,
+        relation_label:
+          text(row.relation_label) ??
+          relationLabel ??
+          (related?.kind === "self" && described ? mention.trim() : null),
+      };
+      const changedRow =
+        updates.description !== text(row.description) ||
+        updates.related_person_id !== text(row.related_person_id) ||
+        updates.relation_label !== text(row.relation_label);
+      if (changedRow)
+        this.database
+          .prepare(
+            "UPDATE persons SET description = ?, related_person_id = ?, relation_label = ?, row_version = row_version + 1, updated_at = ? WHERE id = ?",
+          )
+          .run(
+            updates.description,
+            updates.related_person_id,
+            updates.relation_label,
+            context.timestamp,
+            member.personId,
+          );
+      context.keys.set(operation.key, {
+        kind: "person",
+        id: member.personId,
+      });
+      const ref = { kind: "person" as const, id: member.personId };
+      if (!before.has(member.personId)) return { created: [ref], changed: [] };
+      return { created: [], changed: changedRow ? [ref] : [] };
     }
     if (operation.kind === "propose_goal") {
       // R5.4 : une proposition ne remplace jamais un objectif confirmé ; elle
