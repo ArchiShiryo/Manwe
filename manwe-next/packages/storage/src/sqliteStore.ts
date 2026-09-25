@@ -194,6 +194,31 @@ export class SqliteMemoryStore {
     return destination;
   }
 
+  /**
+   * État léger pour la resynchronisation (R4.7) : la révision canonique et
+   * les analyses encore ouvertes, sans charger l'instantané complet.
+   */
+  status(now = nowIso()) {
+    const rows = this.database
+      .prepare(
+        "SELECT status, mode, COUNT(*) AS count FROM analysis_requests WHERE workspace_id = ? AND status IN ('awaiting_response', 'ready_for_review', 'needs_context') AND expires_at > ? GROUP BY status, mode",
+      )
+      .all(this.workspaceId, now) as SqlRow[];
+    const count = (status: string) =>
+      rows
+        .filter((row) => row.status === status)
+        .reduce((sum, row) => sum + Number(row.count), 0);
+    return {
+      revision: this.revision,
+      analyses: {
+        awaitingResponse: count("awaiting_response"),
+        readyForReview: count("ready_for_review"),
+        needsContext: count("needs_context"),
+        modes: [...new Set(rows.map((row) => String(row.mode)))].sort(),
+      },
+    };
+  }
+
   get revision() {
     return Number(
       (

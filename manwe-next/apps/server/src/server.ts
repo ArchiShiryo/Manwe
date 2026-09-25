@@ -158,6 +158,10 @@ export async function startManweServer(options: ServerOptions) {
     }
 
     try {
+      if (pathname === "/api/status" && request.method === "GET") {
+        json(response, 200, store.status());
+        return;
+      }
       if (pathname === "/api/workspace" && request.method === "GET") {
         json(response, 200, store.snapshot());
         return;

@@ -145,6 +145,11 @@ test("capture, recherche, correction et redémarrage utilisent la même mémoire
     assert.equal(projection.focus.kind, "self");
     assert.ok(projection.nodes.some((node) => node.id === "self"));
     assert.equal(projection.synthesis.revision, projection.revision);
+    const status = await (
+      await request(context.origin, cookie, "/api/status")
+    ).json();
+    assert.equal(status.revision, projection.revision);
+    assert.equal(status.analyses.awaitingResponse, 0);
     const snapshot = await request(context.origin, cookie, "/api/workspace");
     const body = await snapshot.json();
     assert.equal(body.workspace.revision, 2);
@@ -221,6 +226,10 @@ test("l’API prépare, prévisualise et applique explicitement une proposition 
     });
     assert.equal(preparedResponse.status, 201);
     const packet = await preparedResponse.json();
+    // R4.7 : l'état léger signale l'analyse assistée en attente.
+    const pending = await (await request(origin, cookie, "/api/status")).json();
+    assert.equal(pending.analyses.awaitingResponse, 1);
+    assert.deepEqual(pending.analyses.modes, ["assisted"]);
     const source = packet.sources[0];
     const proposal = {
       schemaVersion: "1.4",

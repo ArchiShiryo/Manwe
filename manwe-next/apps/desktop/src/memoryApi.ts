@@ -24,6 +24,16 @@ import type {
 } from "../../../packages/cognition/src/projection.ts";
 import type { Synthesis } from "../../../packages/cognition/src/synthesis.ts";
 
+export type MemoryStatus = {
+  revision: number;
+  analyses: {
+    awaitingResponse: number;
+    readyForReview: number;
+    needsContext: number;
+    modes: string[];
+  };
+};
+
 const API_ORIGIN = "http://127.0.0.1:5181";
 
 export class MemoryApiError extends Error {
@@ -108,6 +118,10 @@ class MemoryApi {
 
   snapshot() {
     return this.request<WorkspaceSnapshot>("/api/workspace");
+  }
+
+  status() {
+    return this.request<MemoryStatus>("/api/status");
   }
 
   graph(focus: FocusContext) {

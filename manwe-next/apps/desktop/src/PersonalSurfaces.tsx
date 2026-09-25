@@ -28,7 +28,8 @@ import type {
   CognitiveProposal,
   ContextPacket,
 } from "../../../packages/cognition/src/contract.ts";
-import { MemoryApiError, memoryApi } from "./memoryApi.ts";
+import { MemoryApiError, memoryApi, type MemoryStatus } from "./memoryApi.ts";
+import { syncLabels, type ConnectionState } from "./syncLabels.ts";
 import { WorldGraph } from "./WorldGraph.tsx";
 import analystPrompt from "../../../packages/cognition/prompts/analyst-v6.md?raw";
 import {
@@ -92,20 +93,32 @@ export function PersonalWorld({
   snapshot,
   onMemory,
   onAnnotate,
+  connection = "online",
+  remote = null,
 }: {
   snapshot: WorkspaceSnapshot;
   onMemory: () => void;
   onAnnotate?: MemoryProps["onAnnotate"];
+  connection?: ConnectionState;
+  remote?: MemoryStatus | null;
 }) {
   const lastEvent = snapshot.events[0];
+  const labels = syncLabels(connection, remote);
   return (
     <section className="surface-panel personal-world">
-      <div className="personal-status-row">
+      <div
+        className={`personal-status-row ${connection === "reconnecting" ? "is-offline" : ""}`}
+        role="status"
+      >
         <span>
-          <i /> Mémoire locale disponible
+          <i /> {labels.connection}
         </span>
+        {labels.analysis && <span>{labels.analysis}</span>}
         <span>
-          Révision {snapshot.workspace.revision.toString().padStart(2, "0")}
+          {connection === "reconnecting"
+            ? "Affichage : révision "
+            : "Révision "}
+          {snapshot.workspace.revision.toString().padStart(2, "0")}
         </span>
       </div>
       <div className="personal-world-core">

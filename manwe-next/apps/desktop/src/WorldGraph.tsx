@@ -395,13 +395,20 @@ export function WorldGraph({
   const previous = useRef(new Map<string, PlacedNode[]>());
   const revision = snapshot.workspace.revision;
 
+  const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     let alive = true;
     setError("");
+    setLoading(true);
     memoryApi
       .graph(focus)
       .then((result) => {
         if (alive) setProjection(result);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
       })
       .catch((cause: unknown) => {
         if (alive)
@@ -412,7 +419,7 @@ export function WorldGraph({
     return () => {
       alive = false;
     };
-  }, [focus, revision]);
+  }, [focus, revision, attempt]);
 
   const placed = useMemo(() => {
     if (!projection) return [];
@@ -511,7 +518,24 @@ export function WorldGraph({
           ))}
         </div>
       </div>
-      {error && <div className="analysis-error">{error}</div>}
+      {error && (
+        <div className="world-graph-state" role="alert">
+          <span>
+            {error}
+            {projection
+              ? ` · dernier graphe affiché : révision ${projection.revision}`
+              : ""}
+          </span>
+          <button onClick={() => setAttempt((value) => value + 1)}>
+            Réessayer
+          </button>
+        </div>
+      )}
+      {loading && !projection && !error && (
+        <p className="world-graph-state" role="status">
+          Chargement du graphe depuis la mémoire locale…
+        </p>
+      )}
       {projection && placed.length <= 1 && !error && (
         <p className="world-graph-empty">
           Rien à relier pour l’instant autour de ce focus. Les relations

@@ -546,6 +546,8 @@ export default function App() {
                   snapshot={personal.snapshot}
                   onMemory={() => navigate("memory")}
                   onAnnotate={annotatePersonal}
+                  connection={personal.connection}
+                  remote={personal.remote}
                 />
               )}
               {mode === "personal" &&
