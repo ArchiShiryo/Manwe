@@ -119,6 +119,10 @@ export class Interviewer {
       .map((turn) => ({ role: turn.role, text: turn.text }));
     const prompt = `${INTERVIEWER_PROMPT.trimEnd()}\n\n${JSON.stringify(
       {
+        mission: this.store.agentMission,
+        coverage: (({ score, gaps }) => ({ score, gaps }))(
+          this.store.coveragePlan(),
+        ),
         memory: {
           ...this.store.interviewDigest(),
           analysis: this.analysisState(),
@@ -140,8 +144,27 @@ export class Interviewer {
       gap?: unknown;
       motive?: unknown;
       action?: unknown;
+      profile?: unknown;
     };
     if (parsed.action === "modeliser") this.onModel();
+    // D-032 : un champ du profil n'est gardé que s'il cite mot pour mot le
+    // dernier message de la personne.
+    const lastSaid = this.store
+      .conversation(24)
+      .filter((turn) => turn.role === "user" && turn.sourceId)
+      .at(-1);
+    for (const entry of Array.isArray(parsed.profile) ? parsed.profile : [])
+      if (lastSaid?.sourceId && entry && typeof entry === "object")
+        try {
+          this.store.setProfileField({
+            field: String((entry as { field?: unknown }).field ?? ""),
+            value: String((entry as { value?: unknown }).value ?? ""),
+            quote: String((entry as { quote?: unknown }).quote ?? ""),
+            sourceId: lastSaid.sourceId,
+          });
+        } catch {
+          // citation inexacte ou champ inconnu : ignoré, jamais inventé
+        }
     const reply =
       typeof parsed.reply === "string" ? parsed.reply.trim().slice(0, 600) : "";
     if (!reply) throw new Error("Réponse de l’agent vide.");

@@ -214,6 +214,25 @@ export async function startManweServer(options: ServerOptions) {
         json(response, 200, automatic.current());
         return;
       }
+      // D-032 : objectif de l'agent et plan de couverture.
+      if (pathname === "/api/agent/coverage" && request.method === "GET") {
+        json(response, 200, {
+          ...store.coveragePlan(),
+          profile: store.selfProfile(),
+        });
+        return;
+      }
+      if (pathname === "/api/agent/mission" && request.method === "POST") {
+        const body = (await readJson(request)) as Record<string, unknown>;
+        const text = body?.mission;
+        if (text !== null && typeof text !== "string")
+          throw new DomainError(
+            "invalid_mission",
+            "mission doit être un texte.",
+          );
+        json(response, 200, { mission: store.setAgentMission(text) });
+        return;
+      }
       // R5.8 : la conversation du lieu.
       if (pathname === "/api/conversation" && request.method === "GET") {
         json(response, 200, interviewer.state());

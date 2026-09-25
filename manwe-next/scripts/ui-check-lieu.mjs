@@ -45,7 +45,7 @@ const fake = createServer((request, response) => {
     let content;
     if (prompt.startsWith("Tu es la voix de MANWË")) {
       const state = JSON.parse(
-        prompt.slice(prompt.lastIndexOf('\n{\n  "memory"')),
+        prompt.slice(prompt.lastIndexOf('\n{\n  "mission"')),
       );
       content = state.conversation.length
         ? {
@@ -165,6 +165,13 @@ try {
       .innerText(),
     /je suis là pour vous écouter/,
   );
+
+  // 1 bis. D-032 : l'objectif de départ (cartographier) et la carte.
+  assert.match(
+    await page.locator(".lieu-mission").innerText(),
+    /Cartographier/,
+  );
+  assert.match(await page.locator(".lieu-coverage").innerText(), /CARTE · 0 %/);
 
   // 2. Un message fictif devient une note ; l'agent répond.
   await page

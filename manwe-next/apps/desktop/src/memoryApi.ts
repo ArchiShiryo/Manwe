@@ -88,6 +88,26 @@ export type ConversationState = {
   turns: ConversationTurn[];
 };
 
+/** D-032 : objectif de l'agent et plan de couverture. */
+export type Coverage = {
+  mission: string;
+  score: number;
+  actors: {
+    kind: "self" | "person";
+    id: string;
+    name: string;
+    score: number;
+    items: {
+      key: string;
+      label: string;
+      known: boolean;
+      detail: string | null;
+    }[];
+  }[];
+  gaps: { actor: string; actorId: string; key: string; label: string }[];
+  profile: { field: string; value: string; quote: string }[];
+};
+
 const API_ORIGIN = "http://127.0.0.1:5181";
 
 export class MemoryApiError extends Error {
@@ -336,6 +356,17 @@ class MemoryApi {
     return this.request<AgentState>("/api/agent/consent", {
       method: "POST",
       body: JSON.stringify({ granted }),
+    });
+  }
+
+  coverage() {
+    return this.request<Coverage>("/api/agent/coverage");
+  }
+
+  setMission(mission: string | null) {
+    return this.request<{ mission: string }>("/api/agent/mission", {
+      method: "POST",
+      body: JSON.stringify({ mission }),
     });
   }
 

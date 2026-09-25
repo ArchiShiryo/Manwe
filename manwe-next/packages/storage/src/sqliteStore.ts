@@ -74,6 +74,28 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
+
+/** D-032 : objectif de départ de l'agent (« bootloader »). */
+export const DEFAULT_AGENT_MISSION =
+  "Cartographier le monde social de la personne : elle-même, les personnes qui comptent, les liens et les milieux où elle les vit, pour qu'elle puisse ensuite mieux le comprendre et y agir.";
+
+export const PROFILE_FIELDS = [
+  "age",
+  "situation",
+  "foyer",
+  "energie",
+  "poids",
+  "souhait",
+] as const;
+export type ProfileField = (typeof PROFILE_FIELDS)[number];
+const PROFILE_LABELS: Record<ProfileField, string> = {
+  age: "Âge ou tranche d’âge",
+  situation: "Situation (études, travail, autre)",
+  foyer: "Avec qui vous vivez",
+  energie: "Comment vous allez en ce moment",
+  poids: "Ce qui vous pèse",
+  souhait: "Ce que vous aimeriez qui change",
+};
 const ANALYST_PROMPT_VERSION = "analyst-v11";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
@@ -234,6 +256,15 @@ export class SqliteMemoryStore {
         new URL("./migrations/015_settings.sql", import.meta.url),
       );
       this.database.exec(readFileSync(settingsMigrationPath, "utf8"));
+    }
+    const profileMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 16")
+      .get();
+    if (!profileMigration) {
+      const profileMigrationPath = fileURLToPath(
+        new URL("./migrations/016_self_profile.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(profileMigrationPath, "utf8"));
     }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
@@ -2191,6 +2222,254 @@ export class SqliteMemoryStore {
   /** D-031 : l'utilisateur a accepté une fois la transmission au fournisseur. */
   get transmissionConsent() {
     return this.setting("transmission_consent") === "granted";
+  }
+
+  /**
+   * D-032 : l'objectif de l'agent. Au départ (« bootloader »), cartographier
+   * le monde social de la personne ; il peut être changé ensuite.
+   */
+  get agentMission(): string {
+    return this.setting("agent_mission") ?? DEFAULT_AGENT_MISSION;
+  }
+
+  setAgentMission(text: string | null) {
+    const value = text?.trim();
+    if (value && value.length > 400)
+      throw new DomainError(
+        "invalid_mission",
+        "Objectif trop long (400 au plus).",
+      );
+    if (value) this.setSetting("agent_mission", value);
+    else
+      this.database
+        .prepare(
+          "DELETE FROM workspace_settings WHERE workspace_id = ? AND key = 'agent_mission'",
+        )
+        .run(this.workspaceId);
+    return this.agentMission;
+  }
+
+  /** D-032 : profil de l'utilisateur, chaque valeur citée de ses mots. */
+  selfProfile() {
+    return (
+      this.database
+        .prepare(
+          "SELECT field, value, source_id, quote, updated_at FROM self_profile WHERE workspace_id = ?",
+        )
+        .all(this.workspaceId) as SqlRow[]
+    ).map((row) => ({
+      field: String(row.field) as ProfileField,
+      value: String(row.value),
+      sourceId: String(row.source_id),
+      quote: String(row.quote),
+      updatedAt: String(row.updated_at),
+    }));
+  }
+
+  /**
+   * Un champ du profil, seulement s'il est tiré d'une note de l'utilisateur :
+   * la citation doit figurer mot pour mot dans la source.
+   */
+  setProfileField(entry: {
+    field: string;
+    value: string;
+    sourceId: string;
+    quote: string;
+  }) {
+    if (!PROFILE_FIELDS.includes(entry.field as ProfileField))
+      throw new DomainError(
+        "invalid_profile_field",
+        "Champ de profil inconnu.",
+      );
+    const value = entry.value.trim().slice(0, 160);
+    const source = this.workspaceSourceText(entry.sourceId);
+    if (
+      !value ||
+      !source ||
+      !entry.quote.trim() ||
+      !source.text.includes(entry.quote.trim())
+    )
+      throw new DomainError(
+        "profile_not_in_sources",
+        "Un champ du profil doit citer exactement une note de l’utilisateur.",
+      );
+    this.database
+      .prepare(
+        "INSERT INTO self_profile(workspace_id, field, value, source_id, quote, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(workspace_id, field) DO UPDATE SET value = excluded.value, source_id = excluded.source_id, quote = excluded.quote, updated_at = excluded.updated_at",
+      )
+      .run(
+        this.workspaceId,
+        entry.field,
+        value,
+        entry.sourceId,
+        entry.quote.trim(),
+        nowIso(),
+      );
+  }
+
+  /**
+   * D-032 : plan de couverture. Pour l'utilisateur et chaque personne, ce
+   * qu'on sait et ce qui reste inconnu. Calcul déterministe, sur les seules
+   * données sourcées ; l'agent en tire ses questions.
+   */
+  coveragePlan() {
+    const snapshot = this.snapshot();
+    const profile = new Map(
+      this.selfProfile().map((item) => [item.field, item]),
+    );
+    const contexts = new Set(
+      snapshot.events
+        .map((event) => event.context?.trim().toLowerCase())
+        .filter((item): item is string => Boolean(item)),
+    );
+    const episodesOf = (personId: string) =>
+      snapshot.events.filter((event) =>
+        snapshot.roles.some(
+          (role) =>
+            role.eventId === event.id &&
+            role.subject.kind === "person" &&
+            role.subject.personId === personId,
+        ),
+      );
+    const withSelf = (personId: string) =>
+      snapshot.relations.some(
+        (relation) =>
+          relation.members.some((member) => member.kind === "self") &&
+          relation.members.some(
+            (member) =>
+              member.kind === "person" && member.personId === personId,
+          ),
+      );
+    const readingsAbout = (personId: string) =>
+      snapshot.hypotheses.filter(
+        (item) =>
+          item.status !== "superseded" &&
+          item.subjects.some(
+            (subject) =>
+              (subject.kind === "person" && subject.personId === personId) ||
+              (subject.kind === "relation" &&
+                snapshot.relations
+                  .find((relation) => relation.id === subject.relationId)
+                  ?.members.some(
+                    (member) =>
+                      member.kind === "person" && member.personId === personId,
+                  )),
+          ),
+      ).length;
+    const item = (
+      key: string,
+      label: string,
+      known: boolean,
+      detail: string | null = null,
+    ) => ({
+      key,
+      label,
+      known,
+      detail,
+    });
+    const self = [
+      ...PROFILE_FIELDS.map((field) =>
+        item(
+          `profil:${field}`,
+          PROFILE_LABELS[field],
+          profile.has(field),
+          profile.get(field)?.value ?? null,
+        ),
+      ),
+      item(
+        "milieux",
+        "Milieux de vie (au moins trois)",
+        contexts.size >= 3,
+        contexts.size ? [...contexts].join(", ") : null,
+      ),
+      item(
+        "proches",
+        "Personnes qui comptent (au moins trois)",
+        snapshot.persons.length >= 3,
+        snapshot.persons.length ? `${snapshot.persons.length}` : null,
+      ),
+    ];
+    const persons = snapshot.persons.map((person) => {
+      const episodes = episodesOf(person.id);
+      const items = [
+        item(
+          "nom",
+          "Nommée",
+          !person.description,
+          person.description ? person.displayName : null,
+        ),
+        item(
+          "lien",
+          "Lien avec vous",
+          withSelf(person.id) || Boolean(person.relationLabel),
+          person.relationLabel,
+        ),
+        item(
+          "milieu",
+          "Milieu où vous la voyez",
+          episodes.some((event) => Boolean(event.context)),
+          episodes.find((event) => event.context)?.context ?? null,
+        ),
+        item(
+          "episodes",
+          "Au moins deux moments racontés",
+          episodes.length >= 2,
+          `${episodes.length}`,
+        ),
+        item(
+          "lecture",
+          "Une lecture de la relation",
+          readingsAbout(person.id) > 0,
+          null,
+        ),
+      ];
+      return {
+        kind: "person" as const,
+        id: person.id,
+        name: person.displayName,
+        items,
+        score: items.filter((entry) => entry.known).length / items.length,
+      };
+    });
+    const actors = [
+      {
+        kind: "self" as const,
+        id: "self",
+        name: "Vous",
+        items: self,
+        score: self.filter((entry) => entry.known).length / self.length,
+      },
+      ...persons,
+    ];
+    const all = actors.flatMap((actor) => actor.items);
+    return {
+      mission: this.agentMission,
+      score: all.length
+        ? all.filter((entry) => entry.known).length / all.length
+        : 0,
+      actors,
+      // Les creux les plus utiles d'abord : l'utilisateur, puis les personnes
+      // les moins connues.
+      gaps: [...actors]
+        .sort((left, right) =>
+          left.kind === "self"
+            ? -1
+            : right.kind === "self"
+              ? 1
+              : left.score - right.score,
+        )
+        .flatMap((actor) =>
+          actor.items
+            .filter((entry) => !entry.known)
+            .map((entry) => ({
+              actor: actor.name,
+              actorId: actor.id,
+              key: entry.key,
+              label: entry.label,
+            })),
+        )
+        .slice(0, 12),
+    };
   }
 
   /** R5.8 : la conversation du lieu, dans l'ordre. */

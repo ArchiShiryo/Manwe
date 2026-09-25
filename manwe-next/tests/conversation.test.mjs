@@ -44,7 +44,7 @@ test("R5.8 · un message devient une note et l'agent répond par une question mo
     // La personne parle : sa parole devient une note citable.
     answer = (prompt) => {
       const memory = JSON.parse(
-        prompt.slice(prompt.lastIndexOf('\n{\n  "memory"')),
+        prompt.slice(prompt.lastIndexOf('\n{\n  "mission"')),
       ).memory;
       return {
         reply:

@@ -15,6 +15,7 @@ import {
   memoryApi,
   type AgentState,
   type ConversationState,
+  type Coverage,
   type MemoryStatus,
 } from "./memoryApi.ts";
 import { syncLabels, type ConnectionState } from "./syncLabels.ts";
@@ -88,6 +89,90 @@ function AgentActivity({
           }`
         : "À jour."}
     </p>
+  );
+}
+
+/**
+ * D-032 : ce que l'agent cherche (son objectif, modifiable) et où en est la
+ * carte, pour vous et chaque personne.
+ */
+function Cartography({
+  coverage,
+  onMission,
+}: {
+  coverage: Coverage | null;
+  onMission: (text: string | null) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  if (!coverage) return null;
+  const percent = (value: number) => `${Math.round(value * 100)} %`;
+  return (
+    <div
+      className="lieu-map"
+      aria-label="Objectif de MANWË et couverture de la carte"
+    >
+      <div className="lieu-mission">
+        <span className="eyebrow">OBJECTIF</span>
+        {editing ? (
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              await onMission(draft.trim() || null);
+              setEditing(false);
+            }}
+          >
+            <input
+              aria-label="Objectif de MANWË"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Vide = revenir à : cartographier"
+            />
+            <button className="text-button">Garder</button>
+          </form>
+        ) : (
+          <>
+            <p>{coverage.mission}</p>
+            <button
+              className="text-button"
+              onClick={() => {
+                setDraft(coverage.mission);
+                setEditing(true);
+              }}
+            >
+              Changer
+            </button>
+          </>
+        )}
+      </div>
+      <div className="lieu-coverage">
+        <span className="eyebrow">CARTE · {percent(coverage.score)}</span>
+        <ul>
+          {coverage.actors.slice(0, 8).map((actor) => (
+            <li
+              key={actor.id}
+              title={actor.items
+                .map((item) => `${item.known ? "✓" : "?"} ${item.label}`)
+                .join("\n")}
+            >
+              <span>{actor.name}</span>
+              <i aria-hidden>
+                <b style={{ width: percent(actor.score) }} />
+              </i>
+              <small>{percent(actor.score)}</small>
+            </li>
+          ))}
+        </ul>
+        {coverage.gaps[0] && (
+          <p className="lieu-next-gap">
+            À découvrir : {coverage.gaps[0].label.toLowerCase()}
+            {coverage.gaps[0].actorId === "self"
+              ? ""
+              : ` (${coverage.gaps[0].actor})`}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -300,17 +385,20 @@ export function Lieu({
     null,
   );
   const [side, setSide] = useState<"conversation" | "journal">("conversation");
+  const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [now, setNow] = useState(Date.now());
   const lastApplied = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [nextAgent, nextConversation] = await Promise.all([
+      const [nextAgent, nextConversation, nextCoverage] = await Promise.all([
         memoryApi.agent(),
         memoryApi.conversation(),
+        memoryApi.coverage(),
       ]);
       setAgent(nextAgent);
       setConversation(nextConversation);
+      setCoverage(nextCoverage);
       // Une analyse appliquée change le monde : on relit la mémoire.
       const job = nextAgent.job;
       if (job?.status === "applied" && job.requestId !== lastApplied.current) {
@@ -377,6 +465,13 @@ export function Lieu({
             .startAutomatic(task as "interpret")
             .then(refresh)
             .catch(() => refresh());
+        }}
+      />
+      <Cartography
+        coverage={coverage}
+        onMission={async (text) => {
+          await memoryApi.setMission(text);
+          await refresh();
         }}
       />
       <div className="lieu-body">
