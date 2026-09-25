@@ -35,7 +35,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **Prochaine étape** : (les relations et leurs indicateurs s'affichent dans l'inspecteur depuis le 25 septembre) R4.0e est validé ; le registre ontologique (R4.0d) est amorcé : `packages/cognition/src/ontology.ts` (types, liens, actions, vocabulaires) et `tests/ontology.test.mjs`, qui échoue si le contrat, le prompt ou le stockage divergent. Reste à en faire dériver le prompt et le paquet, puis le graphe et le graphe R4. La sur-lecture de l'utilisateur est corrigée par le prompt v6 ([RAPPORT-007](./rapports/RAPPORT-007.md)). La pull request [ArchiShiryo/Manwe#1](https://github.com/ArchiShiryo/Manwe/pull/1) attend d'être fusionnée dans `main`.
 
-**Graphe (R4.1-R4.8 faits)** : `projectGraph(snapshot, focus)` produit nœuds et liens typés (styles épistémiques observé, rapporté, impression, inféré, inconnu) ; route `GET /api/graph?kind=person|self|relation|hypothesis|question&id=…`. L'écran « Monde » du mode personnel l'affiche (`apps/desktop/src/WorldGraph.tsx`, disposition déterministe dans `graphLayout.ts`) : focus au centre, anneaux par distance, recentrage au clic, double trait qui tremble d'autant plus que la confiance est basse. R4.4 est fait (positions ancrées entre révisions, zoom sémantique Essentiel / Détails, sélection conservée). R4.5 est fait : la fiche d'un nœud offre « Pourquoi ? » (extraits exacts, épisode, date), « Corriger » ou « Contester », et « Ajouter du contexte » (`graphEvidence.ts`). R4.6 est fait : synthèse déterministe (`synthesis.ts`) renvoyée avec la projection, datée par sa révision. R4.7 est fait : resynchronisation par révision (`GET /api/status`), mode réel affiché, contrôle navigateur `node scripts/ui-check-sync.mjs`. R4.8 est fait (audit axe-core sans violation, contrastes, clavier). Reste de R4 : R4.0d (dériver le prompt et le paquet du registre ontologique).
+**Graphe (R4.1-R4.8 faits)** : `projectGraph(snapshot, focus)` produit nœuds et liens typés (styles épistémiques observé, rapporté, impression, inféré, inconnu) ; route `GET /api/graph?kind=person|self|relation|hypothesis|question&id=…`. L'écran « Monde » du mode personnel l'affiche (`apps/desktop/src/WorldGraph.tsx`, disposition déterministe dans `graphLayout.ts`) : focus au centre, anneaux par distance, recentrage au clic, double trait qui tremble d'autant plus que la confiance est basse. R4.4 est fait (positions ancrées entre révisions, zoom sémantique Essentiel / Détails, sélection conservée). R4.5 est fait : la fiche d'un nœud offre « Pourquoi ? » (extraits exacts, épisode, date), « Corriger » ou « Contester », et « Ajouter du contexte » (`graphEvidence.ts`). R4.6 est fait : synthèse déterministe (`synthesis.ts`) renvoyée avec la projection, datée par sa révision. R4.7 est fait : resynchronisation par révision (`GET /api/status`), mode réel affiché, contrôle navigateur `node scripts/ui-check-sync.mjs`. R4.8 est fait (audit axe-core sans violation, contrastes, clavier). R4.0d est fait : `vocabulary.ts` est la source unique des valeurs, le prompt v6 est le rendu exact de `prompts/analyst.template.md` (`renderPrompt`), et un prompt futur se prépare en modifiant le gabarit puis `node scripts/render-prompt.mjs packages/cognition/prompts/analyst-v7.md`. **R4 est entièrement coché** ; reste son critère de passage (voir ROADMAP) et la suite R5.
 
 **Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
 
@@ -48,31 +48,31 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 ## 4. Carte du dépôt
 
-| Chemin                                           | Contenu                                                                                 |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `ROADMAP.md`                                     | Trajectoire R0 à R11, points d'exécution datés, cases cochées avec preuves              |
-| `manwe-next/docs/pilotage/PILOTAGE.md`           | Rôles, protocole d'évaluation à l'aveugle, **registre des décisions**, suivi des briefs |
-| `manwe-next/docs/pilotage/ONTOLOGIE.md`          | Couche ontologique (comparaison Palantir), manques                                      |
-| `manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md` | Finalité prédictive, lecture stratégique, psychodynamique fine                          |
-| `manwe-next/docs/pilotage/briefs/`               | Cahiers des charges des lots de travail                                                 |
-| `manwe-next/docs/pilotage/rapports/`             | Rapports de clôture et de notation                                                      |
-| `manwe-next/docs/pilotage/scelles/`              | Empreintes SHA-256 des attentes, puis attentes publiées après notation                  |
-| `manwe-next/docs/references/palantir/`           | Documentation publique de Palantir (référence pour l'ontologie et la phase téléréalité) |
-| `manwe-current-docs/`                            | Spécification maître V3.0 et documents d'origine                                        |
-| `manwe-next/packages/domain`                     | Types et commandes du domaine                                                           |
-| `manwe-next/packages/storage`                    | SQLite, migrations 001 à 006, `hypothesisStore.ts` (moteur de révision)                 |
-| `manwe-next/packages/cognition`                  | Contrat cognitif 1.2, `revision.ts` (règles pures), prompts (`analyst-v3.md`)           |
-| `manwe-next/packages/evaluation`                 | Corpus (`fixtures/`) et runs versionnés (`runs/`)                                       |
-| `manwe-next/scripts/scenario-run.mjs`            | Harnais multi-étapes : prepare, advance, auto, summary, rewind                          |
-| `manwe-next/scripts/lib/deepseek.mjs`            | Client de l'API DeepSeek                                                                |
-| `manwe-next/apps/server`, `apps/desktop`         | Service Node local (port 5181) et interface React (port 5180)                           |
+| Chemin                                           | Contenu                                                                                                                                                                             |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ROADMAP.md`                                     | Trajectoire R0 à R11, points d'exécution datés, cases cochées avec preuves                                                                                                          |
+| `manwe-next/docs/pilotage/PILOTAGE.md`           | Rôles, protocole d'évaluation à l'aveugle, **registre des décisions**, suivi des briefs                                                                                             |
+| `manwe-next/docs/pilotage/ONTOLOGIE.md`          | Couche ontologique (comparaison Palantir), manques                                                                                                                                  |
+| `manwe-next/docs/pilotage/MODELE-STRATEGIQUE.md` | Finalité prédictive, lecture stratégique, psychodynamique fine                                                                                                                      |
+| `manwe-next/docs/pilotage/briefs/`               | Cahiers des charges des lots de travail                                                                                                                                             |
+| `manwe-next/docs/pilotage/rapports/`             | Rapports de clôture et de notation                                                                                                                                                  |
+| `manwe-next/docs/pilotage/scelles/`              | Empreintes SHA-256 des attentes, puis attentes publiées après notation                                                                                                              |
+| `manwe-next/docs/references/palantir/`           | Documentation publique de Palantir (référence pour l'ontologie et la phase téléréalité)                                                                                             |
+| `manwe-current-docs/`                            | Spécification maître V3.0 et documents d'origine                                                                                                                                    |
+| `manwe-next/packages/domain`                     | Types et commandes du domaine                                                                                                                                                       |
+| `manwe-next/packages/storage`                    | SQLite, migrations 001 à 008, `hypothesisStore.ts` (moteur de révision)                                                                                                             |
+| `manwe-next/packages/cognition`                  | Contrat 1.4, `vocabulary.ts` et `ontology.ts` (registre), `revision.ts`, `relations.ts`, `projection.ts`, `synthesis.ts` ; prompts : `analyst.template.md` rendu en `analyst-v6.md` |
+| `manwe-next/packages/evaluation`                 | Corpus (`fixtures/`) et runs versionnés (`runs/`)                                                                                                                                   |
+| `manwe-next/scripts/scenario-run.mjs`            | Harnais multi-étapes : prepare, advance, auto, summary, rewind                                                                                                                      |
+| `manwe-next/scripts/lib/deepseek.mjs`            | Client de l'API DeepSeek                                                                                                                                                            |
+| `manwe-next/apps/server`, `apps/desktop`         | Service Node local (port 5181) et interface React (port 5180)                                                                                                                       |
 
 ## 5. Commandes
 
 ```sh
 cd manwe-next
 npm ci
-npm test            # 85 tests au 25 septembre 2026
+npm test            # 88 tests au 25 septembre 2026
 npm run typecheck
 npm run dev         # interface http://127.0.0.1:5180, service :5181
 

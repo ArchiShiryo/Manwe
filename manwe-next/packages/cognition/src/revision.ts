@@ -1,14 +1,16 @@
 // Règles déterministes du moteur de révision (R3, décisions D-006 à D-009).
 // Fonctions pures : aucune dépendance au stockage ni à Node.
 
-export type HypothesisDepth = "D1" | "D2" | "D3" | "D4" | "D5";
-export type HypothesisStatus =
-  | "draft"
-  | "plausible"
-  | "contradicted"
-  | "superseded";
-export type Confidence = "low" | "moderate" | "high";
-export type EvidenceStance = "supports" | "contradicts";
+import {
+  CONFIDENCES,
+  DEPTHS,
+  type Confidence,
+  type EvidenceStance,
+  type HypothesisDepth,
+  type HypothesisStatus,
+} from "./vocabulary.ts";
+
+export type { Confidence, EvidenceStance, HypothesisDepth, HypothesisStatus };
 
 /** Une preuve telle que le stockage la décrit pour les règles. */
 export type EvidenceFact = {
@@ -52,8 +54,8 @@ export const PLAUSIBLE_MIN_UNITS: Record<HypothesisDepth, number> = {
 /** Spécification §4.4 : un pattern profond doit survivre à un état transitoire. */
 export const DEEP_PATTERN_MIN_SPAN_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const DEPTH_ORDER: HypothesisDepth[] = ["D1", "D2", "D3", "D4", "D5"];
-const CONFIDENCE_ORDER: Confidence[] = ["low", "moderate", "high"];
+const DEPTH_ORDER: readonly HypothesisDepth[] = DEPTHS;
+const CONFIDENCE_ORDER: readonly Confidence[] = CONFIDENCES;
 
 export function depthAtLeast(depth: HypothesisDepth, minimum: HypothesisDepth) {
   return DEPTH_ORDER.indexOf(depth) >= DEPTH_ORDER.indexOf(minimum);

@@ -71,6 +71,20 @@ export const DEFAULT_OPERATIONS: Record<
 };
 
 import {
+  CLAIM_CATEGORIES,
+  CLAIM_MODALITIES,
+  CONFIDENCES,
+  CREATION_STATUSES,
+  DEPTHS,
+  EVIDENCE_STANCES,
+  HYPOTHESIS_STATUSES,
+  TEMPORAL_PRECISIONS,
+  type Confidence,
+  type EvidenceStance,
+  type HypothesisDepth,
+  type HypothesisStatus,
+} from "./vocabulary.ts";
+import {
   EPISODE_ROLES,
   ROLE_OUTCOMES,
   type EpisodeRole,
@@ -90,7 +104,7 @@ export type HypothesisSubjectInput = MemberInput | { relation: MemberInput[] };
 
 export type EvidenceInput = {
   claim: TargetRef;
-  stance: "supports" | "contradicts";
+  stance: EvidenceStance;
 };
 
 /**
@@ -114,10 +128,10 @@ export type Mechanism = Partial<
 
 type HypothesisPayload = {
   statement: string;
-  depth: "D1" | "D2" | "D3" | "D4" | "D5";
+  depth: HypothesisDepth;
   framework: string | null;
   construct: string | null;
-  confidence: "low" | "moderate" | "high";
+  confidence: Confidence;
   subjects: HypothesisSubjectInput[];
   evidence: EvidenceInput[];
   limits: string;
@@ -126,7 +140,7 @@ type HypothesisPayload = {
   validFrom: string | null;
   validTo: string | null;
   /** Statut demandé dès la création ; « plausible » seulement si les règles l'autorisent (D-015). */
-  status: "draft" | "plausible";
+  status: (typeof CREATION_STATUSES)[number];
   /** Classement parmi les lectures d'un même sujet ; 1 = lecture principale. */
   rank: number | null;
   mechanism: Mechanism | null;
@@ -135,8 +149,8 @@ type HypothesisPayload = {
 type RevisePayload = {
   target: EntityRef;
   expectedRowVersion: number;
-  status: "draft" | "plausible" | "contradicted" | "superseded";
-  confidence: "low" | "moderate" | "high";
+  status: HypothesisStatus;
+  confidence: Confidence;
   addEvidence: EvidenceInput[];
   /** Nouveau classement ; absent = inchangé. */
   rank?: number | null;
@@ -463,21 +477,10 @@ function citations(value: unknown) {
   return value.map(citation);
 }
 
-const categories: Array<Exclude<InformationCategory, "unclassified_note">> = [
-  "explicit_statement",
-  "sourced_observation",
-  "reported_observation",
-  "user_impression",
-  "inference",
-];
-const claimModalities: ClaimModality[] = ["actual", "intended", "hypothetical"];
-const precisions: TemporalPrecision[] = [
-  "exact",
-  "day",
-  "approximate",
-  "interval",
-  "unknown",
-];
+const categories: readonly Exclude<InformationCategory, "unclassified_note">[] =
+  CLAIM_CATEGORIES;
+const claimModalities: readonly ClaimModality[] = CLAIM_MODALITIES;
+const precisions: readonly TemporalPrecision[] = TEMPORAL_PRECISIONS;
 
 function targetRef(value: unknown, name: string): TargetRef {
   const input = object(value, name);
@@ -515,7 +518,7 @@ function evidenceList(value: unknown, name: string): EvidenceInput[] {
       claim: targetRef(input.claim, `${name}.claim`),
       stance: oneOf(
         input.stance,
-        ["supports", "contradicts"] as const,
+        EVIDENCE_STANCES,
         "invalid_evidence",
         "stance doit valoir supports ou contradicts.",
       ),
@@ -523,14 +526,9 @@ function evidenceList(value: unknown, name: string): EvidenceInput[] {
   });
 }
 
-const depths = ["D1", "D2", "D3", "D4", "D5"] as const;
-const confidences = ["low", "moderate", "high"] as const;
-const hypothesisStatuses = [
-  "draft",
-  "plausible",
-  "contradicted",
-  "superseded",
-] as const;
+const depths = DEPTHS;
+const confidences = CONFIDENCES;
+const hypothesisStatuses = HYPOTHESIS_STATUSES;
 
 function subjectInput(value: unknown): HypothesisSubjectInput {
   const input = object(value, "subject");
@@ -648,7 +646,7 @@ function hypothesisOperation(
           ? "draft"
           : oneOf(
               payload.status,
-              ["draft", "plausible"] as const,
+              CREATION_STATUSES,
               "invalid_status",
               "À la création, le statut est « draft » ou « plausible ».",
             ),
