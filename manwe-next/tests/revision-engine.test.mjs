@@ -47,7 +47,7 @@ function citation(source) {
 
 function proposal(packet, operations, outcome = "proposed") {
   return {
-    schemaVersion: "1.2",
+    schemaVersion: "1.3",
     requestId: packet.requestId,
     workspaceId: packet.workspaceId,
     baseRevision: packet.baseRevision,
@@ -203,15 +203,18 @@ test("R3-1 · une contre-preuve ancrée retire le droit au statut plausible", ()
         { kind: "claim", id: contra },
       ],
     });
-    const refused = respond(store, packet, [
+    // Le statut demandé n'est plus permis : le moteur le ramène avec un
+    // avertissement au lieu de rejeter toute la réponse (D-015).
+    const kept = respond(store, packet, [
       reviseOp(hypothesis(store, id), {
         addEvidence: [
           { claim: { kind: "claim", id: contra }, stance: "contradicts" },
         ],
       }),
-    ]).preview;
-    assert.equal(refused.status, "rejected");
-    assert.equal(refused.errors[0].code, "status_not_allowed");
+    ]).result;
+    assert.equal(kept.status, "applied");
+    assert.equal(kept.warnings[0].code, "status_not_allowed");
+    assert.equal(hypothesis(store, id).status, "draft");
 
     const packet2 = store.prepareAnalysis({
       task: "revise",
@@ -422,9 +425,11 @@ test("R3-6 · une hypothèse appuyée seulement sur des inférences ne devient p
       subjects: [{ mention: "Karim" }],
       statement: "Karim s’éloigne.",
     });
-    const preview = promote(store, id);
-    assert.equal(preview.status, "rejected");
-    assert.equal(preview.errors[0].code, "status_not_allowed");
+    const { result } = respond(store, revisePacket(store, id), [
+      reviseOp(hypothesis(store, id)),
+    ]);
+    assert.equal(result.warnings[0].code, "status_not_allowed");
+    assert.equal(hypothesis(store, id).status, "draft");
     store.close();
   }));
 
@@ -479,7 +484,15 @@ test("R3-7 · profondeurs : D4 accepté en brouillon, promu seulement sur 3 épi
         alternativeTo: { proposalKey: "h1" },
       }),
     ]).preview;
-    assert.equal(preview.errors[0]?.code, "confidence_not_supported");
+    // Confiance trop haute : ramenée au plafond (D4 : au plus moderate), avec
+    // un avertissement, sans rejet de la réponse.
+    assert.equal(preview.status, "ready_for_review");
+    const capped = store
+      .snapshot()
+      .hypotheses.find(
+        (item) => item.depth === "D4" && item.statement === deep.statement,
+      );
+    assert.equal(capped.confidence, "moderate");
 
     packet = interpretPacket(store, crisis);
     const { result } = respond(store, packet, [
@@ -504,7 +517,12 @@ test("R3-7 · profondeurs : D4 accepté en brouillon, promu seulement sur 3 épi
       (ref) => ref.kind === "hypothesis",
     )[0].id;
     assert.equal(hypothesis(store, deepId).status, "draft");
-    assert.equal(promote(store, deepId).errors[0].code, "status_not_allowed");
+    promote(store, deepId);
+    assert.equal(
+      hypothesis(store, deepId).status,
+      "draft",
+      "D4 sans passe critique reste en brouillon",
+    );
 
     const later = claimFrom(
       store,
@@ -518,18 +536,19 @@ test("R3-7 · profondeurs : D4 accepté en brouillon, promu seulement sur 3 épi
         { kind: "claim", id: later },
       ],
     });
-    const strengthen = reviseOp(hypothesis(store, deepId), {
-      addEvidence: [
-        { claim: { kind: "claim", id: later }, stance: "supports" },
-      ],
-      confidence: "high",
-    });
-    preview = respond(store, packet, [strengthen]).preview;
-    assert.equal(
-      preview.errors[0]?.code,
-      "status_not_allowed",
+    const strengthen = () =>
+      reviseOp(hypothesis(store, deepId), {
+        addEvidence: [
+          { claim: { kind: "claim", id: later }, stance: "supports" },
+        ],
+        confidence: "high",
+      });
+    const refused = respond(store, packet, [strengthen()]).result;
+    assert.ok(
+      refused.warnings.some((item) => item.code === "status_not_allowed"),
       "D4 sans passe critique ne se consolide pas",
     );
+    assert.equal(hypothesis(store, deepId).status, "draft");
     packet = store.prepareAnalysis({
       task: "revise",
       focus: [
@@ -554,7 +573,7 @@ test("R3-7 · profondeurs : D4 accepté en brouillon, promu seulement sur 3 épi
         },
         rationale: "Passe critique distincte.",
       },
-      strengthen,
+      strengthen(),
     ]).preview;
     assert.equal(
       preview.status,
@@ -567,7 +586,11 @@ test("R3-7 · profondeurs : D4 accepté en brouillon, promu seulement sur 3 épi
       null,
     );
     assert.equal(hypothesis(store, deepId).status, "plausible");
-    assert.equal(hypothesis(store, deepId).confidence, "high");
+    assert.equal(
+      hypothesis(store, deepId).confidence,
+      "moderate",
+      "« high » est réservé à D1 et D2",
+    );
     const maelle = store
       .snapshot()
       .persons.filter((person) => person.displayName === "Maëlle");
@@ -815,5 +838,189 @@ test("R3 · une alternative peut viser une hypothèse proposée plus loin dans l
     );
     const [first, second] = store.snapshot().hypotheses;
     assert.ok(first.alternativeTo && second.alternativeTo);
+    store.close();
+  }));
+
+test("BRIEF-003 · une correction devient une source citable, reprise dans le paquet de révision", () =>
+  withStore((open) => {
+    const store = open();
+    const first = claimFrom(
+      store,
+      "Lina a annulé notre footing au dernier moment.",
+      "2026-05-04T12:00:00-03:00",
+    );
+    const second = claimFrom(
+      store,
+      "Le concert avec Lina ne s’est finalement pas fait.",
+      "2026-05-20T12:00:00-03:00",
+    );
+    const id = createHypothesis(store, [first, second], {
+      statement: "Lina se retire des projets communs.",
+      depth: "D2",
+      subjects: [{ mention: "Lina" }],
+    });
+    const correction = "Correction : c’est moi qui ai annulé le concert.";
+    const annotated = store.annotate({
+      idempotencyKey: "brief003:correction",
+      target: { kind: "claim", id: second },
+      text: correction,
+      annotationType: "factual_correction",
+    });
+    assert.ok(annotated.created.some((ref) => ref.kind === "source"));
+    const packet = revisePacket(store, id);
+    const source = packet.sources.find((item) => item.text === correction);
+    assert.ok(source, "la correction figure parmi les sources du paquet");
+    const { preview, result } = respond(store, packet, [
+      {
+        key: "c1",
+        kind: "propose_claim",
+        payload: {
+          text: "L’utilisateur a annulé le concert lui-même.",
+          category: "explicit_statement",
+          modality: "actual",
+          validFrom: null,
+          validTo: null,
+          citations: [citation(source)],
+        },
+        rationale: "Déclaration de l’utilisateur.",
+      },
+      reviseOp(hypothesis(store, id), {
+        status: "draft",
+        addEvidence: [{ claim: { proposalKey: "c1" }, stance: "contradicts" }],
+      }),
+    ]);
+    assert.equal(
+      preview.status,
+      "ready_for_review",
+      JSON.stringify(preview.errors),
+    );
+    assert.equal(result.status, "applied");
+    assert.equal(hypothesis(store, id).counts.anchoredContradicts, 1);
+    store.close();
+  }));
+
+test("BRIEF-003 · après un accord, pas de promotion sans nouvel épisode ; un nouvel épisode la rend possible", () =>
+  withStore((open) => {
+    const store = open();
+    const claims = [
+      claimFrom(store, "Malo a boudé le repas.", "2026-02-10T12:00:00-03:00"),
+      claimFrom(
+        store,
+        "Malo a lâché « tu la vois beaucoup ».",
+        "2026-03-18T12:00:00-03:00",
+      ),
+    ];
+    const id = createHypothesis(store, claims, {
+      statement: "Malo réagit quand l’utilisateur voit Anaïs.",
+      depth: "D2",
+      subjects: [{ mention: "Malo" }],
+    });
+    store.annotate({
+      idempotencyKey: "brief003:agreement",
+      target: { kind: "hypothesis", id },
+      text: "Oui, c’est exactement ça.",
+      annotationType: "agreement",
+    });
+    let { result } = respond(store, revisePacket(store, id), [
+      reviseOp(hypothesis(store, id), { confidence: "moderate" }),
+    ]);
+    assert.ok(
+      result.warnings.some((item) => item.code === "promotion_after_agreement"),
+    );
+    assert.equal(hypothesis(store, id).status, "draft");
+    assert.equal(hypothesis(store, id).confidence, "low");
+
+    const third = claimFrom(
+      store,
+      "Malo a demandé deux fois si Anaïs viendrait.",
+      "2026-04-25T12:00:00-03:00",
+    );
+    const packet = store.prepareAnalysis({
+      task: "revise",
+      focus: [
+        { kind: "hypothesis", id },
+        { kind: "claim", id: third },
+      ],
+    });
+    ({ result } = respond(store, packet, [
+      reviseOp(hypothesis(store, id), {
+        confidence: "moderate",
+        addEvidence: [
+          { claim: { kind: "claim", id: third }, stance: "supports" },
+        ],
+      }),
+    ]));
+    assert.equal(result.warnings.length, 0, JSON.stringify(result.warnings));
+    assert.equal(hypothesis(store, id).status, "plausible");
+    assert.equal(hypothesis(store, id).confidence, "moderate");
+    store.close();
+  }));
+
+test("BRIEF-003 · D1–D2 plausible dès la création, rang et formulation mécaniste conservés ; D3 reste en brouillon", () =>
+  withStore((open) => {
+    const store = open();
+    const claims = [
+      claimFrom(
+        store,
+        "Yohan est arrivé en retard au déjeuner.",
+        "2026-03-02T12:00:00-03:00",
+      ),
+      claimFrom(
+        store,
+        "Yohan est encore arrivé en retard au cinéma.",
+        "2026-03-23T12:00:00-03:00",
+      ),
+      claimFrom(
+        store,
+        "Yohan dit être en retard avec tout le monde.",
+        "2026-04-13T12:00:00-03:00",
+      ),
+    ];
+    const packet = interpretPacket(store, claims);
+    const { result } = respond(store, packet, [
+      hypothesisOp("h1", claims, {
+        statement: "Yohan arrive souvent en retard, avec tout le monde.",
+        depth: "D2",
+        confidence: "high",
+        subjects: [{ mention: "Yohan" }],
+        status: "plausible",
+        rank: 1,
+      }),
+      hypothesisOp("h2", claims, {
+        statement: "Yohan évite la honte d’attendre en arrivant tard.",
+        depth: "D3",
+        confidence: "high",
+        subjects: [{ mention: "Yohan" }],
+        status: "plausible",
+        rank: 1,
+        alternativeTo: { proposalKey: "h3" },
+        mechanism: {
+          protects: "L’image de soi face à l’échec de ponctualité.",
+          prediction: "Des retards aussi avec des personnes neutres.",
+        },
+      }),
+      hypothesisOp("h3", claims, {
+        statement: "Une difficulté de gestion du temps sans enjeu relationnel.",
+        depth: "D3",
+        subjects: [{ mention: "Yohan" }],
+        rank: 2,
+        alternativeTo: { proposalKey: "h2" },
+      }),
+    ]);
+    const [h1, h2] = result.createdIds
+      .filter((ref) => ref.kind === "hypothesis")
+      .map((ref) => hypothesis(store, ref.id));
+    assert.equal(h1.status, "plausible");
+    assert.equal(h1.confidence, "high", "D2, 3 épisodes sur 42 jours");
+    assert.equal(h1.rank, 1);
+    assert.equal(h2.status, "draft", "D3 exige une passe critique distincte");
+    assert.equal(h2.confidence, "moderate", "D3 plafonne sous « high »");
+    assert.equal(
+      h2.mechanism.prediction,
+      "Des retards aussi avec des personnes neutres.",
+    );
+    const codes = result.warnings.map((item) => item.code);
+    assert.ok(codes.includes("status_downgraded"));
+    assert.ok(codes.includes("confidence_capped"));
     store.close();
   }));

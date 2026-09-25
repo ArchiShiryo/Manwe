@@ -174,15 +174,47 @@ export function checkStatus(
   return { allowed: true, reason: null };
 }
 
-/** Plafond de confiance qualitative permis par les preuves (T2). */
-export function maxConfidence(summary: EvidenceSummary): Confidence {
+/**
+ * Plafond de confiance qualitative permis par les preuves (T2). La confiance
+ * « high » est réservée aux lectures descriptives D1 et D2 (RAPPORT-003 §4.3) :
+ * une lecture de motif, de personnalité ou de champ plafonne à « moderate ».
+ */
+export function maxConfidence(
+  summary: EvidenceSummary,
+  depth?: HypothesisDepth,
+): Confidence {
+  const deep = depth !== undefined && depthAtLeast(depth, "D3");
   if (
     summary.netSupport >= 3 &&
     summary.supportSpanDays >= DEEP_PATTERN_MIN_SPAN_DAYS
   )
-    return "high";
+    return deep ? "moderate" : "high";
   if (summary.netSupport >= 2) return "moderate";
   return "low";
+}
+
+/**
+ * Après un accord de l'utilisateur, une hypothèse ne peut être promue (statut
+ * ou confiance) que si un nouvel épisode ancré s'est ajouté depuis
+ * (RAPPORT-003 §4.1) : l'accord n'est jamais une preuve, et la promotion ne
+ * doit pas sembler en découler.
+ */
+export function promotionAllowedAfterAgreement(
+  atAgreement: EvidenceSummary,
+  now: EvidenceSummary,
+) {
+  return now.netSupport > atAgreement.netSupport;
+}
+
+export function isPromotion(
+  before: { status: HypothesisStatus; confidence: Confidence },
+  after: { status: HypothesisStatus; confidence: Confidence },
+) {
+  return (
+    (after.status === "plausible" && before.status !== "plausible") ||
+    CONFIDENCE_ORDER.indexOf(after.confidence) >
+      CONFIDENCE_ORDER.indexOf(before.confidence)
+  );
 }
 
 /** Hypothèses dont au moins une preuve cite un claim modifié ou annoté. */

@@ -148,6 +148,15 @@ export class SqliteMemoryStore {
       );
       this.database.exec(readFileSync(critiqueMigrationPath, "utf8"));
     }
+    const brief003Migration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 7")
+      .get();
+    if (!brief003Migration) {
+      const brief003MigrationPath = fileURLToPath(
+        new URL("./migrations/007_brief003.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(brief003MigrationPath, "utf8"));
+    }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
     this.database
@@ -734,9 +743,49 @@ export class SqliteMemoryStore {
       const timestamp = command.createdAt ?? nowIso();
       const annotationId = randomUUID();
       const nextRevision = this.revision + 1;
+      // Une correction, un contexte ou un désaccord est une déclaration de
+      // l'utilisateur : il devient une source citable (RAPPORT-003 §4.2).
+      // L'accord n'en crée pas, car il n'est jamais une preuve (D-008).
+      const citable = command.annotationType !== "agreement";
+      const sourceId = citable ? randomUUID() : null;
+      const createdRefs: EntityRef[] = [];
+      if (sourceId) {
+        const eventId = randomUUID();
+        this.database
+          .prepare(
+            "INSERT INTO sources(id, workspace_id, kind, content, content_hash, recorded_at, narrated_at, sensitivity, created_at) VALUES (?, ?, 'user_entry', ?, ?, ?, ?, 'personal', ?)",
+          )
+          .run(
+            sourceId,
+            this.workspaceId,
+            command.text,
+            sha256(command.text),
+            timestamp,
+            timestamp,
+            timestamp,
+          );
+        this.database
+          .prepare(
+            "INSERT INTO events(id, workspace_id, title, text, category, source_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, 'unclassified_note', ?, NULL, NULL, 'unknown', ?, 1, ?, ?)",
+          )
+          .run(
+            eventId,
+            this.workspaceId,
+            `Annotation (${command.annotationType})`,
+            command.text,
+            sourceId,
+            "Annotation de l’utilisateur",
+            timestamp,
+            timestamp,
+          );
+        createdRefs.push(
+          { kind: "source", id: sourceId },
+          { kind: "event", id: eventId },
+        );
+      }
       this.database
         .prepare(
-          "INSERT INTO annotations(id, workspace_id, target_kind, target_id, text, annotation_type, revision, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO annotations(id, workspace_id, target_kind, target_id, text, annotation_type, revision, created_at, source_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .run(
           annotationId,
@@ -747,10 +796,12 @@ export class SqliteMemoryStore {
           command.annotationType,
           nextRevision,
           timestamp,
+          sourceId,
         );
       const changed: EntityRef[] = [
         command.target,
         { kind: "annotation", id: annotationId },
+        ...createdRefs,
         ...this.hypotheses.onAnnotation(
           command.target,
           command.annotationType,
@@ -763,7 +814,7 @@ export class SqliteMemoryStore {
         idempotencyKey: command.idempotencyKey,
         replayed: false,
         revision,
-        created: [{ kind: "annotation", id: annotationId }],
+        created: [{ kind: "annotation", id: annotationId }, ...createdRefs],
       };
       this.saveReceipt(
         "annotate",
@@ -1400,6 +1451,20 @@ export class SqliteMemoryStore {
       ...packetHypotheses.hypotheses.map((item) => `hypothesis:${item.id}`),
       ...packetHypotheses.questions.map((item) => `question:${item.id}`),
     ]);
+    const packetAnnotations = snapshot.annotations.filter((annotation) =>
+      relevant.has(`${annotation.target.kind}:${annotation.target.id}`),
+    );
+    // Les annotations citables apportent leur source au paquet.
+    for (const annotation of packetAnnotations)
+      if (annotation.sourceId && !sourceIds.has(annotation.sourceId)) {
+        const source = snapshot.sources.find(
+          (item) => item.id === annotation.sourceId,
+        );
+        if (source) {
+          sourceIds.add(source.id);
+          selectedSources.push(source);
+        }
+      }
     const packetWithoutHash: Omit<ContextPacket, "contextHash"> = {
       schemaVersion: COGNITION_SCHEMA_VERSION,
       requestId,
@@ -1432,9 +1497,7 @@ export class SqliteMemoryStore {
       ),
       claims: snapshot.claims.filter((claim) => selectedClaimIds.has(claim.id)),
       hypotheses: packetHypotheses.hypotheses,
-      annotations: snapshot.annotations.filter((annotation) =>
-        relevant.has(`${annotation.target.kind}:${annotation.target.id}`),
-      ),
+      annotations: packetAnnotations,
       questions: packetHypotheses.questions,
       goals: snapshot.goals.filter((goal) => focused.has(`goal:${goal.id}`)),
       coverage: {
@@ -1671,7 +1734,7 @@ export class SqliteMemoryStore {
       const packet = JSON.parse(
         String(lockedRequest.context_json),
       ) as ContextPacket;
-      const { created, changed } = this.applyOperations(
+      const { created, changed, warnings } = this.applyOperations(
         proposal,
         packet,
         timestamp,
@@ -1689,7 +1752,7 @@ export class SqliteMemoryStore {
         resultRevision,
         createdIds: created,
         changedIds: touched,
-        warnings: [],
+        warnings,
         errors: [],
         replayed: false,
       };
@@ -1720,7 +1783,8 @@ export class SqliteMemoryStore {
   ) {
     const created: EntityRef[] = [];
     const changed: EntityRef[] = [];
-    if (proposal.outcome !== "proposed") return { created, changed };
+    if (proposal.outcome !== "proposed")
+      return { created, changed, warnings: [] };
     const context: OperationContext = {
       packet,
       revision: this.revision + 1,
@@ -1728,6 +1792,7 @@ export class SqliteMemoryStore {
       keys: new Map(),
       links: [],
       deferred: [],
+      warnings: [],
     };
     const order: CognitiveOperationKind[] = [
       "propose_event",
@@ -1809,7 +1874,7 @@ export class SqliteMemoryStore {
     }
     for (const link of context.links) link();
     for (const check of context.deferred) check();
-    return { created, changed };
+    return { created, changed, warnings: context.warnings };
   }
 
   cancelAnalysis(requestId: string) {
@@ -2011,6 +2076,7 @@ export class SqliteMemoryStore {
       annotationType: String(
         row.annotation_type,
       ) as HumanAnnotation["annotationType"],
+      sourceId: row.source_id ? String(row.source_id) : null,
       revision: Number(row.revision),
       createdAt: String(row.created_at),
     };

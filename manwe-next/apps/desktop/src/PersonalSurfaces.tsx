@@ -1220,7 +1220,7 @@ function AssistedAnalysisPanel({
                 value={proposalText}
                 onChange={(event) => setProposalText(event.target.value)}
                 rows={8}
-                placeholder='{"schemaVersion":"1.2", …}'
+                placeholder='{"schemaVersion":"1.3", …}'
                 aria-label="Proposition JSON de Sol"
               />
               <button

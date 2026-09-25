@@ -259,6 +259,7 @@ function applyPending(runDir, scenario, state, store) {
         (errors.length ? "rejected" : "received"),
       errors,
       ...(normalized.length ? { normalized } : {}),
+      warnings: result?.warnings ?? [],
       createdIds: result?.createdIds ?? [],
       changedIds: result?.changedIds ?? [],
     });

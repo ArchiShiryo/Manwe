@@ -73,6 +73,8 @@ export type HumanAnnotation = {
   target: EntityRef;
   text: string;
   annotationType: AnnotationType;
+  /** Source citable créée pour une correction, un contexte ou un désaccord. */
+  sourceId: string | null;
   revision: number;
   createdAt: string;
 };
@@ -138,6 +140,22 @@ export type Hypothesis = {
   validFrom: string | null;
   validTo: string | null;
   alternativeTo: string | null;
+  /** Rang parmi les lectures d'un même sujet ; 1 = lecture principale (D-015). */
+  rank: number | null;
+  /** Formulation mécaniste (D-017, D-019) : ce qui est optimisé, protégé, prédit. */
+  mechanism: Partial<
+    Record<
+      | "optimizes"
+      | "protects"
+      | "defenses"
+      | "beliefs"
+      | "triggers"
+      | "soothes"
+      | "barrier"
+      | "prediction",
+      string
+    >
+  > | null;
   subjects: HypothesisSubject[];
   evidence: HypothesisEvidence[];
   /** Comptages calculés par le backend (D-007), jamais déclarés par le modèle. */

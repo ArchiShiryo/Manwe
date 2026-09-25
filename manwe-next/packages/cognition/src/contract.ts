@@ -7,7 +7,7 @@ import {
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.2" as const;
+export const COGNITION_SCHEMA_VERSION = "1.3" as const;
 export const COGNITION_VALIDATOR_VERSION = "1.2.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;
@@ -56,6 +56,7 @@ export const DEFAULT_OPERATIONS: Record<
     "propose_critique",
   ],
   revise: [
+    "propose_event",
     "propose_claim",
     "propose_hypothesis",
     "revise_hypothesis",
@@ -79,6 +80,25 @@ export type EvidenceInput = {
   stance: "supports" | "contradicts";
 };
 
+/**
+ * Formulation mécaniste d'une lecture (D-017, D-019) : ce que la personne
+ * optimise ou protège, comment, et ce que cela prédit. Tous les champs sont
+ * facultatifs ; une formulation vide est refusée.
+ */
+export const MECHANISM_KEYS = [
+  "optimizes",
+  "protects",
+  "defenses",
+  "beliefs",
+  "triggers",
+  "soothes",
+  "barrier",
+  "prediction",
+] as const;
+export type Mechanism = Partial<
+  Record<(typeof MECHANISM_KEYS)[number], string>
+>;
+
 type HypothesisPayload = {
   statement: string;
   depth: "D1" | "D2" | "D3" | "D4" | "D5";
@@ -92,6 +112,11 @@ type HypothesisPayload = {
   alternativeTo: TargetRef | null;
   validFrom: string | null;
   validTo: string | null;
+  /** Statut demandé dès la création ; « plausible » seulement si les règles l'autorisent (D-015). */
+  status: "draft" | "plausible";
+  /** Classement parmi les lectures d'un même sujet ; 1 = lecture principale. */
+  rank: number | null;
+  mechanism: Mechanism | null;
 };
 
 type RevisePayload = {
@@ -100,6 +125,8 @@ type RevisePayload = {
   status: "draft" | "plausible" | "contradicted" | "superseded";
   confidence: "low" | "moderate" | "high";
   addEvidence: EvidenceInput[];
+  /** Nouveau classement ; absent = inchangé. */
+  rank?: number | null;
 };
 
 export const CRITIQUE_KINDS = [
@@ -519,6 +546,9 @@ function hypothesisOperation(
       "alternativeTo",
       "validFrom",
       "validTo",
+      "status",
+      "rank",
+      "mechanism",
     ],
     "propose_hypothesis.payload",
   );
@@ -567,8 +597,45 @@ function hypothesisOperation(
           : targetRef(payload.alternativeTo, "hypothesis.alternativeTo"),
       validFrom: dateOrNull(payload.validFrom, "hypothesis.validFrom"),
       validTo: dateOrNull(payload.validTo, "hypothesis.validTo"),
+      status:
+        payload.status === undefined
+          ? "draft"
+          : oneOf(
+              payload.status,
+              ["draft", "plausible"] as const,
+              "invalid_status",
+              "À la création, le statut est « draft » ou « plausible ».",
+            ),
+      rank: rankOrNull(payload.rank, "hypothesis.rank"),
+      mechanism: mechanismOrNull(payload.mechanism),
     },
   };
+}
+
+function rankOrNull(value: unknown, name: string) {
+  if (value === undefined || value === null) return null;
+  if (!Number.isInteger(value) || Number(value) < 1 || Number(value) > 20)
+    throw new DomainError(
+      "invalid_rank",
+      `${name} doit être un entier entre 1 et 20, ou null.`,
+    );
+  return Number(value);
+}
+
+function mechanismOrNull(value: unknown): Mechanism | null {
+  if (value === undefined || value === null) return null;
+  const input = object(value, "hypothesis.mechanism");
+  exactKeys(input, [...MECHANISM_KEYS], "hypothesis.mechanism");
+  const mechanism: Mechanism = {};
+  for (const key of MECHANISM_KEYS)
+    if (input[key] !== undefined && input[key] !== null)
+      mechanism[key] = text(input[key], `mechanism.${key}`, 1_000);
+  if (!Object.keys(mechanism).length)
+    throw new DomainError(
+      "invalid_mechanism",
+      "Une formulation mécaniste renseigne au moins un champ.",
+    );
+  return mechanism;
 }
 
 function reviseOperation(
@@ -578,7 +645,14 @@ function reviseOperation(
 ): CognitiveOperation {
   exactKeys(
     payload,
-    ["target", "expectedRowVersion", "status", "confidence", "addEvidence"],
+    [
+      "target",
+      "expectedRowVersion",
+      "status",
+      "confidence",
+      "addEvidence",
+      "rank",
+    ],
     "revise_hypothesis.payload",
   );
   const target = reference(payload.target);
@@ -615,6 +689,9 @@ function reviseOperation(
         "Confiance inconnue.",
       ),
       addEvidence: evidenceList(payload.addEvidence, "revise.addEvidence"),
+      ...(payload.rank === undefined
+        ? {}
+        : { rank: rankOrNull(payload.rank, "revise.rank") }),
     },
   };
 }

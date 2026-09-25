@@ -142,9 +142,17 @@ test("capture, recherche, correction et redémarrage utilisent la même mémoire
     const snapshot = await request(context.origin, cookie, "/api/workspace");
     const body = await snapshot.json();
     assert.equal(body.workspace.revision, 2);
-    assert.equal(body.events.length, 1);
-    assert.equal(body.events[0].category, "unclassified_note");
+    // L'annotation de contexte crée sa propre note citable (BRIEF-003).
+    assert.equal(body.events.length, 2);
+    assert.ok(
+      body.events.every((item) => item.category === "unclassified_note"),
+    );
     assert.equal(body.annotations[0].target.id, event.id);
+    assert.ok(
+      body.sources.some(
+        (source) => source.id === body.annotations[0].sourceId,
+      ),
+    );
   }));
 
 test("les erreurs de validation de l’API n’écrivent pas d’état partiel", () =>
@@ -211,7 +219,7 @@ test("l’API prépare, prévisualise et applique explicitement une proposition 
     const packet = await preparedResponse.json();
     const source = packet.sources[0];
     const proposal = {
-      schemaVersion: "1.2",
+      schemaVersion: "1.3",
       requestId: packet.requestId,
       workspaceId: packet.workspaceId,
       baseRevision: packet.baseRevision,

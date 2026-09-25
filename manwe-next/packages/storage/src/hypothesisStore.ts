@@ -23,7 +23,9 @@ import {
   disagreementAddressed,
   independentUnits,
   isDuplicateQuestion,
+  isPromotion,
   maxConfidence,
+  promotionAllowedAfterAgreement,
   normalizeQuestion,
   type EvidenceFact,
   type EvidenceSummary,
@@ -41,6 +43,8 @@ export type OperationContext = {
   /** Liens résolus après création de toutes les hypothèses (références en avant). */
   links: Array<() => void>;
   deferred: Array<() => void>;
+  /** Ajustements du moteur signalés sans rejeter la réponse (D-015). */
+  warnings: Array<{ code: string; message: string }>;
 };
 
 const plain = (value: string) =>
@@ -132,6 +136,10 @@ export class HypothesisStore {
       validFrom: nullableString(row.valid_from),
       validTo: nullableString(row.valid_to),
       alternativeTo: nullableString(row.alternative_to),
+      rank: row.rank === null || row.rank === undefined ? null : Number(row.rank),
+      mechanism: row.mechanism_json
+        ? (JSON.parse(String(row.mechanism_json)) as Hypothesis["mechanism"])
+        : null,
       subjects,
       evidence,
       critiques,
@@ -166,15 +174,16 @@ export class HypothesisStore {
   }
 
   /** Preuves actives, décrites pour les règles pures (unité, date, ancrage). */
-  evidenceFacts(hypothesisId: string): EvidenceFact[] {
+  /** Preuves actives ; `upToRevision` limite à celles ajoutées jusqu'à cette révision. */
+  evidenceFacts(hypothesisId: string, upToRevision?: number): EvidenceFact[] {
     const rows = this.database
       .prepare(
         `SELECT he.claim_id, he.stance, c.category, c.contested_revision, c.valid_from,
            (SELECT cs.source_id FROM claim_sources cs WHERE cs.claim_id = c.id ORDER BY cs.source_id LIMIT 1) AS source_id
          FROM hypothesis_evidence he JOIN claims c ON c.id = he.claim_id
-         WHERE he.hypothesis_id = ? AND he.superseded_revision IS NULL`,
+         WHERE he.hypothesis_id = ? AND he.superseded_revision IS NULL AND he.added_revision <= ?`,
       )
-      .all(hypothesisId) as SqlRow[];
+      .all(hypothesisId, upToRevision ?? Number.MAX_SAFE_INTEGER) as SqlRow[];
     return rows.map((row) => {
       const source = this.database
         .prepare("SELECT content_hash FROM sources WHERE id = ?")
@@ -199,8 +208,20 @@ export class HypothesisStore {
     });
   }
 
-  summary(hypothesisId: string): EvidenceSummary {
-    return independentUnits(this.evidenceFacts(hypothesisId));
+  summary(hypothesisId: string, upToRevision?: number): EvidenceSummary {
+    return independentUnits(this.evidenceFacts(hypothesisId, upToRevision));
+  }
+
+  /** Révision du dernier accord de l'utilisateur sur cette hypothèse, ou null. */
+  private lastAgreementRevision(hypothesisId: string) {
+    const row = this.database
+      .prepare(
+        "SELECT MAX(revision) AS revision FROM annotations WHERE workspace_id = ? AND target_kind = 'hypothesis' AND target_id = ? AND annotation_type = 'agreement'",
+      )
+      .get(this.workspaceId, hypothesisId) as SqlRow;
+    return row.revision === null || row.revision === undefined
+      ? null
+      : Number(row.revision);
   }
 
   /** État de la passe critique pour les règles (R3.4). */
@@ -301,7 +322,10 @@ export class HypothesisStore {
           },
           summary,
         ).allowed;
-      const ceiling = maxConfidence(summary);
+      const ceiling = maxConfidence(
+        summary,
+        String(row.depth) as Hypothesis["depth"],
+      );
       const confidence = confidenceAtMost(
         String(row.confidence) as Hypothesis["confidence"],
         ceiling,
@@ -531,13 +555,23 @@ export class HypothesisStore {
     }
   }
 
-  private checkConfidence(hypothesisId: string, confidence: string) {
-    const ceiling = maxConfidence(this.summary(hypothesisId));
-    if (!confidenceAtMost(confidence as Hypothesis["confidence"], ceiling))
-      throw new DomainError(
-        "confidence_not_supported",
-        `Les preuves ne permettent pas une confiance « ${confidence} » (plafond : ${ceiling}).`,
-      );
+  /**
+   * Ramène la confiance au plafond permis par les preuves et la profondeur,
+   * avec un avertissement, au lieu de rejeter toute la réponse (D-015).
+   */
+  private capConfidence(
+    hypothesisId: string,
+    depth: Hypothesis["depth"],
+    confidence: Hypothesis["confidence"],
+    context: OperationContext,
+  ): Hypothesis["confidence"] {
+    const ceiling = maxConfidence(this.summary(hypothesisId), depth);
+    if (confidenceAtMost(confidence, ceiling)) return confidence;
+    context.warnings.push({
+      code: "confidence_capped",
+      message: `hypothesis:${hypothesisId} : confiance « ${confidence} » ramenée à « ${ceiling} » (preuves et profondeur ${depth}).`,
+    });
+    return ceiling;
   }
 
   applyOperation(
@@ -566,8 +600,8 @@ export class HypothesisStore {
         .prepare(
           `INSERT INTO hypotheses(id, workspace_id, statement, depth, framework, construct, confidence, status,
              needs_review, limits, revision_conditions, valid_from, valid_to, alternative_to, created_revision,
-             row_version, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+             row_version, created_at, updated_at, rank, mechanism_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
         )
         .run(
           id,
@@ -585,6 +619,8 @@ export class HypothesisStore {
           context.revision,
           context.timestamp,
           context.timestamp,
+          payload.rank,
+          payload.mechanism ? JSON.stringify(payload.mechanism) : null,
         );
       const subjects = payload.subjects.map((subject) =>
         this.resolveSubject(subject, context),
@@ -624,7 +660,38 @@ export class HypothesisStore {
             "alternative_required",
             `Une hypothèse ${payload.depth} exige une alternative incompatible.`,
           );
-        this.checkConfidence(id, payload.confidence);
+        const confidence = this.capConfidence(
+          id,
+          payload.depth,
+          payload.confidence,
+          context,
+        );
+        // « plausible » dès la création si les règles l'autorisent : en
+        // pratique D1 et D2, puisque D3 et plus exigent une passe critique
+        // distincte (D-015).
+        let status: Hypothesis["status"] = "draft";
+        if (payload.status === "plausible") {
+          const check = checkStatus(
+            "plausible",
+            {
+              depth: payload.depth,
+              hasActiveAlternative: this.hasActiveAlternative(id),
+              ...this.critiqueFacts(id),
+            },
+            this.summary(id),
+          );
+          if (check.allowed) status = "plausible";
+          else
+            context.warnings.push({
+              code: "status_downgraded",
+              message: `hypothesis:${id} reste « draft » : ${check.reason ?? "statut non permis"}`,
+            });
+        }
+        this.database
+          .prepare(
+            "UPDATE hypotheses SET status = ?, confidence = ? WHERE id = ?",
+          )
+          .run(status, confidence, id);
       });
       return { created: [{ kind: "hypothesis", id }], changed: [] };
     }
@@ -650,21 +717,53 @@ export class HypothesisStore {
           .run(context.revision, id);
         const summary = this.summary(id);
         const hasActiveAlternative = this.hasActiveAlternative(id);
-        const check = checkStatus(
-          payload.status,
-          {
-            depth: String(row.depth) as Hypothesis["depth"],
-            hasActiveAlternative,
-            ...this.critiqueFacts(id),
-          },
-          summary,
+        const depth = String(row.depth) as Hypothesis["depth"];
+        const facts = {
+          depth,
+          hasActiveAlternative,
+          ...this.critiqueFacts(id),
+        };
+        const previous = {
+          status: String(row.status) as Hypothesis["status"],
+          confidence: String(row.confidence) as Hypothesis["confidence"],
+        };
+        // Statut non permis : on garde l'ancien s'il reste permis, sinon draft,
+        // avec un avertissement plutôt qu'un rejet de toute la réponse (D-015).
+        let status = payload.status;
+        const check = checkStatus(status, facts, summary);
+        if (!check.allowed) {
+          status = checkStatus(previous.status, facts, summary).allowed
+            ? previous.status
+            : "draft";
+          context.warnings.push({
+            code: "status_not_allowed",
+            message: `hypothesis:${id} : « ${payload.status} » refusé, statut « ${status} » conservé. ${check.reason ?? ""}`.trim(),
+          });
+        }
+        let confidence = this.capConfidence(
+          id,
+          depth,
+          payload.confidence,
+          context,
         );
-        if (!check.allowed)
-          throw new DomainError(
-            "status_not_allowed",
-            check.reason ?? "Statut non permis par les preuves.",
-          );
-        this.checkConfidence(id, payload.confidence);
+        const agreementRevision = this.lastAgreementRevision(id);
+        if (
+          agreementRevision !== null &&
+          isPromotion(previous, { status, confidence }) &&
+          !promotionAllowedAfterAgreement(
+            this.summary(id, agreementRevision),
+            summary,
+          )
+        ) {
+          context.warnings.push({
+            code: "promotion_after_agreement",
+            message: `hypothesis:${id} : aucune promotion sans nouvel épisode depuis l'accord de l'utilisateur ; statut et confiance conservés.`,
+          });
+          if (status === "plausible" && previous.status !== "plausible")
+            status = previous.status;
+          if (!confidenceAtMost(confidence, previous.confidence))
+            confidence = previous.confidence;
+        }
         if (
           reviewReason === "disagreement" &&
           !disagreementAddressed({
@@ -672,7 +771,7 @@ export class HypothesisStore {
             addsContradiction: payload.addEvidence.some(
               (item) => item.stance === "contradicts",
             ),
-            newStatus: payload.status,
+            newStatus: status,
           })
         )
           throw new DomainError(
@@ -685,7 +784,11 @@ export class HypothesisStore {
                review_since_revision = NULL, row_version = row_version + 1, updated_at = ?
              WHERE id = ?`,
           )
-          .run(payload.status, payload.confidence, context.timestamp, id);
+          .run(status, confidence, context.timestamp, id);
+        if (payload.rank !== undefined)
+          this.database
+            .prepare("UPDATE hypotheses SET rank = ? WHERE id = ?")
+            .run(payload.rank, id);
       });
       return { created: [], changed: [{ kind: "hypothesis", id }] };
     }
