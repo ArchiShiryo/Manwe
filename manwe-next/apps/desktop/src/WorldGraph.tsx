@@ -456,7 +456,17 @@ export function WorldGraph({
   ];
 
   return (
-    <section className="world-graph" aria-label="Graphe de votre monde">
+    <section
+      className="world-graph"
+      aria-label="Graphe de votre monde"
+      onKeyDown={(event) => {
+        // R4.8 : Échap referme le détail sans perdre le focus du graphe.
+        if (event.key === "Escape" && selected) {
+          event.stopPropagation();
+          setSelected(null);
+        }
+      }}
+    >
       <div className="world-graph-toolbar">
         <div className="segmented" aria-label="Centrer le graphe">
           {shortcuts.map((item) => (
@@ -629,7 +639,18 @@ export function WorldGraph({
         />
       )}
       {detail && (
-        <aside className="world-graph-detail" aria-live="polite">
+        <aside
+          className="world-graph-detail"
+          aria-live="polite"
+          aria-label="Détail de l’élément sélectionné"
+        >
+          <button
+            className="world-graph-close"
+            aria-label="Fermer le détail (Échap)"
+            onClick={() => setSelected(null)}
+          >
+            Fermer
+          </button>
           <div className="eyebrow">
             {KIND_LABELS[detail.kind].toUpperCase()} ·{" "}
             {STYLE_LABELS[detail.style]}
