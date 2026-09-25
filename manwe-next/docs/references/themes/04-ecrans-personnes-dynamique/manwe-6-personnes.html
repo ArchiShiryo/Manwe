@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MANWË — Personnes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{--bg:#040404;--panel:#0B0C12;--line:#1C1F29;--tx:#ECEFF5;--tx2:#B4BACA;--tx3:#8A90A3;--bone:#D8D6D0;--indigo:#3E40C1;
+--work:#0092F9;--play:#FEB800;--close:#E4559B;--kin:#00923B}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg)}
+body{width:1440px;height:900px;overflow:hidden;position:relative;font-family:'IBM Plex Sans',sans-serif;color:var(--tx)}
+.scan{position:absolute;inset:0;pointer-events:none;z-index:8;background:repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 1px,transparent 1px 4px)}
+.side{position:absolute;left:0;top:0;width:220px;height:900px;padding:22px 16px;background:linear-gradient(180deg,#0B0C12,#040404);border-right:1px solid #262A36;display:flex;flex-direction:column;gap:4px}
+.logo{padding:0 10px 26px;font-family:'Chakra Petch';font-weight:600;font-size:26px;letter-spacing:.2em;color:#fff;text-shadow:-2px 0 var(--close),2px 0 var(--work)}
+.side a{display:flex;justify-content:space-between;align-items:center;height:40px;padding:0 10px;text-decoration:none;font-family:'Chakra Petch';font-size:15px;color:#A3A9BC;border-radius:3px}
+.side a.on{color:#fff;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.side a i{font-style:normal;font-family:'Space Mono';font-size:10px;color:var(--tx3)}
+.k{font-family:'Space Mono';font-size:10.5px;letter-spacing:.12em;color:var(--bone)}
+.serial{margin-top:auto;font-family:'Space Mono';font-size:10px;line-height:1.7;color:#009B9A}
+.barcode{height:24px;width:130px;margin-top:10px;background:repeating-linear-gradient(90deg,#C9CEDA 0 2px,transparent 2px 3px,#C9CEDA 3px 4px,transparent 4px 7px,#C9CEDA 7px 10px,transparent 10px 12px);opacity:.7}
+
+.list{position:absolute;left:220px;top:0;width:680px;height:900px;border-right:1px solid #262A36}
+.top{height:56px;padding:0 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line)}
+.top h1{margin:0;font-family:'Chakra Petch';font-weight:500;font-size:22px;letter-spacing:.1em;text-transform:uppercase}
+.chips{margin-left:auto;display:flex;gap:6px}
+.chips span{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid #2A2E3B;border-radius:3px;font-size:12.5px;color:var(--tx2)}
+.chips b{width:10px;height:3px;border-radius:2px}
+.row{position:relative;display:grid;grid-template-columns:72px 1fr 190px;gap:16px;align-items:center;padding:16px 24px;border-bottom:1px solid var(--line)}
+.row.sel{background:linear-gradient(90deg,rgba(62,64,193,.16),rgba(62,64,193,0));box-shadow:inset 2px 0 0 var(--indigo)}
+.row.self{border-bottom:1px solid var(--indigo)}
+.row canvas{display:block}
+.nm{font-family:'Chakra Petch';font-size:18px;color:#fff}
+.rl{font-size:12.5px;color:var(--tx2);margin-top:2px}
+.tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tag{font-family:'Space Mono';font-size:10.5px;padding:2px 7px;border-radius:2px;border:1px solid #333848;color:var(--tx2)}
+.tag.inf{border-style:dashed;border-color:rgba(214,212,245,.5);color:#D6D4F5}
+.tag.rev{border-color:#F44E18;color:#FF9A7A}
+.stats{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--tx3)}
+.stats .v{font-family:'Chakra Petch';font-size:15px;color:#fff}
+
+.det{position:absolute;left:900px;top:0;width:540px;height:900px;padding:26px 30px;display:flex;flex-direction:column;gap:20px;background:linear-gradient(180deg,#0B0C12,#060608)}
+.head{display:flex;gap:22px;align-items:center}
+.head h2{margin:6px 0 4px;font-family:'Chakra Petch';font-weight:500;font-size:30px}
+.bar{display:flex;height:8px;border-radius:2px;overflow:hidden;gap:2px;margin-top:10px;width:240px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs span{padding:10px 12px;font-family:'Chakra Petch';font-size:14px;color:var(--tx3)}
+.tabs span.on{color:#fff;box-shadow:inset 0 -2px 0 var(--bone)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--indigo);border:1px solid var(--indigo)}
+.facts div{background:#060608;padding:10px 12px;font-size:13px;color:var(--tx2)}
+.facts b{display:block;font-weight:500;color:#fff;font-size:14px;margin-bottom:2px}
+.mech{border:1px dashed rgba(214,212,245,.5);border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.mech .h{display:flex;justify-content:space-between;align-items:center}
+.mech .h span{font-family:'Space Mono';font-size:10.5px;color:#D6D4F5;letter-spacing:.08em}
+.mrow{display:grid;grid-template-columns:110px 1fr;gap:12px;font-size:13.5px;line-height:1.45}
+.mrow em{font-style:normal;font-family:'Space Mono';font-size:10.5px;color:var(--tx3);padding-top:2px}
+.mrow .u{color:var(--tx3);border:1px dashed #3A3F50;border-radius:2px;padding:0 6px;font-family:'Space Mono';font-size:11px}
+.watch{display:flex;flex-direction:column;gap:8px}
+.watch div{display:flex;gap:10px;align-items:baseline;font-size:13.5px;color:var(--tx2)}
+.watch i{font-style:normal;font-family:'Space Mono';color:var(--bone)}
+.btns{margin-top:auto;display:flex;gap:8px}
+.btns span{flex:1;height:42px;display:flex;align-items:center;justify-content:center;font-size:13px;border:1px solid #333848;color:#DDE1EA;border-radius:4px}
+.btns span:first-child{background:#fff;color:#000;border-color:#fff}
+</style>
+</head>
+<body>
+<div class="scan"></div>
+<aside class="side">
+<div class="logo">MANWË</div>
+<a href="#"><span>Aujourd'hui</span><i>02</i></a>
+<a href="#"><span>Monde</span><i>04</i></a>
+<a href="#" class="on"><span>Personnes</span><i>04</i></a>
+<a href="#"><span>Intentions</span><i>01</i></a>
+<a href="#"><span>Mémoire</span><i>20</i></a>
+<div class="serial">SLUS_973.25 · rév. 041<br>mode : sol-assisté<br>contrat cognition v1</div>
+<div class="barcode"></div>
+</aside>
+
+<section class="list">
+<div class="top"><h1>Personnes</h1><span class="k" style="color:var(--tx3)">4 + vous</span>
+<div class="chips"><span><b style="background:var(--work)"></b>Travail</span><span><b style="background:var(--play)"></b>Jeu</span><span><b style="background:var(--close)"></b>Amitié</span><span><b style="background:var(--kin)"></b>Famille</span></div></div>
+
+<div class="row self"><canvas class="g" width="72" height="72" data-s="work:.35,play:.25,close:.25,kin:.15" data-a="10" data-self="1"></canvas>
+<div><div class="nm">Vous <span style="font-size:13px;color:var(--tx3)">· tel que perçu</span></div><div class="rl">Votre signature sociale vue par les autres, distincte de l'image que vous avez de vous</div>
+<div class="tags"><span class="tag inf">◇ 2 lectures</span><span class="tag">? 3 questions</span></div></div>
+<div class="stats"><canvas class="tl" width="190" height="26" data-e="work:3,play:8,play:12,close:9,kin:-30"></canvas><span>initiatives : <span class="v">1</span> sur 7 épisodes</span></div></div>
+
+<div class="row sel"><canvas class="g" width="72" height="72" data-s="work:.4,play:.6" data-a="5"></canvas>
+<div><div class="nm">Marc Dupont</div><div class="rl">Collègue · ami de jeu</div>
+<div class="tags"><span class="tag inf">◇ D2 plausible</span><span class="tag inf">◇ D3 faible</span></div></div>
+<div class="stats"><canvas class="tl" width="190" height="26" data-e="play:8,work:10,play:12"></canvas><span>initie <span class="v">2</span> / 3 · ~6 par mois</span></div></div>
+
+<div class="row"><canvas class="g" width="72" height="72" data-s="work:1" data-a="3"></canvas>
+<div><div class="nm">Léa Martin</div><div class="rl">Collègue · lien de groupe</div>
+<div class="tags"><span class="tag">● 2 épisodes</span></div></div>
+<div class="stats"><canvas class="tl" width="190" height="26" data-e="work:8,work:10"></canvas><span>initie <span class="v">0</span> / 2</span></div></div>
+
+<div class="row"><canvas class="g" width="72" height="72" data-s="close:1" data-a="12"></canvas>
+<div><div class="nm">Claire Morel</div><div class="rl">Amie de longue date</div>
+<div class="tags"><span class="tag">≈ 1 impression</span><span class="tag rev">à réexaminer</span></div></div>
+<div class="stats"><canvas class="tl" width="190" height="26" data-e="close:9"></canvas><span>délai de réponse : <span class="v">2 j</span></span></div></div>
+
+<div class="row" style="opacity:.6"><canvas class="g" width="72" height="72" data-s="kin:1" data-a="3"></canvas>
+<div><div class="nm">Hugo</div><div class="rl">Frère · dernier épisode le 07.08</div>
+<div class="tags"><span class="tag">silence · 48 j</span></div></div>
+<div class="stats"><canvas class="tl" width="190" height="26" data-e="kin:-30"></canvas><span>hors fenêtre</span></div></div>
+</section>
+
+<section class="det">
+<div class="head"><canvas class="g" width="150" height="150" data-s="work:.4,play:.6" data-a="5" data-big="1"></canvas>
+<div><div class="k">PERSONNE · FICHE</div><h2>Marc Dupont</h2><div style="font-size:13.5px;color:var(--tx2)">Collègue · ami de jeu · depuis 08.09</div>
+<div class="bar"><span style="width:40%;background:var(--work)"></span><span style="width:60%;background:var(--play)"></span></div></div></div>
+
+<div class="tabs"><span class="on">Signature</span><span>Épisodes · 3</span><span>Lectures · 2</span><span>Sources</span></div>
+
+<div class="facts">
+<div><b>● Prend l'initiative</b>2 épisodes sur 3</div>
+<div><b>● Lieux du lien</b>travail, jeu en ligne</div>
+<div><b>● Rythme</b>~6 épisodes / 30 jours</div>
+<div><b>? Hors activité</b>jamais observé</div>
+</div>
+
+<div class="mech">
+<div class="h"><span>◇ LECTURE DE FOND · D3 · CONFIANCE FAIBLE</span><span style="color:var(--tx3)">1 alternative</span></div>
+<div class="mrow"><em>CHERCHE</em><span>un lien qui dépasse le cadre du travail, sans le forcer</span></div>
+<div class="mrow"><em>S'APPUIE SUR</em><span>une activité partagée qui rend l'invitation facile</span></div>
+<div class="mrow"><em>PROTÈGE</em><span class="u">? inconnu</span></div>
+<div class="mrow"><em>PRÉDICTION</em><span>une invitation sans jeu serait acceptée, mais moins spontanée</span></div>
+</div>
+
+<div class="watch"><div class="k">SIGNAUX À OBSERVER</div>
+<div><i>01</i>Propose-t-il un moment sans jeu ni travail ?</div>
+<div><i>02</i>Répond-il quand c'est vous qui initiez ?</div>
+</div>
+
+<div class="btns"><span>Ajouter un épisode</span><span>Corriger</span><span>Demander à MANWË</span></div>
+</section>
+
+<script>
+const C={work:[0,146,249],play:[254,184,0],close:[228,85,155],kin:[0,146,59]},TAU=Math.PI*2;
+const parse=s=>s.split(',').map(p=>{const[a,b]=p.split(':');return[a,+b]});
+// generative signature glyph: scanline disc, bands = context shares, wobble = uncertainty
+const glyphs=[...document.querySelectorAll('canvas.g')].map(c=>({c,g:c.getContext('2d'),s:parse(c.dataset.s),a:+c.dataset.a,self:!!c.dataset.self,big:!!c.dataset.big}));
+function drawGlyph(o,t){const{c,g,s,a}=o,W=c.width,R=W/2-3,cx=W/2,cy=W/2;g.clearRect(0,0,W,W);
+ const step=o.big?4:3;let acc=0;const bands=s.map(([k,v])=>{const b=[k,acc,acc+v];acc+=v;return b});
+ for(let y=cy-R;y<=cy+R;y+=step){const f=(y-(cy-R))/(2*R);const band=bands.find(b=>f>=b[1]&&f<=b[2])||bands[bands.length-1];
+  const half=Math.sqrt(Math.max(0,R*R-(y-cy)**2));g.beginPath();
+  for(let x=cx-half;x<=cx+half;x+=2){const d=Math.hypot(x-cx,y-cy)/R;const w=Math.sin(x*.12+t*.05+y*.3)*a*.12*(1-d*.5)*(o.big?1.6:1);g.lineTo(x,y+w)}
+  const [r,gg,b]=C[band[0]];const v=.35+.65*((Math.sin(f*TAU*2+t*.02)+1)/2);
+  g.strokeStyle=`rgba(${r},${gg},${b},${v})`;g.lineWidth=o.big?1.6:1.2;g.stroke()}
+ g.strokeStyle=o.self?'rgba(216,214,208,.9)':'rgba(216,214,208,.25)';g.lineWidth=1;g.setLineDash(o.self?[3,3]:[]);g.beginPath();g.arc(cx,cy,R+1.5,0,TAU);g.stroke();g.setLineDash([]);
+ if(o.self){g.fillStyle='#fff';g.font='600 13px Chakra Petch';g.textAlign='center';g.fillText('VOUS',cx,cy+4)}}
+// timeline strip: last 30 days, bars colored by context
+document.querySelectorAll('canvas.tl').forEach(c=>{const g=c.getContext('2d'),W=c.width,H=c.height;
+ g.fillStyle='#1C1F29';g.fillRect(0,H-1,W,1);for(let i=0;i<=30;i+=5){g.fillRect(i/30*(W-4),H-4,1,4)}
+ parse(c.dataset.e).forEach(([k,d])=>{if(d<0){g.fillStyle='rgba(216,214,208,.35)';g.font='10px Space Mono';g.fillText('◂ '+(-d)+' j',0,12);return}
+  const x=(d-1)/30*(W-4);const[r,gg,b]=C[k];g.fillStyle=`rgb(${r},${gg},${b})`;g.fillRect(x,4,4,H-6)})});
+let t=0;(function loop(){t++;glyphs.forEach(o=>drawGlyph(o,t));requestAnimationFrame(loop)})();
+</script>
+</body>
+</html>

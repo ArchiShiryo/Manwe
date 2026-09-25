@@ -1757,8 +1757,9 @@ kbd {
   justify-content: space-between;
   gap: 16px;
   padding: 17px 20px;
-  color: #718463;
-  font-size: 9px;
+  /* R4.8 : contraste 6,25:1 (au lieu de 4,3:1) et taille lisible. */
+  color: #8fa080;
+  font-size: 10px;
 }
 .personal-status-row {
   border-bottom: 1px solid var(--line);
@@ -1835,6 +1836,35 @@ kbd {
 }
 .personal-event-list {
   padding: 2px 23px;
+}
+.personal-claim-inspector {
+  margin: 8px 23px 22px;
+  padding: 20px;
+  border: 1px solid #a6bb8224;
+  border-radius: 8px;
+  background: #9eb57d06;
+}
+.personal-claim-inspector h2 {
+  margin: 7px 0 12px;
+  color: #cbd6ba;
+  font:
+    400 18px/1.4 Georgia,
+    serif;
+}
+.personal-claim-list {
+  display: grid;
+  gap: 8px;
+}
+.personal-claim {
+  padding: 12px;
+  border-left: 2px solid #9eb77b30;
+  background: #0b120c4d;
+}
+.personal-claim p {
+  margin: 8px 0 0;
+  color: #a8b899;
+  font-size: 10px;
+  line-height: 1.7;
 }
 .personal-event {
   padding: 25px 0;
@@ -2239,6 +2269,11 @@ kbd {
   color: #8fa57a;
   font-size: 8px;
   text-transform: uppercase;
+}
+.analysis-operation-classification {
+  margin-left: 8px;
+  color: #77896a;
+  font-size: 8px;
 }
 .analysis-preview article p {
   margin: 5px 0;
@@ -3409,4 +3444,671 @@ kbd {
   .composer textarea {
     font-size: 11px;
   }
+}
+
+/* R3 — hypothèses, preuves et questions dans l'espace personnel */
+.analysis-start {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.analysis-start label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.analysis-start select,
+.personal-hypothesis-annotation select {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #d6dcd3;
+  background: var(--panel);
+}
+.personal-hypothesis-inspector h2 {
+  margin-bottom: 16px;
+}
+.personal-question {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-left: 2px solid var(--blue);
+  background: #0b120c4d;
+}
+.personal-question p,
+.personal-hypothesis-statement {
+  margin: 4px 0;
+  color: #d6dcd3;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.personal-question small,
+.personal-hypothesis small {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.6;
+}
+.personal-question textarea,
+.personal-hypothesis-annotation textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: #d6dcd3;
+  background: var(--panel);
+  resize: vertical;
+}
+.personal-question-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.personal-hypothesis {
+  display: grid;
+  gap: 6px;
+  border-left-color: var(--clay);
+}
+.personal-hypothesis-badges {
+  display: flex;
+  gap: 6px;
+}
+.personal-hypothesis-badges:empty {
+  display: none;
+}
+.badge-review {
+  border-color: #c6a48a66;
+  color: var(--clay);
+}
+.personal-hypothesis-counts {
+  margin: 0;
+  color: var(--sage);
+  font-size: 9px;
+}
+.personal-evidence strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.personal-evidence ul,
+.personal-hypothesis-history ul {
+  margin: 4px 0;
+  padding-left: 16px;
+  color: #a8b899;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.personal-evidence-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 8px;
+}
+.personal-evidence summary,
+.personal-hypothesis-history summary {
+  cursor: pointer;
+}
+.personal-evidence blockquote {
+  margin: 4px 0 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+  color: #c7cfbf;
+}
+.personal-hypothesis-alternative {
+  margin: 4px 0;
+  color: var(--blue);
+  font-size: 10px;
+}
+.personal-hypothesis-annotation {
+  display: grid;
+  gap: 6px;
+}
+.personal-hypothesis-history summary {
+  color: var(--muted);
+  font-size: 9px;
+}
+.analysis-step .text-button + .text-button {
+  margin-left: 14px;
+}
+
+.badge-primary {
+  border-color: #b2c7a266;
+  color: var(--sage);
+}
+
+.personal-mechanism dl {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+}
+
+.personal-mechanism dt {
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+.personal-mechanism dd {
+  margin: 0;
+}
+
+/* Graphe vivant du mode personnel (R4.3) : sémiologie des thèmes. */
+.world-graph {
+  --edge: #b9c4b0;
+  --edge-muted: #6f7a6c;
+  position: relative;
+  margin: 8px 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: #0f1411;
+}
+.world-graph-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.world-graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.world-graph-legend span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.world-graph-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+}
+.world-graph-empty,
+.world-graph-note {
+  color: var(--muted);
+  font-size: 11px;
+}
+.world-edge {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 1.2;
+}
+.world-edge-reported {
+  stroke-dasharray: 7 4;
+}
+.world-edge-impression {
+  stroke-dasharray: 1.5 4;
+  stroke-linecap: round;
+}
+.world-edge-unknown {
+  stroke: var(--edge-muted);
+  stroke-dasharray: 3 5;
+}
+.world-edge-contradicts {
+  stroke: var(--clay);
+}
+.world-edge-double-outer {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 4;
+}
+.world-edge-double-inner {
+  fill: none;
+  stroke: #0f1411;
+  stroke-width: 1.6;
+}
+.world-edge-inferred.tremor-low {
+  animation: world-tremor 2.4s ease-in-out infinite;
+}
+.world-edge-inferred.tremor-medium {
+  animation: world-tremor 1.2s ease-in-out infinite;
+}
+.world-edge-inferred.tremor-high {
+  animation: world-tremor-strong 0.6s ease-in-out infinite;
+}
+@keyframes world-tremor {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0.6px, -0.6px);
+  }
+}
+@keyframes world-tremor-strong {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(1.4px, -1px);
+  }
+  75% {
+    transform: translate(-1.2px, 1.2px);
+  }
+}
+.world-node {
+  cursor: pointer;
+  outline: none;
+  /* R4.4 : un recentrage déplace les nœuds communs au lieu de les redessiner. */
+  transition: transform 420ms ease;
+}
+.world-edge,
+.world-edge-double-outer,
+.world-edge-double-inner {
+  transition: d 420ms ease;
+}
+.world-node circle,
+.world-node rect,
+.world-node polygon {
+  fill: #151b17;
+  stroke: var(--edge);
+  stroke-width: 1.2;
+}
+.world-node-self circle,
+.world-node.is-focus circle,
+.world-node.is-focus rect,
+.world-node.is-focus polygon {
+  stroke: var(--sage);
+  stroke-width: 2;
+}
+.world-node-hypothesis polygon {
+  stroke-dasharray: 3 2;
+}
+.world-node-unknown circle,
+.world-node-question circle {
+  stroke: var(--edge-muted);
+  stroke-dasharray: 3 3;
+}
+.world-node.is-selected circle,
+.world-node.is-selected rect,
+.world-node.is-selected polygon,
+.world-node:focus-visible circle,
+.world-node:focus-visible rect,
+.world-node:focus-visible polygon {
+  stroke: var(--blue);
+  stroke-width: 2.4;
+}
+.world-node text {
+  fill: #c8d0c2;
+  font-size: 11px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.world-node .world-node-unknown,
+.world-node .world-node-rank {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.world-graph-detail {
+  position: relative;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  font-size: 12px;
+}
+.world-graph-detail p {
+  margin: 6px 0;
+}
+.world-graph-detail small,
+.world-graph-detail ul {
+  color: var(--muted);
+}
+.world-graph-detail ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-edge-inferred {
+    animation: none !important;
+  }
+  .world-node,
+  .world-edge,
+  .world-edge-double-outer,
+  .world-edge-double-inner {
+    transition: none;
+  }
+}
+@media (max-width: 640px) {
+  /* Le SVG est réduit d'environ 2,5 fois : on compense les libellés. */
+  .world-node text {
+    font-size: 24px;
+  }
+  .world-node .world-node-unknown,
+  .world-node .world-node-rank {
+    font-size: 22px;
+  }
+}
+.world-graph-actions {
+  margin-top: 10px;
+}
+.world-graph-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.world-graph-action-row button,
+.world-graph-annotate button {
+  border: 1px solid #ffffff1c;
+  border-radius: 8px;
+  padding: 5px 10px;
+  background: transparent;
+  font-size: 11px;
+}
+.world-graph-action-row button.active {
+  border-color: var(--sage);
+  color: var(--sage);
+}
+.world-graph-why article {
+  margin-top: 10px;
+  border-left: 1px solid #ffffff1c;
+  padding-left: 10px;
+}
+.world-graph-reason-head {
+  display: flex;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.world-graph-reason-head .reason-contradicts {
+  color: var(--clay);
+}
+.world-graph-why blockquote {
+  margin: 6px 0;
+  color: #c8d0c2;
+  font-family: Georgia, serif;
+  font-size: 12px;
+}
+.world-graph-why cite {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 10px;
+  font-style: normal;
+}
+.world-graph-annotate {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+.world-graph-annotate textarea {
+  border: 1px solid #ffffff1c;
+  border-radius: 8px;
+  padding: 8px;
+  color: inherit;
+  background: #0b0f0d;
+  resize: vertical;
+}
+.world-graph-annotate small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.world-graph-annotate button {
+  justify-self: start;
+}
+.world-synthesis {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  font-size: 12px;
+  transition: opacity 200ms ease;
+}
+.world-synthesis.is-stale {
+  opacity: 0.55;
+}
+.world-synthesis h3 {
+  margin: 12px 0 4px;
+  color: #d8e0ca;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: 400;
+}
+.world-synthesis ol,
+.world-synthesis ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.world-synthesis li {
+  margin: 4px 0;
+}
+.world-synthesis small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+}
+.world-synthesis ul small {
+  display: inline;
+}
+.world-synthesis-indicators {
+  margin: 6px 0;
+  color: var(--muted);
+}
+.world-synthesis-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  text-align: left;
+  text-decoration: underline dotted #ffffff40;
+}
+.personal-status-row.is-offline {
+  color: var(--clay);
+}
+.personal-status-row.is-offline i {
+  background: var(--clay);
+  box-shadow: none;
+}
+.world-graph-state {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+.world-graph-state button {
+  border: 1px solid #ffffff1c;
+  border-radius: 8px;
+  padding: 4px 10px;
+  background: transparent;
+  font-size: 11px;
+}
+.world-graph-close {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+.personal-claim p.is-contested {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: #ffffff40;
+}
+.world-node.is-contested circle {
+  stroke: var(--clay);
+  stroke-dasharray: 2 3;
+}
+.world-node.is-contested .world-node-label {
+  text-decoration: line-through;
+}
+.automatic-consent {
+  display: flex !important;
+  gap: 8px;
+  align-items: flex-start;
+  max-width: 320px;
+  font-size: 11px;
+}
+.automatic-running {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+  color: var(--sage);
+  font-size: 12px;
+}
+/* Directions et boucle d'action (BRIEF-005). Aucune couleur de réussite. */
+.directions {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 28px;
+  text-align: left;
+}
+.directions-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.directions-heading h3 {
+  margin: 6px 0;
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+}
+.directions-heading p,
+.directions-heading small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.direction-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.direction-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  background: #121814;
+  font-size: 12px;
+}
+.direction-card.status-chosen {
+  border-color: #b2c7a255;
+}
+.direction-card.lever-do_nothing {
+  border-style: dashed;
+}
+.direction-card h4 {
+  margin: 8px 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.direction-lever {
+  color: var(--muted);
+  font-style: italic;
+}
+.direction-predictions {
+  margin: 8px 0;
+  padding-left: 16px;
+}
+.direction-predictions li {
+  margin: 4px 0;
+}
+.phase {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.phase-transitional {
+  color: var(--clay);
+}
+.direction-choose,
+.direction-outcome {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.direction-choose label,
+.direction-outcome label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.direction-choose textarea,
+.direction-outcome textarea {
+  border: 1px solid #ffffff1c;
+  border-radius: 8px;
+  padding: 8px;
+  color: inherit;
+  background: #0b0f0d;
+}
+.direction-action {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+@media (max-width: 640px) {
+  .directions-heading {
+    flex-direction: column;
+  }
+}
+.world-situation-readings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+.world-situation-readings article {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+.world-situation-readings .world-synthesis-link {
+  display: block;
+  margin: 4px 0;
+}
+.world-situation-question {
+  margin: 10px 0 0;
+  color: #c8d0c2;
+}
+.world-synthesis-all {
+  margin-top: 12px;
+}
+.world-synthesis-all summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+.goal-suggestion {
+  width: 100%;
+  max-width: 720px;
+  margin-top: 22px;
+  border: 1px dashed #b2c7a255;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: left;
+}
+.goal-suggestion h3 {
+  margin: 6px 0;
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+}
+.goal-problem,
+.goal-note,
+.goal-citations {
+  color: var(--muted);
+  font-size: 11px;
+}
+.goal-suggestion textarea {
+  width: 100%;
+  border: 1px solid #ffffff1c;
+  border-radius: 8px;
+  padding: 8px;
+  color: inherit;
+  background: #0b0f0d;
 }

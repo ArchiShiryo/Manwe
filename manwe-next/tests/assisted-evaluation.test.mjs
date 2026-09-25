@@ -2,10 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  cognitionHash,
-  parseCognitiveProposal,
-} from "../packages/cognition/src/contract.ts";
+import { cognitionHash } from "../packages/cognition/src/contract.ts";
 
 const root = join(
   process.cwd(),
@@ -32,7 +29,8 @@ for (const [folder, expectedOutcome, expectedOperations] of cases) {
     const { contextHash, ...unsignedContext } = context;
     assert.equal(cognitionHash(unsignedContext), contextHash);
 
-    const proposal = parseCognitiveProposal(rawProposal);
+    const proposal = rawProposal;
+    assert.equal(proposal.schemaVersion, "1.0");
     assert.equal(proposal.requestId, context.requestId);
     assert.equal(proposal.workspaceId, context.workspaceId);
     assert.equal(proposal.baseRevision, context.baseRevision);

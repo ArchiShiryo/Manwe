@@ -8,7 +8,10 @@ import {
   DomainError,
   IMPORT_MAX_BYTES,
   parseAnnotationCommand,
+  parseChooseDirectionCommand,
+  parseRecordOutcomeCommand,
   parseCaptureCommand,
+  parseAnswerQuestionCommand,
   parseGoalCommand,
   parseImportCommand,
   parseResolveIdentityCommand,
@@ -18,6 +21,12 @@ import {
   parsePrepareAnalysisCommand,
 } from "../../../packages/cognition/src/contract.ts";
 import { SqliteMemoryStore } from "../../../packages/storage/src/sqliteStore.ts";
+import {
+  projectGraph,
+  type FocusContext,
+} from "../../../packages/cognition/src/projection.ts";
+import { buildSynthesis } from "../../../packages/cognition/src/synthesis.ts";
+import { AutomaticAnalyses, type ProviderConfig } from "./analystProvider.ts";
 
 const JSON_LIMIT = 64 * 1024;
 
@@ -27,6 +36,8 @@ type ServerOptions = {
   allowedOrigin?: string;
   workspaceId?: string;
   workspaceName?: string;
+  /** Fournisseur automatique (IA-A.2) ; absent = analyse assistée seulement. */
+  analyst?: ProviderConfig | null;
 };
 
 function json(response: ServerResponse, status: number, body: unknown) {
@@ -68,6 +79,7 @@ export async function startManweServer(options: ServerOptions) {
     workspaceId,
     options.workspaceName,
   );
+  const automatic = new AutomaticAnalyses(store, options.analyst ?? null);
   const sessionToken = randomBytes(32).toString("base64url");
   const rate = new Map<string, number[]>();
 
@@ -152,8 +164,45 @@ export async function startManweServer(options: ServerOptions) {
     }
 
     try {
+      if (pathname === "/api/status" && request.method === "GET") {
+        json(response, 200, store.status());
+        return;
+      }
       if (pathname === "/api/workspace" && request.method === "GET") {
         json(response, 200, store.snapshot());
+        return;
+      }
+      if (pathname === "/api/analyses/automatic" && request.method === "GET") {
+        json(response, 200, automatic.describe());
+        return;
+      }
+      if (pathname === "/api/analyses/automatic" && request.method === "POST") {
+        // Le client choisit la tâche et le focus, jamais le fournisseur.
+        const body = await readJson(request);
+        const input =
+          body && typeof body === "object" && !Array.isArray(body)
+            ? (body as { task?: unknown; focus?: unknown })
+            : {};
+        const command = parsePrepareAnalysisCommand({
+          task: input.task,
+          ...(input.focus === undefined ? {} : { focus: input.focus }),
+        });
+        json(
+          response,
+          202,
+          automatic.start({ task: command.task, focus: command.focus }),
+        );
+        return;
+      }
+      const automaticRoute = pathname.match(
+        /^\/api\/analyses\/automatic\/([^/]+)$/,
+      );
+      if (automaticRoute && request.method === "GET") {
+        json(
+          response,
+          200,
+          automatic.get(decodeURIComponent(automaticRoute[1])),
+        );
         return;
       }
       const analysisRoute = pathname.match(/^\/api\/analyses\/([^/]+)$/);
@@ -163,6 +212,26 @@ export async function startManweServer(options: ServerOptions) {
           200,
           store.getAnalysis(decodeURIComponent(analysisRoute[1])),
         );
+        return;
+      }
+      if (pathname === "/api/graph" && request.method === "GET") {
+        // Projection du graphe vivant autour d'un focus (R4.1, R4.2).
+        const params = new URL(request.url ?? "/", `http://${host}`)
+          .searchParams;
+        const kind = params.get("kind") ?? "self";
+        const kinds = ["person", "self", "relation", "hypothesis", "question"];
+        if (!kinds.includes(kind))
+          throw new DomainError("invalid_focus", "Focus de graphe inconnu.");
+        // Synthèse (R4.6) calculée sur le même instantané : même révision.
+        const snapshot = store.snapshot();
+        const projection = projectGraph(snapshot, {
+          kind: kind as FocusContext["kind"],
+          id: params.get("id") ?? "self",
+        });
+        json(response, 200, {
+          ...projection,
+          synthesis: buildSynthesis(snapshot, projection),
+        });
         return;
       }
       if (pathname === "/api/search" && request.method === "GET") {
@@ -249,6 +318,72 @@ export async function startManweServer(options: ServerOptions) {
         );
         return;
       }
+      const answerRoute = pathname.match(/^\/api\/questions\/([^/]+)\/answer$/);
+      if (answerRoute && request.method === "POST") {
+        json(
+          response,
+          201,
+          store.answerQuestion(
+            parseAnswerQuestionCommand(
+              await readJson(request),
+              decodeURIComponent(answerRoute[1]),
+            ),
+          ),
+        );
+        return;
+      }
+      // BRIEF-005 : l'utilisateur choisit une direction ; aucune exécution.
+      if (pathname === "/api/actions" && request.method === "POST") {
+        json(
+          response,
+          201,
+          store.chooseDirection(
+            parseChooseDirectionCommand(await readJson(request)),
+          ),
+        );
+        return;
+      }
+      const outcomeRoute = pathname.match(/^\/api\/actions\/([^/]+)\/outcome$/);
+      if (outcomeRoute && request.method === "POST") {
+        const body = await readJson(request);
+        const input =
+          body && typeof body === "object" && !Array.isArray(body) ? body : {};
+        json(
+          response,
+          201,
+          store.recordOutcome(
+            parseRecordOutcomeCommand({
+              ...input,
+              actionId: decodeURIComponent(outcomeRoute[1]),
+            }),
+          ),
+        );
+        return;
+      }
+      const dismissGoalRoute = pathname.match(
+        /^\/api\/goals\/([^/]+)\/dismiss$/,
+      );
+      if (dismissGoalRoute && request.method === "POST") {
+        const body = await readJson(request);
+        const key =
+          body && typeof body === "object" && !Array.isArray(body)
+            ? (body as { idempotencyKey?: unknown }).idempotencyKey
+            : undefined;
+        if (typeof key !== "string" || key.length < 8)
+          throw new DomainError(
+            "invalid_idempotency_key",
+            "Clé d’idempotence invalide.",
+          );
+        json(
+          response,
+          200,
+          store.dismissGoal({
+            idempotencyKey: key,
+            goalId: decodeURIComponent(dismissGoalRoute[1]),
+          }),
+        );
+        return;
+      }
       if (pathname === "/api/goals" && request.method === "POST") {
         json(
           response,
@@ -321,11 +456,9 @@ export async function startManweServer(options: ServerOptions) {
       }
       const cancelRoute = pathname.match(/^\/api\/analyses\/([^/]+)\/cancel$/);
       if (cancelRoute && request.method === "POST") {
-        json(
-          response,
-          200,
-          store.cancelAnalysis(decodeURIComponent(cancelRoute[1])),
-        );
+        const requestId = decodeURIComponent(cancelRoute[1]);
+        automatic.abort(requestId);
+        json(response, 200, store.cancelAnalysis(requestId));
         return;
       }
       json(response, 404, {

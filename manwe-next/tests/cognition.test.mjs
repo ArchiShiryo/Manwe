@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -38,7 +39,7 @@ function capturedStore(store, suffix = "base") {
 function proposal(packet, overrides = {}) {
   const source = packet.sources[0];
   return {
-    schemaVersion: "1.0",
+    schemaVersion: "1.4",
     requestId: packet.requestId,
     workspaceId: packet.workspaceId,
     baseRevision: packet.baseRevision,
@@ -56,6 +57,7 @@ function proposal(packet, overrides = {}) {
         payload: {
           text: "Selon Léa, Marc l’a invitée.",
           category: "reported_observation",
+          modality: "actual",
           validFrom: "2026-09-13T12:00:00-03:00",
           validTo: null,
           citations: [
@@ -100,6 +102,127 @@ test("un ContextPacket est figé, sourcé et son empreinte exclut uniquement con
     store.close();
   }));
 
+test("chaque demande enregistre l’empreinte du prompt analyst-v10 versionné", () =>
+  withStore((store) => {
+    capturedStore(store, "prompt-hash");
+    const prompt = readFileSync(
+      new URL("../packages/cognition/prompts/analyst-v10.md", import.meta.url),
+      "utf8",
+    );
+    const expectedHash = createHash("sha256")
+      .update(prompt, "utf8")
+      .digest("hex");
+    const requests = [
+      store.prepareAnalysis({ task: "extract" }),
+      store.prepareAnalysis({ task: "extract" }),
+    ];
+    for (const packet of requests) {
+      const journal = store.getAnalysis(packet.requestId);
+      assert.equal(packet.promptVersion, "analyst-v10");
+      assert.equal(journal.promptVersion, "analyst-v10");
+      assert.equal(journal.promptHash, expectedHash);
+    }
+    store.close();
+  }));
+
+test("le prompt analyst-v6 documente chaque champ exigé par le parseur strict", () => {
+  const prompt = readFileSync(
+    new URL("../packages/cognition/prompts/analyst-v10.md", import.meta.url),
+    "utf8",
+  );
+  const required = [
+    // CognitiveProposal
+    "schemaVersion",
+    "requestId",
+    "workspaceId",
+    "baseRevision",
+    "contextHash",
+    "modelDeclaration",
+    "outcome",
+    "operations",
+    "clarifications",
+    "summary",
+    // modelDeclaration
+    "declaredModel",
+    "role",
+    "technicalId",
+    // opération
+    "key",
+    "kind",
+    "payload",
+    "rationale",
+    // propose_claim.payload
+    "text",
+    "category",
+    "modality",
+    "validFrom",
+    "validTo",
+    "citations",
+    // propose_event.payload
+    "title",
+    "occurredStart",
+    "occurredEnd",
+    "temporalPrecision",
+    "context",
+    // citation
+    "sourceId",
+    "contentHash",
+    "spanStart",
+    "spanEnd",
+    "quote",
+    // clarification
+    "question",
+    "relatedRefs",
+    // propose_hypothesis.payload
+    "statement",
+    "depth",
+    "framework",
+    "construct",
+    "confidence",
+    "subjects",
+    "evidence",
+    "limits",
+    "revisionConditions",
+    "alternativeTo",
+    "rank",
+    "mechanism",
+    "optimizes",
+    "protects",
+    "defenses",
+    "beliefs",
+    "triggers",
+    "soothes",
+    "barrier",
+    "prediction",
+    "relation",
+    // propose_role.payload
+    "event",
+    "subject",
+    "role",
+    "outcome",
+    "mention",
+    "person",
+    "self",
+    "claim",
+    "stance",
+    "proposalKey",
+    // revise_hypothesis.payload
+    "target",
+    "expectedRowVersion",
+    "status",
+    "addEvidence",
+    // propose_question.payload
+    "targets",
+    "discriminatingInfo",
+    "whyNow",
+    // propose_critique.payload
+    "findings",
+    "detail",
+  ];
+  const missing = required.filter((field) => !prompt.includes(`"${field}"`));
+  assert.deepEqual(missing, []);
+});
+
 test("une proposition sourcée s’applique une fois et survit au redémarrage", () =>
   withStore((store, path) => {
     capturedStore(store);
@@ -118,6 +241,7 @@ test("une proposition sourcée s’applique une fois et survit au redémarrage",
     assert.equal(result.resultRevision, 2);
     assert.equal(result.createdIds[0].kind, "claim");
     assert.equal(store.snapshot().claims[0].category, "reported_observation");
+    assert.equal(store.snapshot().claims[0].modality, "actual");
     assert.equal(store.applyAnalysis(preview.responseId).replayed, true);
     assert.equal(
       store.receiveAnalysis(response).applicationResult.resultRevision,
@@ -130,6 +254,82 @@ test("une proposition sourcée s’applique une fois et survit au redémarrage",
     assert.equal(reopened.snapshot().claims.length, 1);
     assert.equal(reopened.getAnalysis(packet.requestId).status, "applied");
     reopened.close();
+  }));
+
+test("un claim intended est persisté et relu après redémarrage", () =>
+  withStore((store, path) => {
+    capturedStore(store, "intended");
+    const packet = store.prepareAnalysis({ task: "extract" });
+    const intended = proposal(packet);
+    intended.operations[0].payload.modality = "intended";
+    const preview = store.receiveAnalysis(intended);
+    store.applyAnalysis(preview.responseId);
+    store.close();
+
+    const reopened = new SqliteMemoryStore(path);
+    assert.equal(reopened.snapshot().claims[0].modality, "intended");
+    reopened.close();
+  }));
+
+test("le schéma 1.2 exige la modalité uniquement sur propose_claim", () =>
+  withStore((store) => {
+    capturedStore(store, "modality-validation");
+    const packet = store.prepareAnalysis({ task: "extract" });
+
+    const missing = proposal(packet);
+    delete missing.operations[0].payload.modality;
+    assert.throws(
+      () => store.receiveAnalysis(missing),
+      (error) => error.code === "invalid_modality",
+    );
+
+    const unknown = proposal(packet);
+    unknown.operations[0].payload.modality = "possible";
+    assert.throws(
+      () => store.receiveAnalysis(unknown),
+      (error) => error.code === "invalid_modality",
+    );
+
+    const source = packet.sources[0];
+    const eventWithModality = proposal(packet, {
+      operations: [
+        {
+          key: "event-with-modality",
+          kind: "propose_event",
+          payload: {
+            title: "Invitation",
+            text: source.text,
+            category: "reported_observation",
+            modality: "actual",
+            occurredStart: null,
+            occurredEnd: null,
+            temporalPrecision: "unknown",
+            context: null,
+            citations: [
+              {
+                sourceId: source.sourceId,
+                contentHash: source.contentHash,
+                spanStart: source.spanStart,
+                spanEnd: source.spanEnd,
+                quote: source.text,
+              },
+            ],
+          },
+          rationale: "La modalité est volontairement interdite ici.",
+        },
+      ],
+    });
+    assert.throws(
+      () => store.receiveAnalysis(eventWithModality),
+      (error) => error.code === "unknown_field",
+    );
+
+    assert.throws(
+      () =>
+        store.receiveAnalysis({ ...proposal(packet), schemaVersion: "1.0" }),
+      (error) => error.code === "unsupported_schema_version",
+    );
+    store.close();
   }));
 
 test("une citation altérée est conservée comme rejet sans mutation", () =>

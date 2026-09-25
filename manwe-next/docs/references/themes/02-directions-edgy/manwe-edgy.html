@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MANWË — directions edgy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=VT323&family=UnifrakturCook:wght@700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Chakra+Petch:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#000}
+body{width:1440px;height:900px;overflow:hidden;position:relative;font-family:'IBM Plex Mono',monospace}
+#bg{position:absolute;left:220px;top:0;width:840px;height:900px}
+#links{position:absolute;left:220px;top:0;width:840px;height:900px;pointer-events:none}
+.side{position:absolute;left:0;top:0;width:220px;height:900px;padding:22px 16px;display:flex;flex-direction:column;gap:4px;z-index:2}
+.logo{padding:0 10px 26px;display:flex;align-items:center;gap:10px}
+.nav a{display:flex;align-items:center;justify-content:space-between;height:40px;padding:0 10px;text-decoration:none;font-size:14px}
+.readout{margin-top:auto;font-size:11px;line-height:1.55;white-space:pre;overflow:hidden;height:250px}
+.top{position:absolute;left:220px;top:0;width:840px;height:56px;padding:0 24px;display:flex;align-items:center;gap:16px;z-index:2}
+.node{position:absolute;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:3;transform:translate(-50%,-30px)}
+.node .d{width:60px;height:60px;display:flex;align-items:center;justify-content:center}
+.node .n{font-size:14px;white-space:nowrap}.node .r{font-size:11.5px;white-space:nowrap}
+.card{position:absolute;z-index:3;padding:12px 14px;width:252px}
+.card .k{font-size:11px;letter-spacing:.14em}
+.card .t{font-size:17px;margin-top:6px;line-height:1.3}
+.card .m{font-size:12px;margin-top:6px}
+.composer{position:absolute;left:260px;top:822px;width:760px;height:54px;z-index:3;display:flex;align-items:center;padding:0 8px 0 18px;gap:12px}
+.composer span.ph{flex:1;font-size:14px}
+.composer b{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.insp{position:absolute;left:1060px;top:0;width:380px;height:900px;padding:22px 26px;z-index:2;display:flex;flex-direction:column;gap:18px}
+.insp .k{font-size:11px;letter-spacing:.16em}
+.insp h2{margin:0;font-weight:400}
+.ev{display:flex;gap:10px;padding:9px 0;font-size:13.5px}
+.ev small{display:block;font-size:11.5px;margin-top:2px}
+.btns{margin-top:auto;display:flex;gap:8px}
+.btns span{flex:1;height:42px;display:flex;align-items:center;justify-content:center;font-size:13px}
+.switch{position:fixed;right:10px;bottom:10px;z-index:9;display:flex;gap:6px}
+.switch button{font:12px 'IBM Plex Mono',monospace;padding:6px 10px;background:#111;color:#ddd;border:1px solid #444;cursor:pointer}
+.scan{position:absolute;inset:0;pointer-events:none;z-index:8}
+
+/* ============ V1 — GNOSE TERMINAL ============ */
+body.v1{background:#030302;color:#F2E6D0}
+.v1 .side{border-right:1px solid #3A2410;background:#050403}
+.v1 .logo{font-family:'VT323',monospace;font-size:34px;color:#FF9A2E;letter-spacing:.12em;text-shadow:0 0 12px rgba(255,154,46,.35)}
+.v1 .nav a{color:#B9A58A;border-left:2px solid transparent}
+.v1 .nav a.on{color:#FFE9C9;background:#1A0E04;border-left-color:#FF9A2E}
+.v1 .nav a i{font-style:normal;color:#7CFF6B;font-size:11px}
+.v1 .readout{color:#6FD65F;opacity:.75}
+.v1 .top{border-bottom:1px solid #2A1A0B;color:#C9B391;font-size:12px}
+.v1 .top h1{font-family:'VT323',monospace;font-weight:400;font-size:30px;margin:0;color:#FFB45C;letter-spacing:.06em}
+.v1 .node .d{border:1px solid #FF9A2E;background:#3A2108;color:#FFD8A8;font-size:16px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.v1 .node.sel .d{background:#FF9A2E;color:#140A02;box-shadow:0 0 30px #FF9A2E}
+.v1 .node .n{color:#FFF3E2;background:#030302;padding:0 4px}.v1 .node .r{color:#B9A58A;background:#030302;padding:0 4px}
+.v1 .node.you .d{border-color:#5FD6FF;color:#5FD6FF;clip-path:none;border-radius:0}
+.v1 .card{background:rgba(3,3,2,.92);border:1px solid #FF9A2E}
+.v1 .card .k{color:#FF9A2E}.v1 .card .t{color:#FFF3E2;font-family:'VT323',monospace;font-size:24px;letter-spacing:.02em}.v1 .card .m{color:#C9B391}
+.v1 .card.q{border:1px dashed #7CFF6B}.v1 .card.q .k{color:#7CFF6B}
+.v1 .composer{background:#070503;border:1px solid #FF9A2E}
+.v1 .composer span.ph{color:#9C8768}.v1 .composer span.ph:before{content:"> ";color:#7CFF6B}
+.v1 .composer b{background:#FF9A2E;color:#000}
+.v1 .insp{background:#050403;border-left:1px solid #3A2410}
+.v1 .insp .k{color:#7CFF6B}
+.v1 .insp h2{font-family:'VT323',monospace;font-size:36px;line-height:1;color:#FFB45C}
+.v1 .insp p{color:#E4D5BD;font-size:13.5px;line-height:1.65;margin:0}
+.v1 .ev{border-bottom:1px dotted #3A2410;color:#FFF3E2}.v1 .ev small{color:#A8946F}.v1 .ev em{color:#7CFF6B;font-style:normal}
+.v1 .btns span{border:1px solid #FF9A2E;color:#FFD8A8}.v1 .btns span:first-child{background:#FF9A2E;color:#000}
+.v1 .scan{background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
+.v1 .meter{font-family:'VT323',monospace;font-size:20px;color:#FF9A2E;letter-spacing:.05em}
+
+/* ============ V2 — RELIQUAIRE ============ */
+body.v2{background:#070607;color:#EDE6DA}
+.v2 .side{background:#0A0809;border-right:1px solid #2B2224}
+.v2 .logo{font-family:'UnifrakturCook',serif;font-size:32px;color:#F2EBDF}
+.v2 .nav a{font-family:'EB Garamond',serif;font-size:17px;color:#A89D95}
+.v2 .nav a.on{color:#F7F1E6}.v2 .nav a.on:before{content:"✠";color:#9E2A38;margin-right:8px}
+.v2 .nav a i{font-style:normal;color:#6C6260;font-size:12px;font-family:'IBM Plex Mono'}
+.v2 .readout{color:#6C6260;font-size:10.5px}
+.v2 .top{border-bottom:1px solid #221B1D;color:#9D928B;font-size:12px}
+.v2 .top h1{font-family:'UnifrakturCook',serif;font-size:28px;margin:0;color:#F2EBDF;font-weight:700}
+.v2 .node{transform:translate(-50%,-44px)}
+.v2 .node .d{width:62px;height:88px;border:1px solid #CFC5B8;background:#0B090A;flex-direction:column;font-family:'EB Garamond',serif;color:#F2EBDF;font-size:20px;outline:1px solid #3A3033;outline-offset:3px}
+.v2 .node .d small{font-size:10px;letter-spacing:.2em;color:#8F847D;font-family:'IBM Plex Mono'}
+.v2 .node.sel .d{border-color:#C23A4B;outline-color:#9E2A38;box-shadow:0 0 0 7px #070607,0 0 0 8px #5E1A24}
+.v2 .node .n{font-family:'EB Garamond',serif;font-size:17px;color:#F7F1E6;background:#070607;padding:0 4px}.v2 .node .r{color:#A89D95;background:#070607;padding:0 4px}
+.v2 .node.you .d{border-radius:50%;width:56px;height:56px;outline:none}
+.v2 .card{background:#0B090A;border:1px solid #6B5D5F}
+.v2 .card:before,.v2 .card:after{content:"◆";position:absolute;top:-8px;left:-6px;color:#C23A4B;font-size:12px}
+.v2 .card:after{left:auto;right:-6px}
+.v2 .card .k{color:#C9707B}.v2 .card .t{font-family:'EB Garamond',serif;font-size:22px;font-style:italic;color:#F7F1E6}.v2 .card .m{color:#A89D95}
+.v2 .card.q{border-style:dashed}.v2 .card.q .k{color:#CFC5B8}
+.v2 .composer{background:#0B090A;border:1px solid #4A3E40;border-radius:2px}
+.v2 .composer span.ph{color:#8F847D;font-family:'EB Garamond',serif;font-size:17px;font-style:italic}
+.v2 .composer b{border:1px solid #C23A4B;color:#F2EBDF}
+.v2 .insp{background:#0A0809;border-left:1px solid #2B2224}
+.v2 .insp .k{color:#C9707B}
+.v2 .insp h2{font-family:'EB Garamond',serif;font-size:32px;line-height:1.1;color:#F7F1E6}
+.v2 .insp p{font-family:'EB Garamond',serif;font-size:17px;line-height:1.5;color:#DCD3C6;margin:0}
+.v2 .ev{border-bottom:1px solid #221B1D;color:#F2EBDF}.v2 .ev small{color:#968B84}.v2 .ev em{color:#C23A4B;font-style:normal}
+.v2 .btns span{border:1px solid #4A3E40;color:#DCD3C6}.v2 .btns span:first-child{border-color:#C23A4B;color:#F7F1E6;background:#2A0E13}
+.v2 .scan{background:radial-gradient(ellipse at 45% 50%,transparent 55%,rgba(0,0,0,.55))}
+.v2 .meter{font-family:'EB Garamond',serif;font-size:18px;color:#C9707B;letter-spacing:.3em}
+
+/* ============ V3 — JEWEL CASE ============ */
+body.v3{background:#050508;color:#E9ECF2}
+.v3 .side{background:linear-gradient(180deg,#0B0C12,#050508);border-right:1px solid #262A36}
+.v3 .logo{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:26px;letter-spacing:.2em;color:#fff;text-shadow:-2px 0 #FF2E88,2px 0 #2EF2FF}
+.v3 .nav a{font-family:'Chakra Petch',sans-serif;font-size:15px;color:#9AA0B4}
+.v3 .nav a.on{color:#fff;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.v3 .nav a i{font-style:normal;font-family:'Space Mono';font-size:10px;color:#6E7488}
+.v3 .readout{color:#6E7488;font-family:'Space Mono';font-size:10px}
+.v3 .top{border-bottom:1px solid #1C1F29;font-size:12px;color:#9AA0B4;font-family:'Space Mono'}
+.v3 .top h1{font-family:'Chakra Petch';font-size:24px;margin:0;color:#fff;letter-spacing:.08em;text-transform:uppercase}
+.v3 .node .d{border-radius:50%;background:#0B0C12;border:1px solid #444A5E;color:#fff;font-family:'Chakra Petch';font-size:16px}
+.v3 .node.sel .d{border:2px solid transparent;background:linear-gradient(#0B0C12,#0B0C12) padding-box,conic-gradient(#FF2E88,#FFB02E,#E7FF2E,#2EFF9A,#2EF2FF,#8A2EFF,#FF2E88) border-box;box-shadow:0 0 34px rgba(138,46,255,.45)}
+.v3 .node .n{font-family:'Chakra Petch';font-size:15px;color:#fff;background:#050508;padding:0 4px}.v3 .node .r{color:#9AA0B4;background:#050508;padding:0 4px;font-family:'Space Mono';font-size:10.5px}
+.v3 .node.you .d{border-radius:8px}
+.v3 .card{background:rgba(12,13,19,.9);border:1px solid rgba(255,255,255,.16);border-radius:4px;backdrop-filter:blur(6px)}
+.v3 .card.h{border:1px solid transparent;background:linear-gradient(rgba(12,13,19,.94),rgba(12,13,19,.94)) padding-box,linear-gradient(90deg,#FF2E88,#FFB02E,#2EFF9A,#2EF2FF,#8A2EFF) border-box}
+.v3 .card .k{color:#9AA0B4;font-family:'Space Mono';font-size:10.5px}
+.v3 .card.h .k{background:linear-gradient(90deg,#FF7AB6,#FFD27A,#7AFFC2,#7AF6FF);-webkit-background-clip:text;color:transparent}
+.v3 .card .t{font-family:'Chakra Petch';font-size:19px;color:#fff}.v3 .card .m{color:#9AA0B4}
+.v3 .composer{background:rgba(12,13,19,.92);border:1px solid rgba(255,255,255,.16);border-radius:6px}
+.v3 .composer span.ph{color:#80869A}
+.v3 .composer b{background:#fff;color:#000;border-radius:4px}
+.v3 .insp{background:linear-gradient(180deg,#0B0C12,#07070B);border-left:1px solid #262A36}
+.v3 .insp .k{color:#9AA0B4;font-family:'Space Mono'}
+.v3 .insp h2{font-family:'Chakra Petch';font-weight:500;font-size:28px;line-height:1.15;color:#fff}
+.v3 .insp p{color:#C9CDD8;font-size:13.5px;line-height:1.65;margin:0}
+.v3 .ev{border-bottom:1px solid #1C1F29}.v3 .ev small{color:#80869A}.v3 .ev em{color:#2EFF9A;font-style:normal}
+.v3 .btns span{border:1px solid #333848;color:#DDE1EA;border-radius:4px}.v3 .btns span:first-child{background:#fff;color:#000}
+.v3 .scan{background:repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 1px,transparent 1px 4px)}
+.v3 .meter{font-family:'Space Mono';font-size:12px;color:#fff}
+.v3 .barcode{position:absolute;right:26px;top:24px;height:26px;width:120px;background:repeating-linear-gradient(90deg,#DDE1EA 0 2px,transparent 2px 3px,#DDE1EA 3px 4px,transparent 4px 7px)}
+</style>
+</head>
+<body class="v1">
+<canvas id="bg" width="840" height="900"></canvas>
+<svg id="links" viewBox="0 0 840 900"></svg>
+<div class="scan"></div>
+
+<aside class="side">
+<div class="logo">MANWË</div>
+<nav class="nav">
+<a href="#"><span>Aujourd'hui</span><i>02</i></a>
+<a href="#" class="on"><span>Monde</span><i>03</i></a>
+<a href="#"><span>Personnes</span><i>03</i></a>
+<a href="#"><span>Intentions</span><i>01</i></a>
+<a href="#"><span>Mémoire</span><i>05</i></a>
+</nav>
+<div class="readout" id="readout"></div>
+</aside>
+
+<header class="top"><h1 id="title">Mon monde</h1><span id="sub">démo · 3 personnes · 5 souvenirs · rév. 01</span><span style="flex:1"></span><span id="topr">⌘K rechercher</span></header>
+
+<div class="node sel" style="left:450px;top:300px"><div class="d" id="dm">MD</div><div class="n">Marc Dupont</div><div class="r">collègue · ami de jeu</div></div>
+<div class="node" style="left:790px;top:250px"><div class="d" id="dl">LM</div><div class="n">Léa Martin</div><div class="r">collègue · groupe</div></div>
+<div class="node" style="left:860px;top:600px"><div class="d" id="dc">CM</div><div class="n">Claire Morel</div><div class="r">≈ réponse plus lente</div></div>
+<div class="node you" style="left:620px;top:490px"><div class="d">◉</div><div class="n">VOUS</div></div>
+
+<div class="card h" style="left:250px;top:470px"><div class="k">◇ HYPOTHÈSE · PLAUSIBLE</div><div class="t">Une proximité qui évolue</div><div class="m">2 appuis ● · 1 limite</div></div>
+<div class="card q" style="left:250px;top:620px"><div class="k">? QUESTION OUVERTE</div><div class="t" style="font-size:15px">Vous voyez-vous sans activité prévue ?</div></div>
+
+<div class="composer"><span class="ph">raconter · demander · corriger une lecture…</span><b>↑</b></div>
+
+<aside class="insp">
+<div class="k" id="ik" style="padding-right:130px">◇ LECTURE PROPOSÉE PAR MANWË</div>
+<h2 id="ih">Le lien avec Marc se renforce peut-être</h2>
+<div class="meter" id="meter">▮▮▮▯▯ PLAUSIBLE</div>
+<p>Marc a pris l'initiative deux fois en une semaine. Signe possible de rapprochement — ou simple effet des activités partagées.</p>
+<div>
+<div class="k">CE QUI SOUTIENT</div>
+<div class="ev"><em>●</em><div>Une invitation à jouer<small>12.09 · fait rapporté · src a3f9</small></div></div>
+<div class="ev"><em>●</em><div>Un déjeuner à son initiative<small>10.09 · fait rapporté · src 71c0</small></div></div>
+</div>
+<div>
+<div class="k">CE QUI LIMITE</div>
+<div class="ev"><em>●</em><div>Un contexte encore partagé<small>10.09 · note de contexte</small></div></div>
+</div>
+<div class="btns"><span>Oui, plutôt</span><span>À nuancer</span><span>?</span></div>
+<div class="barcode" id="bar"></div>
+</aside>
+
+<div class="switch"><button onclick="setV(1)">1 · Gnose terminal</button><button onclick="setV(2)">2 · Reliquaire</button><button onclick="setV(3)">3 · Jewel case</button></div>
+
+<script>
+const cv=document.getElementById('bg'),g=cv.getContext('2d'),W=840,H=900,TAU=Math.PI*2;
+const YOU=[400,490],MARC=[230,300],LEA=[570,250],CLA=[640,600];
+let V=+(new URLSearchParams(location.search).get('v')||1),t=0;
+// value noise
+const P=[];for(let i=0;i<512;i++)P[i]=Math.random();
+function hash(x,y){return P[(x*73856093^y*19349663)&511]}
+function noise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,s=v=>v*v*(3-2*v);
+const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);
+return a+(b-a)*s(xf)+(c-a)*s(yf)+(a-b-c+d)*s(xf)*s(yf)}
+
+function links(){
+ const L=document.getElementById('links');
+ const col={1:['#FF9A2E','#5A3A1A','#7CFF6B'],2:['#C23A4B','#4A3E40','#CFC5B8'],3:['url(#rb)','#343A4C','#2EF2FF']}[V];
+ const q=(a,b,c)=>`M${a[0]} ${a[1]} Q${c[0]} ${c[1]} ${b[0]} ${b[1]}`;
+ L.innerHTML=`<defs><linearGradient id="rb"><stop offset="0" stop-color="#FF2E88"/><stop offset=".5" stop-color="#2EFF9A"/><stop offset="1" stop-color="#8A2EFF"/></linearGradient></defs>
+ <path d="${q(YOU,MARC,[290,440])}" stroke="${col[0]}" stroke-width="2.2" fill="none"/>
+ <path d="${q(MARC,LEA,[400,200])}" stroke="${col[1]}" stroke-width="1.3" fill="none"/>
+ <path d="${q(YOU,LEA,[520,400])}" stroke="${col[1]}" stroke-width="1" fill="none"/>
+ <path d="${q(YOU,CLA,[520,600])}" stroke="${col[2]}" stroke-width="1.5" stroke-dasharray="2 6" stroke-linecap="round" fill="none"/>
+ <path d="M282 505 L290 420" stroke="${col[0]}" stroke-width="1" stroke-dasharray="3 4" fill="none" opacity=".7"/>`;
+}
+function readout(){
+ const r=document.getElementById('readout');let s='';
+ const lines={1:i=>`${(0x3f00+i*37).toString(16)} ${['OBS','IMP','INF','EXP','???'][i%5]} ${(Math.sin(i+t/40)*.5+.5).toFixed(3)} ${'▮'.repeat(1+(i*7+Math.floor(t/20))%6)}`,
+  2:i=>`${['I','II','III','IV','V','VI','VII','VIII','IX','X'][i%10].padEnd(5)} ${['ecce','lumen','nexus','umbra','verbum'][i%5]} ${((i*13)%97).toString().padStart(2,'0')}`,
+  3:i=>`SLUS_973.${String(i).padStart(2,'0')}  ${(Math.random()*1e8|0).toString(16).padStart(7,'0')}`}[V];
+ for(let i=0;i<16;i++)s+=lines(i)+'\n';r.textContent=s;
+}
+function frame(){
+ t++;g.setTransform(1,0,0,1,0,0);
+ if(V==1){ // amber spiral (hisadan) + attractor between you & marc
+  g.fillStyle='rgba(3,3,2,1)';g.fillRect(0,0,W,H);
+  const tt=(t%400)+40;
+  for(let r=0;r<TAU*90;r+=.23){const x=r*Math.sin(r)+YOU[0],y=r*Math.cos(r)+YOU[1];if(x<0||x>W||y<0||y>H)continue;
+   const v=(r%tt)/tt;g.fillStyle=`rgba(255,${120+v*60|0},40,${.03+v*.14})`;g.beginPath();g.arc(x,y,Math.sqrt(r)*.45,0,TAU);g.fill();}
+  // attractor cloud = hypothesis (unstable)
+  let x=.1,y=0;const a=1.86,b=.7*Math.cos(t*Math.PI/300);g.fillStyle='rgba(124,255,107,.22)';
+  for(let i=0;i<14000;i++){const p=a*x-x*y,q=b*y+x*x;x=p;y=q;if(Math.abs(p)>4)break;g.fillRect(p*70+300,q*70+330,1,1);}
+  // wire grid perspective floor
+  g.strokeStyle='rgba(95,214,255,.10)';g.lineWidth=1;
+  for(let i=0;i<14;i++){const yy=700+i*i*1.2;g.beginPath();g.moveTo(0,yy);g.lineTo(W,yy);g.stroke();}
+  for(let i=-12;i<=12;i++){g.beginPath();g.moveTo(W/2+i*20,700);g.lineTo(W/2+i*120,900);g.stroke();}
+ }
+ if(V==2){ // bilateral sigil, halftone
+  g.fillStyle='#070607';g.fillRect(0,0,W,H);
+  const cx=420,cy=430;g.lineWidth=1;
+  for(let k=0;k<70;k++){let x=cx+ (hash(k,1)-.5)*40,y=cy+(hash(k,2)-.5)*600,a=hash(k,3)*TAU;
+   g.strokeStyle=`rgba(237,230,218,${.05+hash(k,4)*.09})`;
+   for(let s=0;s<60;s++){const n=noise(x*.006+t*.002,y*.006)*TAU*2;const nx=x+Math.cos(n+a)*6,ny=y+Math.sin(n+a)*6;
+    g.beginPath();g.moveTo(x,y);g.lineTo(nx,ny);g.moveTo(2*cx-x,y);g.lineTo(2*cx-nx,ny);g.stroke();x=nx;y=ny;}}
+  // concentric thorn rings
+  for(let r=60;r<420;r+=34){g.strokeStyle=`rgba(158,42,56,${.10-r/6000})`;g.beginPath();
+   for(let a=0;a<=TAU+.01;a+=TAU/96){const rr=r+(Math.floor(a/(TAU/96))%2?5:-5);g.lineTo(cx+Math.cos(a+t*.0015*(r%68?1:-1))*rr,cy+Math.sin(a)*rr*.92);}g.stroke();}
+  // halftone
+  for(let y=0;y<H;y+=10)for(let x=0;x<W;x+=10){const v=noise(x*.01,y*.01+t*.003);if(v<.62)continue;g.fillStyle='rgba(237,230,218,.10)';g.beginPath();g.arc(x,y,(v-.62)*9,0,TAU);g.fill();}
+ }
+ if(V==3){ // ascii noise digits (GenerativePunk) + rainbow halo on marc
+  g.fillStyle='#050508';g.fillRect(0,0,W,H);const s=14;g.font='11px Space Mono, monospace';
+  const tt=t/90;
+  for(let i=0;i<W;i+=s)for(let j=0;j<H;j+=s){const d=Math.hypot(i-YOU[0],j-YOU[1])/(W/1.4);
+   const r=(Math.sin(TAU*(tt+2*noise(i*.02,j*.02)*d))+1)/2;
+   const dm=Math.hypot(i-MARC[0],j-MARC[1]);
+   if(dm<150){const h=(dm*2.4+t*2)%360;g.fillStyle=`hsla(${h},90%,65%,${.12+r*.45*(1-dm/150)})`;}
+   else g.fillStyle=`rgba(210,215,230,${.03+r*.16})`;
+   g.fillText(Math.floor(10*r),i,j);}
+ }
+ if(t%6==0)readout();
+ requestAnimationFrame(frame);
+}
+function setV(v){V=v;document.body.className='v'+v;links();readout();
+ document.getElementById('title').textContent={1:'MON_MONDE',2:'Mon monde',3:'Mon monde'}[v];
+ document.getElementById('meter').textContent={1:'▮▮▮▯▯ PLAUSIBLE · 0.62',2:'✦ ✦ ✦ ✧ ✧   plausible',3:'[■■■□□] PLAUSIBLE — 2/3'}[v];
+ document.getElementById('bar').style.display=v==3?'block':'none';
+ document.getElementById('dm').innerHTML=v==2?'MD<small>III</small>':'MD';
+ document.getElementById('dl').innerHTML=v==2?'LM<small>VI</small>':'LM';
+ document.getElementById('dc').innerHTML=v==2?'CM<small>XVII</small>':'CM';
+}
+setV(V);frame();if(location.search.includes('shot'))document.querySelector('.switch').style.display='none';
+</script>
+</body>
+</html>

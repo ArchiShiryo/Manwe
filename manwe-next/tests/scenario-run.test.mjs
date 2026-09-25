@@ -1,0 +1,446 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { randomUUID } from "node:crypto";
+import { basename, join } from "node:path";
+import { tmpdir } from "node:os";
+
+const script = join(process.cwd(), "scripts", "scenario-run.mjs");
+
+function execute(...arguments_) {
+  const result = spawnSync(process.execPath, [script, ...arguments_], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.equal(
+    result.status,
+    0,
+    `Commande échouée.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+  );
+  return result.stdout;
+}
+
+const read = (path) => JSON.parse(readFileSync(path, "utf8"));
+
+function answer(packet, operations) {
+  return JSON.stringify({
+    schemaVersion: "1.4",
+    requestId: packet.requestId,
+    workspaceId: packet.workspaceId,
+    baseRevision: packet.baseRevision,
+    contextHash: packet.contextHash,
+    modelDeclaration: {
+      declaredModel: "Test",
+      role: "analyst",
+      technicalId: null,
+    },
+    outcome: operations.length ? "proposed" : "no_change",
+    operations,
+    clarifications: [],
+    summary: "Réponse simulée.",
+  });
+}
+
+const withInterfaceArtifact = (json) =>
+  json.replace(
+    '"Réponse simulée."',
+    '"Réponse simulée. :chatgpt-content-reference{index="0"}"',
+  );
+
+test("le harnais multi-étapes enchaîne analyses, annotations et réponses, puis reprend depuis les copies versionnées", () => {
+  const directory = mkdtempSync(join(tmpdir(), "manwe-scenario-"));
+  const runDir = join(directory, `run-${randomUUID()}`);
+  const qaDir = join(process.cwd(), ".qa", basename(runDir));
+  const fixturePath = join(directory, "fixture.json");
+  const capture = (id, text, date) => ({
+    id,
+    type: "capture",
+    command: {
+      idempotencyKey: `scenario-test:${id}`,
+      title: `Étape ${id}`,
+      text,
+      recordedAt: date,
+      narratedAt: date,
+      occurredStart: date,
+      occurredEnd: null,
+      temporalPrecision: "day",
+      context: "Test",
+    },
+  });
+  writeFileSync(
+    fixturePath,
+    JSON.stringify({
+      schemaVersion: "1.0",
+      scenarios: [
+        {
+          id: "T1",
+          steps: [
+            capture(
+              "T1-1",
+              "Karim a mis deux jours à répondre.",
+              "2026-05-12T12:00:00-03:00",
+            ),
+            {
+              id: "T1-A1",
+              type: "analyze",
+              task: "interpret",
+              focus: { person: "Karim" },
+            },
+            {
+              id: "T1-C1",
+              type: "annotate",
+              target: { hypotheses: { subject: "Karim", which: "all_active" } },
+              annotationType: "agreement",
+              text: "Oui, c'est lui.",
+            },
+            {
+              id: "T1-Q1",
+              type: "answer",
+              question: "last_open",
+              choice: "unknown",
+            },
+            {
+              id: "T1-A2",
+              type: "analyze",
+              task: "revise",
+              focus: { person: "Karim" },
+            },
+          ],
+        },
+      ],
+    }),
+    "utf8",
+  );
+  try {
+    execute("prepare", fixturePath, runDir);
+    const first = read(join(runDir, "T1", "T1-A1", "context.json"));
+    assert.equal(first.task, "interpret");
+    assert.ok(existsSync(join(runDir, "T1", "T1-A1", "prepared.sqlite3")));
+    const source = first.sources[0];
+    writeFileSync(
+      join(runDir, "T1", "T1-A1", "proposal.raw.json"),
+      answer(first, [
+        {
+          key: "c1",
+          kind: "propose_claim",
+          payload: {
+            text: "Karim a mis deux jours à répondre.",
+            category: "sourced_observation",
+            modality: "actual",
+            validFrom: null,
+            validTo: null,
+            citations: [
+              {
+                sourceId: source.sourceId,
+                contentHash: source.contentHash,
+                spanStart: source.spanStart,
+                spanEnd: source.spanEnd,
+                quote: source.text,
+              },
+            ],
+          },
+          rationale: "Fait.",
+        },
+        {
+          key: "h1",
+          kind: "propose_hypothesis",
+          payload: {
+            statement: "Karim est surchargé.",
+            depth: "D1",
+            framework: null,
+            construct: null,
+            confidence: "low",
+            subjects: [{ mention: "Karim" }],
+            evidence: [{ claim: { proposalKey: "c1" }, stance: "supports" }],
+            limits: "Un seul épisode.",
+            revisionConditions: "Des réponses rapides.",
+            alternativeTo: null,
+            validFrom: null,
+            validTo: null,
+          },
+          rationale: "Lecture de surface.",
+        },
+        {
+          key: "q1",
+          kind: "propose_question",
+          payload: {
+            question: "Karim répond-il aussi tard aux autres ?",
+            targets: [{ proposalKey: "h1" }],
+            discriminatingInfo: "Surcharge générale ou non.",
+            whyNow: "Premier délai observé.",
+          },
+          rationale: "Question.",
+        },
+      ]),
+      "utf8",
+    );
+    // Reprise depuis une autre machine : seules les copies versionnées subsistent.
+    rmSync(qaDir, { recursive: true, force: true });
+    execute("advance", runDir);
+    const state = read(join(runDir, "T1", "state.json"));
+    assert.equal(state.pending, "T1-A2");
+    assert.deepEqual(
+      state.log.map((entry) => [entry.step, entry.outcome]),
+      [
+        ["T1-1", "captured"],
+        ["T1-A1", "applied"],
+        ["T1-C1", "annotated"],
+        ["T1-Q1", "answered:unknown"],
+        ["T1-A2", "awaiting_response"],
+      ],
+    );
+    const second = read(join(runDir, "T1", "T1-A2", "context.json"));
+    assert.equal(second.task, "revise");
+    assert.equal(second.hypotheses.length, 1);
+    assert.equal(second.questions[0].status, "unknown");
+    writeFileSync(
+      join(runDir, "T1", "T1-A2", "proposal.raw.json"),
+      answer(second, []),
+      "utf8",
+    );
+    rmSync(qaDir, { recursive: true, force: true });
+    execute("advance", runDir);
+    execute("summary", runDir);
+    const results = read(join(runDir, "results.json"));
+    const scenario = results.scenarios[0];
+    assert.equal(scenario.completed, true);
+    assert.equal(scenario.hypotheses[0].subjects[0], "Karim");
+    assert.equal(
+      scenario.hypotheses[0].needsReview,
+      false,
+      "l’accord ne déclenche rien",
+    );
+    assert.equal(scenario.questions[0].status, "unknown");
+    assert.ok(existsSync(join(runDir, "T1", "final.sqlite3")));
+    assert.match(
+      readFileSync(join(runDir, "SUMMARY.md"), "utf8"),
+      /Karim est surchargé/,
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+    rmSync(qaDir, { recursive: true, force: true });
+  }
+});
+
+test("une analyse rejetée reste en attente de sa seconde tentative ; l’artefact d’interface est retiré ; le reçu garde les deux essais", () => {
+  const directory = mkdtempSync(join(tmpdir(), "manwe-scenario-"));
+  const runDir = join(directory, `run-${randomUUID()}`);
+  const qaDir = join(process.cwd(), ".qa", basename(runDir));
+  const fixturePath = join(directory, "fixture.json");
+  const date = "2026-05-12T12:00:00-03:00";
+  writeFileSync(
+    fixturePath,
+    JSON.stringify({
+      schemaVersion: "1.0",
+      scenarios: [
+        {
+          id: "T2",
+          steps: [
+            {
+              id: "T2-1",
+              type: "capture",
+              command: {
+                idempotencyKey: "scenario-test:T2-1",
+                title: "Étape T2-1",
+                text: "Inès a annulé le dîner.",
+                recordedAt: date,
+                narratedAt: date,
+                occurredStart: date,
+                occurredEnd: null,
+                temporalPrecision: "day",
+                context: "Test",
+              },
+            },
+            { id: "T2-A1", type: "analyze", task: "extract", focus: null },
+          ],
+        },
+      ],
+    }),
+    "utf8",
+  );
+  try {
+    execute("prepare", fixturePath, runDir);
+    const stepDir = join(runDir, "T2", "T2-A1");
+    const packet = read(join(stepDir, "context.json"));
+    const claim = (citations) => ({
+      key: "c1",
+      kind: "propose_claim",
+      payload: {
+        text: "Inès a annulé le dîner.",
+        category: "sourced_observation",
+        modality: "actual",
+        validFrom: null,
+        validTo: null,
+        citations,
+      },
+      rationale: "Fait.",
+    });
+    writeFileSync(
+      join(stepDir, "proposal.raw.json"),
+      answer(packet, [claim([])]),
+      "utf8",
+    );
+    assert.match(execute("advance", runDir), /T2-A1 rejetée/);
+    assert.equal(read(join(runDir, "T2", "state.json")).pending, "T2-A1");
+    const source = packet.sources[0];
+    // La seconde tentative porte l'artefact d'interface de ChatGPT.
+    writeFileSync(
+      join(stepDir, "proposal.retry.raw.json"),
+      withInterfaceArtifact(
+        answer(packet, [
+          claim([
+            {
+              sourceId: source.sourceId,
+              contentHash: source.contentHash,
+              spanStart: source.spanStart,
+              spanEnd: source.spanEnd,
+              quote: source.text,
+            },
+          ]),
+        ]),
+      ),
+      "utf8",
+    );
+    assert.match(execute("advance", runDir), /T2 : terminé/);
+    const receipt = read(join(stepDir, "receipt.json"));
+    assert.equal(receipt.status, "applied");
+    assert.deepEqual(
+      receipt.attempts.map((attempt) => attempt.status),
+      ["rejected", "applied"],
+    );
+    assert.deepEqual(receipt.attempts[1].normalized, [
+      "chatgpt-content-reference",
+    ]);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+    rmSync(qaDir, { recursive: true, force: true });
+  }
+});
+
+test("le mode auto interroge le fournisseur, enregistre la réponse brute et ses métadonnées, puis avance", async () => {
+  const { createServer } = await import("node:http");
+  const { spawn } = await import("node:child_process");
+  const directory = mkdtempSync(join(tmpdir(), "manwe-auto-"));
+  const runDir = join(directory, `run-${randomUUID()}`);
+  const qaDir = join(process.cwd(), ".qa", basename(runDir));
+  const fixturePath = join(directory, "fixture.json");
+  const date = "2026-05-12T12:00:00-03:00";
+  writeFileSync(
+    fixturePath,
+    JSON.stringify({
+      schemaVersion: "1.0",
+      scenarios: [
+        {
+          id: "T3",
+          steps: [
+            {
+              id: "T3-1",
+              type: "capture",
+              command: {
+                idempotencyKey: "scenario-test:T3-1",
+                title: "Étape T3-1",
+                text: "Karim a mis deux jours à répondre.",
+                recordedAt: date,
+                narratedAt: date,
+                occurredStart: date,
+                occurredEnd: null,
+                temporalPrecision: "day",
+                context: "Test",
+              },
+            },
+            { id: "T3-A1", type: "analyze", task: "extract", focus: null },
+          ],
+        },
+      ],
+    }),
+    "utf8",
+  );
+  const requests = [];
+  const server = createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      const payload = JSON.parse(body);
+      requests.push(payload);
+      const prompt = payload.messages[0].content.split(
+        "\n\nTa réponse précédente",
+      )[0];
+      const packet = JSON.parse(
+        prompt.slice(
+          prompt.lastIndexOf('\n{\n  "schemaVersion"') + 1,
+          prompt.lastIndexOf("}") + 1,
+        ),
+      );
+      response.setHeader("content-type", "application/json");
+      // Première réponse invalide : la seconde tentative doit connaître l'erreur (D-021).
+      const content =
+        requests.length === 1 ? "{ pas du JSON" : answer(packet, []);
+      response.end(
+        JSON.stringify({
+          model: "deepseek-flash",
+          choices: [
+            {
+              finish_reason: "stop",
+              message: {
+                content,
+                reasoning_content: "Raisonnement simulé.",
+              },
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5 },
+        }),
+      );
+    });
+  });
+  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  try {
+    execute("prepare", fixturePath, runDir);
+    const child = spawn(
+      process.execPath,
+      [script, "auto", runDir, "--concurrency", "2"],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          DEEPSEEK_BASE_URL: `http://127.0.0.1:${server.address().port}`,
+          HTTPS_PROXY: "",
+          https_proxy: "",
+        },
+      },
+    );
+    let output = "";
+    child.stdout.on("data", (chunk) => (output += chunk));
+    child.stderr.on("data", (chunk) => (output += chunk));
+    const code = await new Promise((done) => child.on("close", done));
+    assert.equal(code, 0, output);
+    assert.equal(requests.length, 2);
+    assert.match(
+      requests[1].messages[0].content,
+      /rejetée par le validateur :\n- invalid_json/,
+    );
+    assert.equal(requests[0].model, "deepseek-flash");
+    assert.equal(requests[0].response_format.type, "json_object");
+    const stepDir = join(runDir, "T3", "T3-A1");
+    assert.equal(read(join(stepDir, "receipt.json")).status, "no_change");
+    assert.equal(
+      read(join(stepDir, "call.json")).servedModel,
+      "deepseek-flash",
+    );
+    assert.equal(
+      readFileSync(join(stepDir, "reasoning.txt"), "utf8"),
+      "Raisonnement simulé.",
+    );
+    assert.equal(read(join(runDir, "T3", "state.json")).pending, null);
+  } finally {
+    server.close();
+    rmSync(directory, { recursive: true, force: true });
+    rmSync(qaDir, { recursive: true, force: true });
+  }
+});

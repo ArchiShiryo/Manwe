@@ -31,7 +31,11 @@ import {
   type Page,
   type Selection,
 } from "../../../packages/domain/src/demo.ts";
-import type { TemporalPrecision } from "../../../packages/domain/src/memory.ts";
+import type {
+  AnnotationCommand,
+  AnnotationType,
+  TemporalPrecision,
+} from "../../../packages/domain/src/memory.ts";
 import { Graph } from "./Graph.tsx";
 import { Inspector } from "./Inspector.tsx";
 import {
@@ -158,6 +162,20 @@ export default function App() {
   const notify = (message: string) => {
     setToast(message);
     setToastSequence((n) => n + 1);
+  };
+  const annotatePersonal = async (
+    target: AnnotationCommand["target"],
+    text: string,
+    type: AnnotationType,
+  ) => {
+    try {
+      await personal.annotate(target, text, type);
+      notify("Précision conservée sans modifier la source");
+      return true;
+    } catch {
+      notify("La précision n’a pas pu être enregistrée");
+      return false;
+    }
   };
   const select = (s: Selection) => {
     setSelection(s);
@@ -527,6 +545,9 @@ export default function App() {
                 <PersonalWorld
                   snapshot={personal.snapshot}
                   onMemory={() => navigate("memory")}
+                  onAnnotate={annotatePersonal}
+                  connection={personal.connection}
+                  remote={personal.remote}
                 />
               )}
               {mode === "personal" &&
@@ -545,16 +566,7 @@ export default function App() {
                     snapshot={personal.snapshot}
                     onReload={personal.reload}
                     onNotify={notify}
-                    onAnnotate={async (target, text, type) => {
-                      try {
-                        await personal.annotate(target, text, type);
-                        notify("Précision conservée sans modifier la source");
-                        return true;
-                      } catch {
-                        notify("La précision n’a pas pu être enregistrée");
-                        return false;
-                      }
-                    }}
+                    onAnnotate={annotatePersonal}
                   />
                 )}
               {mode === "personal" &&
@@ -562,6 +574,8 @@ export default function App() {
                 page === "intentions" && (
                   <PersonalIntentions
                     snapshot={personal.snapshot}
+                    onReload={personal.reload}
+                    onNotify={notify}
                     onSave={async (text, id) => {
                       try {
                         await personal.updateGoal(text, id);

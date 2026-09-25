@@ -25,3 +25,12 @@ Windows desktop / Tauri / React / TypeScript / local-first backend / PostgreSQL 
 - `MANWE_Technical_Architecture_v3_0.docx` / `ARCHITECTURE.md` — technical architecture
 - `MANWE_PoC_Plan_v3_0.docx` / `POC_PLAN.md` — PoC
 - `MANWE_Document_Index_v3_0.docx` — document governance
+
+## Dérogations en vigueur (mode développement)
+
+Ces documents v3.0 restent la référence conceptuelle. Pendant le développement, les décisions de pilotage D-006 et D-010 ([PILOTAGE.md](../manwe-next/docs/pilotage/PILOTAGE.md)) prévalent sur les limitations suivantes :
+
+- « no D4 deep psychodynamics » (POC_PLAN) et « interdit la psychodynamique D4 » (spécification §25.1) : levés. Toutes les profondeurs sont produites ; D4 reste « exploratoire » tant que le Behavioral Anchor Check n'est pas satisfait.
+- Parcimonie (§6.9) et Formulation Gate (§6.8) : appliqués comme règles de classement et de promotion, pas de suppression.
+- Plafonds « deux hypothèses », « une question », « deux directions » : plafonds d'affichage, pas des limites du modèle.
+- Cible « Windows desktop » : cible de la première version personnelle ; une diffusion publique est envisagée (D-004).

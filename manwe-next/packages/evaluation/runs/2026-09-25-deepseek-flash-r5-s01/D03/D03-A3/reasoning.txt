@@ -1,0 +1,626 @@
+Let me analyze this ContextPacket.
+
+Task: revise. Focus on goal, events, hypotheses.
+
+Allowed operations: propose_event, propose_claim, propose_role, propose_hypothesis, revise_hypothesis, propose_question, propose_critique. Note: propose_direction is NOT allowed. So no directions.
+
+The new source: "Résultat de l'action « Une séance minuscule et explicitement non jugée, seul » : J'ai laissé le document ouvert et commencé par deux minutes chaque soir. Pas de boule au ventre, mais je me suis ennuyé et j'ai arrêté au bout de cinq minutes."
+
+So the action outcome: user did the tiny non-judged session, no boule au ventre, but got bored and stopped after five minutes.
+
+This is an important result. The prediction was: immediate inconfort; transitional abandon; equilibrium autonomy. Result: no discomfort, but boredom → stopped. So the prediction of "inconfort au moment de s'asseoir" was contradicted (pas de boule au ventre). Also prediction "à 30 jours écriture autonome de 15-20 min" — not confirmed; abandoned due to boredom.
+
+This is a new event (fait accompli) — the action was done, result reported. Category: explicit_statement (user says what happened). Modality: actual.
+
+Let me build the operations:
+
+1. propose_event e1: the outcome of the action — user left document open, wrote in two-minute sessions each evening, no boule au ventre, but got bored and stopped after five minutes. occurredStart around... The outcome recorded at 2026-09-25T06:15:43.680Z. Hmm, but "chaque soir" — approximate. temporalPrecision: approximate or unknown. validFrom not given. Let's use occurredStart as the recordedAt date? Actually we don't know when the sessions occurred. The annotation was recorded 2026-09-25. Hmm, but the sources have dates 2026-02 for the notes. The action was created at 2026-09-25T06:15:43.678Z and outcome recorded at same. That's the meta timestamp of the packet creation. Hmm, the packet createdAt is 2026-09-25. The events D03-1/2/3 occurred Feb 2026. So the outcome likely occurred before 2026-09-25. Use occurredStart = null, temporalPrecision "unknown". Or use approximate. I'll set null with "unknown".
+
+Actually, the source is only the annotation text. Citations must use the annotation source dcfadecb-... with contentHash 7214195b... spanStart 0, spanEnd 240.
+
+2. propose_claim c1: "L'utilisateur a laissé le document ouvert et commencé par deux minutes chaque soir." explicit_statement, actual.
+
+3. propose_claim c2: "L'utilisateur n'a pas ressenti de boule au ventre lors des séances..." — a negation, actual. explicit_statement.
+
+4. propose_claim c3: "L'utilisateur s'est ennuyé et a arrêté au bout de cinq minutes." explicit_statement, actual.
+
+Maybe combine into fewer claims. Let's do:
+- c1: fact of doing the micro-sessions (explicit_statement, actual)
+- c2: absence of boule au ventre (explicit_statement, actual) — negation preserved
+- c3: ennui + arrêt (explicit_statement, actual)
+- c4: inference: the lever (disconfirming experience) partly worked: the belief "écrire déclenche une angoisse" was disconfirmed, but the expected reward (soulagement de l'angoisse) missing → the activity no longer provides reward → boredom; also possibly writing is only sustained by discomfort relief... Hmm. Let me think mechanic.
+
+Interpretation: The avoidance was explained by anxiety/self-esteem protection (h1 f46e4bb8: boucle d'évitement; c63feed4: protection estime; 415a1743: D4 auto-critique; 2024209a: contextuelle). The result: no anxiety, no boule au ventre → this disconfirms the "inconfort somatique systématique" part of the loop hypothesis (f46e4bb8), but the writing still didn't happen sustainedly → the reason was boredom/ennui, not fear. So new mechanism: the task lacks intrinsic reward / doesn't provide a gain; the alternative source of gain is missing. The "ennui" suggests the writing competes with immediate-gratification activities (scrolling), and the barrier is now one of motivation/reward rather than anxiety.
+
+So revise hypotheses:
+- f46e4bb8 (D2, rank1, plausible, needsReview true, reviewReason "context", revision 2): The loop's somatic component is disconfirmed for the isolated micro-session. But the prediction "inconfort au moment de s'asseoir plus fort en solo" was contradicted. Still, the second prediction (tendance à abandonner) was partially confirmed — abandon occurred, but for boredom not discomfort. So: addEvidence: c2 (absence de boule au ventre) contradicts; c3 (arrêt par ennui) supports the abandon part? Hmm, need to be careful.
+
+Rule 19: hypothesis needsReview with reviewReason "disagreement" can only be revised by proposing alternative, adding counter-evidence, or superseding. Here reviewReason is "context". So normal revise is allowed. expectedRowVersion = 2.
+
+Revision: the critique should be done. Actually rule 17: propose_critique for existing hypothesis, and for D3 hypothesis to become "plausible" needs critique + revise. But here we're revising f46e4bb8 (D2, already plausible). Hmm, "Dès D3, une hypothèse ne devient 'plausible' qu'après une passe critique suivie d'un revise_hypothesis". f46e4bb8 is D2, already plausible.
+
+Let's plan:
+
+Critique k1 on f46e4bb8: findings — simpler_explanation (ennui rather than angoisse explains the current abandon), ignored_evidence (the new result shows no boule au ventre in solo session), overgeneralization maybe.
+
+Then revise r1 on f46e4bb8 with addEvidence: new claim c2 contradicts, c3 supports (arrêt). Status: keep "plausible"? The D2 loop: first part (inconfort somatique à l'ouverture en solo) contradicted. Hmm. But maybe the loop remains with modification: the trigger is now the absence of reward. Actually the loop as stated requires "l'ouverture du document déclenche un inconfort somatique". This is contradicted by c2 (pas de boule au ventre). So counts: 3 supports, now 1 contradiction anchored. Status plausible requires for D2 2 anchored net episodes. Net supports 3-1=2 → still plausible? Plus new contradiction. Let me keep "plausible" but reduce rank? Hmm.
+
+Actually let's think about which hypothesis becomes rank 1. The new evidence suggests a different mechanism: the writing itself yields no reward/ennui; the competing activities (scrolling) offer immediate stimulation. That's more of a "change_reward" or reward-deficit reading. Alternatively the contextual reading (2024209a) gains: the solo session without cadre → no boule au ventre but no traction either; the frame (bibliothèque + Zoé) provided the traction. So the contextual/frame reading (h3, 2024209a) gains support: the written 20 min happened in the library with Zoé; the solo micro-session produced boredom. Hmm — but the contextual reading predicted "l'inconfort à l'ouverture du document serait l'effet de la solitude devant une tâche sans cadre". Actually no, the result shows no inconfort in solo. So the "inconfort = solitude" part is also contradicted? Hmm, the contextual reading's prediction: "reproduire le contexte constaté produirait de l'écriture sans réduction préalable de l'inconfort". Not directly tested.
+
+The D4 reading (415a1743) predicted that if the schema is durable, analogous avoidances appear elsewhere. Not tested. The "je suis nul" self-evaluation → the result shows no verdict "je suis nul" during the micro-session. Hmm.
+
+So what's the best reading? Let me construct a new hypothesis: the avoidance is maintained by a reward/activation deficit rather than anxiety: the writing task provides no immediate reward, and the competing activities (scroll, rangement) provide immediate stimulation; when discomfort is removed (non-judged micro-session), nothing sustains the engagement → boredom → stop. This is a D3 hypothesis with mechanism (optimizes immediate stimulation, protects from... hmm).
+
+But rule 8: a reading on the user (self) requires at least one evidence being a claim where the user expresses himself a coût, ressenti, or contrainte. Here: "je me suis ennuyé" is a ressenti expressed by the user. "Pas de boule au ventre" is a ressenti. "j'ai arrêté au bout de cinq minutes" — a contrainte? "je me suis ennuyé" is a ressenti → OK, so a self-reading is allowed.
+
+Good. So we can propose a D3 hypothesis about self.
+
+Alternative: the ennui is just the transient phase of a low-effort start (two minutes is too short to produce engagement), a simpler explanation. Alternative hypothesis: "l'ennui est un effet transitoire de la séance trop courte, non un défaut de récompense".
+
+Let's plan the operations:
+
+Events:
+- e1: outcome of the action. Title "Résultat de la séance minuscule en solo". Category explicit_statement, modality actual. occurredStart null, temporalPrecision unknown (repeated evening sessions). Context: "Études / retour d'action".
+
+Hmm, maybe better to give occurredStart "2026-09-25..."? No, unknown.
+
+Claims:
+- c1 (explicit_statement, actual): "L'utilisateur a laissé le document ouvert et commencé par deux minutes d'écriture chaque soir." citation source dcfadecb full span.
+- c2 (explicit_statement, actual): "Lors de ces séances seules, l'utilisateur n'a pas ressenti de boule au ventre." (negation preserved)
+- c3 (explicit_statement, actual): "L'utilisateur s'est ennuyé et a arrêté au bout de cinq minutes."
+- c4 (inference, actual): "Le retrait de l'enjeu de jugement (séance minuscule, non jugée) a supprimé l'inconfort mais aussi toute traction : l'engagement n'était pas soutenu par le plaisir ou l'intérêt de la tâche, l'arrêt vient de l'ennui, pas de l'angoisse." Hmm — that's an inference. Category inference, modality actual. OK.
+- c5 (inference, actual): "La prédiction d'inconfort immédiat plus fort en solo (direction choisie) a été démentie par le résultat." Category inference? Actually that's about the direction's prediction. Maybe not needed as a claim; can be used in rationale.
+
+Maybe also a claim about the earlier prediction being disconfirmed. Let's keep it in rationale.
+
+Roles: The event e1 has the user as actor; observer Zoé? No. Actually the original role for event 0f0fa39c: Zoé is observer. Do we need new roles? Maybe not. Rule R1: for each episode, extract roles. The new event: the user is the initiator? Hmm, roles are initiator/recipient/requester/helper/responder/observer. This new event doesn't involve another person. Could propose role self as initiator (of the session)? That's a bit odd. I'll skip roles, or add one for the user as initiator of the micro-sessions. Hmm, "initiator (propose, lance le contact)" — contact implies another person. Let me skip.
+
+Hypotheses:
+
+h1: new D3 hypothesis — "L'arrêt vient d'un déficit de récompense immédiate, non d'une angoisse : quand l'enjeu de jugement est retiré, l'écriture n'offre aucun gain immédiat face à des substituts (défilement, rangement) qui en offrent un ; l'ennui est le signal de ce déficit, et l'évitement se maintient par comparaison de récompenses, pas par peur."
+- depth D3, framework psychodynamique? Or "approche par renforcement / économique". Maybe framework "renforcement / économie comportementale", construct "déficit de récompense immédiate / coût d'activation". Status: draft (D3 new hypothesis → draft). Confidence low. Rank 1? Hmm.
+- mechanism: optimizes "stimulation immédiate et sortie d'une activité sans gain perçu", protects "?" maybe not; defenses; beliefs "écrire ne m'apporte rien de bon, le défilement si"; triggers "séance sans enjeu, absence de stimulation"; soothes "défilement, rangement"; barrier "les substituts sont disponibles et immédiatement gratifiants ; une séance courte sans gain ne concurrence pas"; prediction "une séance identique mais avec un gain immédiat ajouté (défi, chrono, récompense, restitution partagée) tiendrait plus longtemps, alors qu'augmenter la durée seule ne tiendrait pas".
+- subjects: self
+- evidence: c1, c3 supports; c2 supports (absence d'angoisse).
+- alternativeTo: 2024209a? Hmm. Rule 11: dès D3, propose aussi une hypothèse alternative incompatible. If I create h1 (D3) I must also create an alternative. Alternatively I can set alternativeTo to an existing one.
+
+h2: alternative — "L'ennui est l'effet transitoire d'un format trop court : deux à cinq minutes ne permettent pas d'entrer dans la tâche ; l'absence d'angoisse montre que la barrière est levée, et une durée un peu plus longue suffirait."
+- depth D2 or D3? This is more D1/D2 (état/format). Let's make it D3 as alternative with mechanism (optimizes: éviter l'effort d'entrée dans la tâche; barrier: temps d'amorçage supérieur à la durée de la séance). Actually to be alternativeTo h1, it should be incompatible-ish. Let's do D3 draft.
+
+Hmm, but rule 11 also says in D4 framework and construct obligatory. Our h1 D3 needs framework/construct optionally.
+
+Also revise existing hypotheses:
+
+r1: f46e4bb8 (D2 loop, revision 2). Add c2 as contradicts, c1 and c3 as supports (the micro-session is an instance of attempt; arrêt). Status: keep plausible but... Actually the statement includes "l'ouverture du document déclenche un inconfort somatique". Now we have a counter-example: no inconfort in solo micro-session. So maybe revise status? Options: "plausible" with confidence moderate. Net anchored supports 3 (prior) + maybe c1/c3; contradictions 1 (c2). Actually anchored supports count would rise. But the core claim about somatic discomfort is weakened. I could add a finding to the critique.
+
+Alternatively I could supersede f46e4bb8? Hmm — its core loop (substitution activity relieves, writing only accessible with external support) is largely still true: the micro-session was abandoned. Actually the loop as stated: "l'ouverture du document déclenche un inconfort somatique, l'utilisateur bascule vers une activité de substitution qui soulage immédiatement". The result: no discomfort, but the user still stopped (boredom, not substitution). So the angoisse-trigger part is disconfirmed; the "écriture seulement avec étai externe" part remains (micro-sessions in solo didn't result in sustained writing; the only success was with Zoé). So the hypothesis survives, amended: the barrier is not (only) angoisse but the absence of gain.
+
+I'll revise r1: status "plausible", confidence moderate, rank 1 or 2, addEvidence: c1 supports, c2 contradicts, c3 supports.
+
+Hmm, wait: careful about counting. "Pour revise_hypothesis : plausible exige, en épisodes ancrés nets (favorables moins contraires), 1 pour D1, 2 pour D2 et D3". f46e4bb8 is D2 with 3 supports, now +contradiction. Net = 3+? Let's just keep plausible.
+
+But rule 19: f46e4bb8 has needsReview true with reviewReason "context" — that's not "disagreement", so fine.
+
+Also the critique rule 17 asks for propose_critique for a hypothesis already in the packet. Let's do a critique k1 on f46e4bb8 (finding: simpler_explanation — the ennui sans angoisse; and ignored_evidence? we're adding it, hmm). Actually the critique is about weaknesses: the result shows that a solo session without judgment produces no anxiety → the "inconfort somatique" component may be a contextual/situational state rather than a stable trigger. Also "overgeneralization": the D2 loop is built on 3 notes over 15 days, all in the same domain.
+
+Then r1 revises accordingly.
+
+Should I also revise c63feed4 (protection estime de soi, D3, plausible, rank 2, revision 1)? The result partly challenges it: no verdict "je suis nul" during the micro-session; the user's own prediction of "verdict interne" didn't occur. But the D3 hypothesis remains. Add c2 as contradicts? Hmm, c2 is about boule au ventre (somatic), not the judgment verdict. c3 (ennui) — supports? Not clearly. Maybe add c3 as contradicts (the abandonment motive was ennui, not self-judgment). Hmm. Rule: "une prediction démentie l'affaiblit ou appelle une alternative".
+
+The direction "séance minuscule non jugée" was built on f46e4bb8 (beliefs). Prediction: inconfort immediate → contradicted by "pas de boule au ventre". So it disconfirms the belief "écrire déclenche une angoisse". But not necessarily the self-esteem defense.
+
+I think I should revise c63feed4 with addEvidence c2 contradicts (the fear/verdict didn't show up when the judgment was explicitly suspended), keeping status plausible? Hmm, with D3 and now 2 anchored supports + 2 contradicts? c63feed4 already has 1 contradict (4204b60f: easy with Zoé). Adding c2 as contradicts → 2 supports, 2 contradicts → not plausible anymore. Hmm, that might force "draft". Actually the rule for status "contradicted" requires as many counter-evidence as favorable. 2 vs 2 → "contradicted" possible. Hmm, that seems too strong; the revisionCondition says if the user writes without effort elsewhere, the hypothesis should give way.
+
+Hmm. Let me be measured. Maybe revise c63feed4 to draft with c2 as contradicts, or keep plausible with added contradiction. Rule 16 for revise_hypothesis: "plausible" exige en épisodes ancrés nets (favorables moins contraires), 2 pour D2 et D3. c63feed4 supports now: 6bef6501, 7f0a8d62, 9ddbf33c, c42a936b = 4 claims, but "counts" say supportUnits 2, anchoredSupports 2. Anchored supports already 2 with 1 contradict → net 1. Hmm, the packet says status plausible anyway. Adding a contradiction → net 0 → wouldn't be plausible. So set status "draft" for c63feed4. Hmm... but is c2 really contradicting the self-esteem hypothesis? c2 says no boule au ventre in the non-judged solo session. The hypothesis says avoidance protects self-esteem; ne pas écrire maintains the idea of intact capacity; "je suis nul" maintains the cost of trying. The micro-session designed to remove judgment produced no anxiety → suggests anxiety is tied to the judgment frame, which... actually supports the self-esteem reading? Hmm! Interesting: when judgment is explicitly suspended, no boule au ventre → the discomfort IS tied to judgment. That supports the hypothesis that the discomfort comes from the judgment/evaluation stake. So c2 could be a support for c63feed4, not a contradiction!
+
+Wait: c63feed4 says "avoidance protects vulnerable self-esteem... je suis nul". The micro-session with no judgment produced no anxiety → the anxiety is judgment-dependent → supports the evaluation-stake reading. But then, if judgment was removed and there's no anxiety, the hypothesis predicts writing becomes possible; instead the user stopped out of boredom. That's a partial failure: it points to a second barrier (reward), not to the absence of the self-esteem issue.
+
+So I'd add c2 as supports for c63feed4 and c3 as contradicts (arrêt par ennui, sans verdict). Hmm, c3 as contradict? The hypothesis predicts "les séances d'écriture resteront dépendantes d'un soutien externe tant que l'écrit restera un test de valeur". The result: the solo session failed → consistent with the dependence. So c3 supports, actually. Hmm.
+
+OK let me simplify: revise c63feed4 with addEvidence c2 supports (absence d'angoisse quand le jugement est suspendu: l'inconfort est bien indexé sur l'enjeu de jugement) and keep plausible rank 2. Hmm, but wait — the earlier contradiction 4204b60f (facile avec Zoé) remains.
+
+Hmm, but is it plausible that both c63feed4 (self-esteem) and a new reward-deficit hypothesis coexist? Yes, they're not mutually exclusive; but I can mark h1 alternativeTo c63feed4 (mutual alternative about what maintains avoidance: protection de la valeur vs déficit de récompense).
+
+Let's decide rank ordering among readings. Current ranks: f46e4bb8 rank1, c63feed4 rank2, 2024209a rank3, 415a1743 rank null. With new data, I'd say:
+- Rank 1: f46e4bb8 (D2 loop, amended) — still the best anchored description, now with a modification noted.
+- Rank 2: c63feed4 (protection estime) — supported by the specificity of the anxiety to the judgment frame.
+- Rank 3: h1 new reward-deficit reading? Or 2024209a contextual?
+
+Hmm, the contextual reading: "l'écriture dépend d'un étai externe (lieu dédié, présence d'une amie)... l'inconfort serait l'effet de la solitude devant une tâche sans cadre". The result: solo micro-session → no discomfort but no sustain. The "étai externe" part is supported (solo = no sustainable writing; Zoé = 20 min). The "inconfort = solitude" part contradicted (no discomfort in solo). So the contextual reading is partly supported. I think the contextual/frame-gain reading and the reward-deficit reading converge: what matters is the frame that makes writing possible (external scaffolding / gain). Actually the new result strengthens the idea that the barrier is not emotional distress but the absence of a rewarding/pulling frame.
+
+Hmm, maybe I propose a revised version of 2024209a: "l'écriture dépend d'un étai externe ; la séance seule sans cadre produit de l'ennui (pas de l'angoisse) → le facteur actif de l'étai est l'activation/le gain, pas l'apaisement de l'angoisse". That's a revise of 2024209a with addEvidence c2 contradicts (the discomfort is not the effect of solitude, since there was none), c3 supports (solo = pas de traction), c1 supports.
+
+OK. Let's structure the response:
+
+Operations:
+1. e1 propose_event — the outcome.
+2. c1..c4 propose_claim.
+3. k1 propose_critique on f46e4bb8.
+4. r1 revise_hypothesis f46e4bb8.
+5. k2? maybe critique on c63feed4? Not required. Skip, or include one. Rule 17 doesn't require critiques on all.
+6. r2 revise_hypothesis c63feed4.
+7. r3 revise_hypothesis 2024209a.
+8. h1 propose_hypothesis (D3, reward deficit / ennui) — new, draft.
+9. h2 propose_hypothesis (D2 alternative: the ennui is a transient effect of a too-short format) — alternativeTo h1.
+10. q1 propose_question? There's already an open question in the packet (about what's happening when opening the document). We must not repeat it. But now the result answers part of it: no fear... well it says "pas de boule au ventre" but the question was about "peur de mal écrire ou ne pas savoir par où commencer". Hmm, the user reported no boule au ventre and boredom. A new discriminating question: "Quand tu as arrêté au bout de cinq minutes, qu'est-ce qui manquait : quelque chose à faire de ces minutes (un enjeu, un retour, une contrainte), ou l'impression que ce que tu écrivais n'avait aucun intérêt ?" That would discriminate between the reward-deficit hypothesis and the contextual/self-esteem. Hmm, or better: ask whether a séance slightly longer or with a concrete objective holds longer. Let's craft a question that discriminates h1 vs h2 (reward deficit vs too-short format).
+
+Also maybe a question about whether "l'ennui" is a familiar experience in other contexts (to test D4 durability). Hmm, careful — ask only if it discriminates.
+
+Let's write q1: "L'ennui que tu as ressenti, tu le retrouves ailleurs (cours, lectures, autres tâches) ou seulement devant ce document ?" — that discriminates between the reward-deficit specific to the mémoire vs a general trait (D4 hypothesis 415a1743). Hmm, could target h1 and 415a1743.
+
+Actually, more decision-useful: discriminate reward deficit vs. too-short format: "si tu avais tenu dix minutes avec une consigne qui rend le résultat visible (un paragraphe à montrer à quelqu'un, un décompte), le temps passerait-il plus vite ?" Hmm, that's a hypothetical. It's ok as a question but a real discriminating info would be better.
+
+I'll ask: "Ce que tu appelles l'ennui, c'est plutôt 'ça ne me dit rien / aucun intérêt' ou 'je tourne en rond sans savoir quoi dire' ? Et cet ennui apparaît-il aussi ailleurs (lectures, cours) ?" Hmm two questions. Let's keep one question with two options.
+
+Let me instead do: "Quand tu as arrêté au bout de cinq minutes, l'ennui venait de ce que tu écrivais (le contenu te semblait sans intérêt), ou de la séance elle-même (trop courte, rien pour te tenir) ? Et retrouves-tu cet ennui-là ailleurs que devant le mémoire ?" That's a compound question, but acceptable. Better to keep it focused: it discriminates h1 (reward deficit specific to writing) vs h2 (format/engagement ramp-up) and 415a1743 (generalisation D4).
+
+Now dates. The action outcome was recorded at 2026-09-25. But the packet's other notes are Feb 2026. The gap between Feb and Sept... The packet createdAt is 2026-09-25T06:15:43.690Z, so the annotation result is set in Sept 2026? Odd but fine. occurredStart for e1: null, temporalPrecision "approximate"? Hmm. The text says "chaque soir" — repeated. I'll set occurredStart null, occurredEnd null, temporalPrecision "unknown". Fine.
+
+Citations: must be exact. For the new source:
+sourceId "dcfadecb-c06f-4c2a-9f38-eeebb06f4249", contentHash "7214195b8f318918b7b17cd3be22c11b0cacdf5a61cceb4debdcf186075fad93", spanStart 0, spanEnd 240, quote the whole text. The quote string must be exactly text.slice(0,240). Let's check the text length: "Résultat de l’action « Une séance minuscule et explicitement non jugée, seul » : J'ai laissé le document ouvert et commencé par deux minutes chaque soir. Pas de boule au ventre, mais je me suis ennuyé et j'ai arrêté au bout de cinq minutes." Likely 240 chars. I'll copy it verbatim as given.
+
+For sub-spans, I could compute offsets but risky (apostrophes typographiques ’). Safer: use full-source citations for all claims from that source. Rule says "Si tu n'es pas certain des offsets, cite la source entière". Good.
+
+For other sources (existing claims), I reference existing claims by id, so no new citations needed.
+
+Now: the claims c1-c4 all cite the full source (0-240).
+
+Let me now write the hypotheses carefully.
+
+h1 (new, D3): "Ce qui arrête l'écriture n'est pas l'angoisse mais l'absence de gain immédiat : une fois l'enjeu de jugement retiré, la séance ne procure ni intérêt ni stimulation et perd la comparaison avec des substituts immédiatement gratifiants (défilement, rangement) ; l'ennui est le signal de ce déficit, et l'évitement se maintient par arbitrage de récompenses."
+- depth D3, framework "renforcement / économie comportementale", construct "déficit de récompense immédiate / coût d'activation élevé" (lecture non clinique).
+- confidence low, status draft, rank 3? Hmm, rank. Let's rank: f46e4bb8 = 1, c63feed4 = 2, h1 = ... Hmm, I could give h1 rank 3 and 2024209a rank 4 (but rank can be null). Let me set ranks: r1 f46e4bb8 rank 1; c63feed4 rank 2; h1 rank 3? But 2024209a currently rank 3. If I revise 2024209a I should adjust rank. Simplest: give h1 rank null? Rule 15: "pour chaque sujet, classe tes lectures avec rank". All these are self-subject. Multiple hypotheses on self should be ranked. Let me:
+  - f46e4bb8: rank 1
+  - c63feed4: rank 2
+  - h1 (reward deficit): rank 3
+  - 2024209a (contextuel): rank 4 — revise with rank 4? Hmm, but its rank in packet is 3. I can set rank via revise_hypothesis (the payload has rank field). Yes, revise supports rank.
+  - 415a1743 (D4): rank null or 5. Keep null? It has rank null already; leave.
+
+Hmm, but is the reward-deficit reading more central than the self-esteem one? The new evidence: no anxiety when judgment suspended, but stop by boredom. Both readings are viable. The main reading (rank 1) could be: the loop is maintained by the absence of an immediately rewarding frame — which is basically f46e4bb8 amended. I'll keep f46e4bb8 rank 1, as the anchored D2 description of the loop (amended in rationale to note the somatic part is contradicted in the non-judged solo format).
+
+Hmm, but honestly, if I keep f46e4bb8 as rank1 "plausible" while noting that its core trigger is disconfirmed, is that coherent? Its statement mentions "l'ouverture du document déclenche un inconfort somatique". With one contradiction, still plausible per threshold for D2 (net ≥ 2). Counts: anchored supports 3 (prior) + new? c1 (document ouvert chaque soir, 2 min) supports; c3 (arrêt par ennui) supports partially. Contradicts: c2. So net is high. OK, keep plausible, moderate confidence.
+
+But I want to state the revision conditions: if later solo sessions continue without discomfort and without writing, the somatic trigger hypothesis cedes to the reward/context reading.
+
+Alternatively I could supersede f46e4bb8 and propose h1 as the replacement. Hmm. The loop concept is still valid (substitution, external scaffolding). I'll revise rather than supersede.
+
+Let me write the mechanism for h1:
+- optimizes: "obtenir une stimulation immédiate (défilement, rangement) plutôt que de rester dans une activité qui n'en procure aucune"
+- protects: "l'énergie et l'attention, en les engageant là où le retour est immédiat" hmm. Maybe "protects": "la sensation d'avancer, obtenue par des activités terminables"
+- defenses: "bascule vers un substitut gratifiant dès que la séance ne 'donne' rien"
+- beliefs: "écrire ne m'apporte rien sur le moment ; ce qui compte c'est ce qui produit un résultat visible tout de suite"
+- triggers: "séance sans enjeu ni retour, absence de stimulation (document ouvert seul, deux minutes)"
+- soothes: "défilement, rangement, présence d'une amie qui travaille à côté"
+- barrier: "les substituts sont disponibles et gratifiants immédiatement ; allonger la durée seule n'ajoute aucun gain"
+- prediction: "une séance qui ajoute un gain immédiat (défi court, résultat visible, retour d'une personne) tiendra plus longtemps, alors qu'augmenter la durée sans gain ne tiendra pas"
+
+Evidence: c1 supports, c2 supports (absence d'angoisse: le blocage n'est pas l'angoisse), c3 supports (ennui + arrêt), 4204b60f supports (facile avec Zoé = gain de co-présence). And maybe contradicts: 7f0a8d62? "je suis nul" — that's a self-judgment, which invites the self-esteem reading → could be a contradict. Yes, "Je me dis que je suis nul" contradicts the reward-only reading (there is a self-judgment cost). Good, include as contradicts.
+
+h2 (alternative, D2 or D3): "L'arrêt tient au format de la séance, pas à un défaut de récompense : deux à cinq minutes ne suffisent pas à entrer dans la tâche, et l'ennui est l'effet transitoire d'un temps d'amorçage trop court ; l'absence d'inconfort montre que la barrière est levée et qu'une séance un peu plus longue produirait de l'écriture."
+- depth D2 (observable, format), framework null, construct null. AlternativeTo: proposalKey h1. status draft, confidence low, rank 4? Hmm. Let me rank h2 rank 4 and 2024209a rank 5? Hmm, that gets long. Maybe rank h2 null (allowed).
+
+Actually let's set: h1 rank 3, 2024209a rank 4 (revised), h2 rank null. Or give h2 rank 4 and 2024209a rank 5. Rank is an integer, 1 = main. I'll do: f46e4bb8 rank1, c63feed4 rank2, h1 rank3, 2024209a rank4, h2 rank5? That's a lot of readings but they're all self. Rule 15 says propose 2 or 3 strong readings per subject rather than a long list. The existing packet already has 4 hypotheses on self. Adding 2 more → 6. Hmm. Maybe I should only add 1 new hypothesis (h1) and use 2024209a revised as its alternative? But rule 11: "propose aussi une hypothèse ALTERNATIVE incompatible... Relie-la par alternativeTo, dans la même réponse si elle n'existe pas déjà." Since h1 is a new D3 hypothesis, an alternative must exist. I can point alternativeTo to an existing hypothesis (c63feed4 or 2024209a) — rule says "Relie-la par alternativeTo, dans la même réponse si elle n'existe pas déjà". So I can link h1.alternativeTo = 2024209a (contextual, existing) — that's a genuine concurrent mechanism (the frame/context vs the reward economy)? Hmm, they're somewhat similar (both about what sustains). A better incompatible alternative: the self-esteem/protection reading c63feed4: "if the avoidance were about protecting self-esteem from judgment, removing judgment should have freed writing; instead the user stopped for lack of interest → the tension is not about value". So h1.alternativeTo = c63feed4. That's a genuine alternative. And I can also revise c63feed4 with the new evidence.
+
+But then h1 vs c63feed4: which one is rank 1? Hmm.
+
+Alternatively, avoid creating h1 and instead revise existing ones. But the new result genuinely introduces a new mechanism (ennui/reward) not captured. I think creating one new D3 hypothesis is right. And for its incompatible alternative, I can create h2 (format/amorçage, simpler state-level explanation) — that's cleaner and distinct ("alternative_not_distinct" risk avoided). Or use existing 2024209a. Hmm, 2024209a is the contextual reading: "l'écriture dépend d'un étai externe (lieu dédié, présence d'une amie)... l'inconfort serait l'effet de la solitude". h1 says the gain, not the discomfort, is what matters. 2024209a says the frame is what matters. These are... related but distinct (frame vs reward). They could be seen as nearly the same. Better alternative: c63feed4 (self-esteem protection) — clearly incompatible in the explanation of the abandonment (ennui vs protection). Hmm, but they're not strictly speaking explaining the same thing... c63feed4 explains the avoidance of the writing; h1 too. OK, they are alternatives.
+
+But careful: rule 11 says the alternative should be a "vrai mécanisme concurrent" — c63feed4 qualifies. However, since c63feed4 gets partly supported (no anxiety when judgment suspended = judgment-indexed discomfort), it's messy to call h1's alternative the self-esteem reading while also noting it's supported.
+
+Hmm. Let me reconsider: maybe the cleanest is:
+- Revise f46e4bb8 (D2) with the new evidence, noting the somatic trigger disconfirmed, keeping rank 1 plausible.
+- Revise c63feed4 (D3) with new evidence: c2 supports (discomfort is judgment-indexed), c3 contradicts (abandon by boredom, no verdict). Rank 2, plausible.
+- Revise 2024209a (D3) with c2 contradicts, c1/c3 supports, rank 3.
+- Propose h1 (D3, reward deficit) rank 4? and h2 as its alternative (format transient) rank 5? That's a lot.
+
+Hmm. Alternatively, propose h1 as the new reading and make 2024209a its alternative (existing), avoiding h2. Then the "ennui" reading ranks... The new data most directly supports a reading like "ce n'est pas l'angoisse qui bloque mais l'absence de traction". I'd give h1 a decent rank, maybe 2, pushing c63feed4 to 3 and 2024209a to 4? Hmm.
+
+Let me think about what's actually most plausible psychologically. The user: writes 20 min easily with a friend at the library; scrolls at night instead of writing; "je suis nul"; boule au ventre opening the document. The micro-session: no boule au ventre (the explicit non-judgment instruction worked), but bored, stopped at 5 min.
+
+So the "angoisse" was likely tied to the judgment frame; when the frame removes judgment, no anxiety. But then why stop? Boredom: the task lacks intrinsic reward, or 2-5 minutes is too short for engagement, or the task requires a "pull" (external scaffolding) to be engaging.
+
+A key point: writing alone with no reward and no audience = no motive. The reward economy reading (h1) and the contextual reading (2024209a) are similar; the self-esteem reading (c63feed4) now predicts anxiety in judgment contexts (verified in the naturalistic contexts) but is silent on the boredom.
+
+I will:
+- rank 1: f46e4bb8 (D2 loop amended) — most anchored description of what happens.
+- rank 2: h1 (reward deficit / absence de traction en solo) — new, D3.
+- rank 3: c63feed4 (self-esteem, judgment-indexed).
+- rank 4: 2024209a (contextual).
+- 415a1743 rank null.
+
+And h2 as alternative to h1 with rank null. Hmm, but if h1 rank 2 and h2 is its alternative... I need h2 to be distinct. h2: "l'ennui est un effet de format (2-5 min trop court pour un temps d'amorçage), l'absence d'inconfort montre que la barrière est levée". That's distinct and simpler. OK, include h2 with rank null and alternativeTo h1. Hmm, but then I could instead say 2024209a is the alternative to h1... The rule says the alternative must be in the response if not existing. Both work. I'll create h2 as a low-cost alternative? Actually creating too many hypotheses is bad. Let me instead set h1.alternativeTo = 2024209a (existing contextual reading, genuinely concurrent: étai externe vs récompense immédiate). Hmm, they might be judged "alternative not distinct". Hmm.
+
+Hmm, honestly the cleanest distinct alternative to "reward deficit" is "format/amorçage transient" (h2). And 2024209a could stay its own reading, revised. But rule 15 says 2-3 strong readings per subject max. We already have 4 existing + would add 2. Too many.
+
+Decision: Add ONE new hypothesis h1 (D3, reward/traction). Make its alternative an existing hypothesis: 2024209a (contextuel/étai externe) — no wait, I judge them too close ("the frame provides the reward"). Alternatively make the alternative c63feed4 (self-esteem) — genuinely different mechanism (protection de la valeur vs arbitrage de récompense), and both explain why the user stops. Yes, I'll use c63feed4 as the alternative for h1, and note in h1's rationale why it wins over it (or not).
+
+Hmm, but they might not be strictly mutually exclusive. Rule says "hypothèse ALTERNATIVE incompatible, un vrai mécanisme concurrent". Reward economy vs self-protection: these are concurrent explanations of the same behavior. Fine.
+
+Hmm, but rank: if h1 is rank 2 and c63feed4 is rank 3 that tells which wins.
+
+Now, do I revise c63feed4 at all? Adding c2 as supports and c3 as contradicts would change the counts. Let me consider: c2 "no boule au ventre in non-judged session" — does it support "l'évitement protège une estime de soi vulnérable"? It supports that the discomfort is indexed on the judgment frame → yes, supports. c3 "ennui, arrêt au bout de 5 min" — the hypothesis predicts dependency on external support; the solo failure is consistent → supports weakly. Hmm, but it also shows that when judgment is removed, writing doesn't happen → somewhat contradicts "l'essai lui-même est le danger" (the danger was removed and still no writing). Hmm, that's an argument that something else than fear blocks. I'd add c3 as contradicts for c63feed4. So it gains 1 support and 1 contradict → net stays similar. Status: plausible (net 2). Fine, keep plausible. But its resolution: on the D3 rule, plausible requires 2 anchored net episodes and an active alternative and a critique pass. It's already plausible; revisions... "Après un accord de l'utilisateur, aucune promotion sans nouvel épisode" — we're not promoting.
+
+Hmm, but rule 16 says with revise_hypothesis, "plausible" requires 2 net anchored episodes for D3. c63feed4 supports: 6bef6501 (rangé au lieu d'écrire), 7f0a8d62 (je suis nul), 9ddbf33c (boule au ventre), c42a936b (scrollé) → 4 claims but counted as 2 support units, 1 contradict unit. Net 1? Hmm, the packet's counting: supportUnits 2, contradictUnits 1. So net = 1, which is < 2 → wouldn't sustain plausible. But it's already plausible in the packet. If I add c2 (supports) and c3 (contradicts), net remains 1ish. Hmm. If I only add c2 as supports, net might become 2 → keeps plausible. Hmm.
+
+I think this counting is "episodes ancrés nets (favorables moins contraires)" per episode. 6bef6501 and c42a936b and 9ddbf33c might be one episode each... It's fuzzy. Let me be prudent: consider the new outcome as ONE new episode: the micro-session. For c63feed4, this episode is mixed: supports (angoisse indexée sur le jugement) and contradicts (arrêt sans verdict). A mixed episode is not "net". So net episodes unchanged → keep "plausible"? Hmm, but with a mixed new episode maybe status stays plausible and I note both stances. I'll add c2 as supports and c3 as contradicts to c63feed4, keep plausible, rank 3 (demoting from 2). Hmm, but demoting rank while the new episode is mixed... The h1 reading I rank 2.
+
+Hmm, actually, is h1 really stronger than c63feed4? The evidence "pas de boule au ventre" + "ennui" — the ennui is the new phenomenon. The hypothesis that explains the whole trajectory (why scroll at night, why easy with Zoé, why bored in a non-judged micro-session) with one mechanism: writing provides no immediate reward, so it loses to substitutes; the co-presence provides a reward (social, structure). The self-esteem reading explains the "je suis nul" and the "boule au ventre" but not the boredom, and struggles with the absence of anxiety when judgment is suspended... actually it's compatible with that (judgment suspended → no anxiety). But then why stop? The self-esteem reading predicts that lifting judgment enables writing. It didn't. So c63feed4's prediction is partially disconfirmed. Good: h1 rank 2 vs c63feed4 rank 3 is defensible. Hmm, or keep c63feed4 rank 2? Hmm.
+
+Actually, let me reconsider once more: rule 16 for revise: plausible requires 2 net anchored episodes for D3. If c63feed4's prediction is disconfirmed by the new episode (mixed/negative), maybe c63feed4 should go to "draft"? Its revisionConditions say: "Si l'utilisateur rapporte avoir écrit sans effort et sans jugement dans d'autres contextes, ou si l'inconfort apparaît hors du champ de la performance, la lecture de protection de l'estime de soi devra céder la place à la lecture contextuelle concurrente." The user wrote without much discomfort (pas de boule au ventre) in a non-judged context — but not "sans effort"... they stopped. Hmm, partially met: he reported writing without discomfort in a non-judged context. That condition suggests ceding to the contextual reading. Hmm.
+
+Decision: revise c63feed4 → keep "plausible" but add c2 supports and c3 contradicts, rank 3, and say in rationale that the mixed new episode weakens it without contradicting it. Hmm. Alternatively set it to "draft" with rank 3. Which is more rigorous? The counts: supports anchored: 6bef6501, 7f0a8d62, 9ddbf33c, c42a936b (4 claims, but they may be few episodes) + c2. Contradicts: 4204b60f + c3. If supports 4-5 vs contradicts 2, net ≥ 2 → plausible. Hmm, by claim count it's fine. The packet's unit counting is different. I'll keep plausible to avoid over-downgrading, and mention that the new episode is mixed.
+
+Hmm, wait. Let me reconsider whether c2 really supports c63feed4. c2: "pas de boule au ventre" during a session explicitly non jugée. c63feed4's mechanism: triggers "ouverture du document, solitude devant la tâche"; beliefs "ce que j'écrirais révélerait ma nullité". The absence of anxiety when judgment is explicitly removed supports the judgment-indexed nature of the anxiety. Yes, supports. OK.
+
+Now, revise 2024209a (contextual, D3, low, draft, rank 3, alternativeTo c63feed4, revision 1). Add: c1 supports (document ouvert chaque soir en solo, sans cadre → pas d'écriture tenue), c3 supports (ennui hors cadre), c2 contradicts (l'inconfort n'est pas l'effet de la solitude: aucune boule au ventre en solo). Status: keep draft (it's D3 draft; revising to plausible requires 2 net anchored episodes + active alternative + critique pass). Hmm, 2024209a's counts: supports 1, contradicts 1 (packet says counts supportUnits 1... wait it lists 3 supports and 1 contradict but counts say 1/1). Hmm, the counts say supportUnits 1, contradictedUnits 1, anchoredSupports 1. So net 0 → draft. Adding c1/c3 supports and c2 contradicts → net maybe 1-2. Keep "draft". Fine.
+
+Rank: 2024209a rank 4.
+
+415a1743 (D4, rank null, draft): should I touch it? The new episode gives a slight support for D4 (avoidance pattern in another context? no, same domain). Keep untouched. Maybe no operation.
+
+Now, the critique k1 on f46e4bb8: findings:
+- simpler_explanation: "le résultat ne montre aucune angoisse à l'ouverture du document quand le jugement est suspendu ; l'évitement du soir (défilement, rangement) peut s'expliquer par la préférence pour une activité immédiatement stimulante, sans invoquer l'inconfort somatique" — claims: c2, c3.
+- overgeneralization: "la boucle est construite sur trois notes, un seul domaine, et la composante somatique y est présentée comme un déclencheur stable alors qu'un contre-exemple existe" — claims: c2.
+- ignored_evidence? We're adding it, so maybe not "ignored". Could use "other": the hypothesis was marked needsReview context at revision 8 — note the revision predates the result.
+
+Hmm, "ignored_evidence" means evidence present in the packet that the hypothesis ignored. Maybe: 4204b60f (écriture facile avec Zoé) is listed as supports, but the ease might be social reward rather than co-presence; hmm, that's more of an alternative.
+
+I'll include two findings: simpler_explanation and overgeneralization.
+
+Then r1 revise f46e4bb8:
+- expectedRowVersion: 2 (the "revision" field = 2).
+- status: plausible, confidence moderate, rank 1.
+- addEvidence: c2 contradicts; c1 supports; c3 supports.
+
+Hmm, careful: if c2 contradicts the loop's somatic component, and the loop is rank 1... I'll explain in rationale that the loop holds for the substitution/scaffolding part and that the trigger is amended (ni angoisse systématique : l'ennui suffit à faire basculer). OK.
+
+Should f46e4bb8's statement be changed? revise_hypothesis payload has no statement field. Only status/confidence/rank/evidence. OK.
+
+Now the events. Also, rule 4: "Un fait accompli donne un propose_event ET un propose_claim qui porte sa provenance."
+
+Event e1: title "Résultat de la séance minuscule en solo", text describing it, category explicit_statement, occurredStart null, occurredEnd null, temporalPrecision "approximate"? Hmm, the sessions occurred over multiple evenings; unknown dates. Use "unknown". Context: "Études / retour d'action (annotation de l'utilisateur)". Citations: the full source.
+
+Roles: For e1, the user is the initiator of the micro-sessions? Roles listed: initiator/recipient/requester/helper/responder/observer. These are interpersonal. For a solo session, maybe no roles. I'll skip roles. Hmm, but rule R1 says "Pour chaque épisode, extrais les rôles tenus". Since it's solo, no interpersonal role. Skip.
+
+Now clarifications: [].
+
+Question q1: targets h1 and 415a1743? Or h1 and h2. Let's target h1 (new) and 2024209a? Hmm. The discrimination: is the ennui specific to the mémoire/writing (reward deficit tied to this task) or general (D4 trait) or a format effect. Let's target: h1 (proposalKey), 2024209a, 415a1743? Rule: question targets are refs of hypotheses. I'll target {proposalKey: "h1"} and {kind: "hypothesis", id: "415a1743-..."} — hmm, 415a1743 is the D4 generalization. The question "retrouves-tu cet ennui ailleurs que devant le mémoire ?" discriminates h1 (task-specific reward deficit) from 415a1743 (generalized trait). Good.
+
+Hmm, but maybe better to discriminate h1 vs h2 (format). Let me craft a question with both aspects: "Ce que tu as ressenti comme de l'ennui : est-ce que le contenu ne t'intéressait pas (rien ne te venait, ça ne te disait rien), ou est-ce que tu aurais pu continuer si la séance avait duré plus longtemps avec une consigne plus engageante ? Et cet ennui apparaît-il seulement devant le mémoire ?"
+
+That's compound. Maybe split into two questions? q1 and q2. Only ask if it discriminates. q1: "Ce que tu as ressenti comme de l'ennui était plutôt 'ça ne me dit rien / aucun intérêt' ou 'je n'ai pas eu le temps d'entrer dedans' ?" targets h1, h2. Hmm, but h2 isn't created in this design.
+
+Let me reconsider whether to create h2. If I create h1 without a same-response alternative, rule 11 says: "propose aussi une hypothèse ALTERNATIVE incompatible... Relie-la par alternativeTo, dans la même réponse si elle n'existe pas déjà." This means: if the alternative doesn't already exist in the packet, propose it in the same response. So I can point to an existing hypothesis (c63feed4) — it exists already. That satisfies the rule. Good, no h2 needed. But then h1's alternative is c63feed4, and h1 must be rank better than... whatever.
+
+Hmm, but is c63feed4 truly "incompatible" with h1? Both can be true simultaneously (self-esteem threat AND reward deficit). Rule 11 says "un vrai mécanisme concurrent". I think it's acceptable: they compete for explaining the abandonment (protection de valeur vs arbitrage de récompense). I'll make h1 rank 2 and c63feed4 rank 3 to indicate h1 wins.
+
+Hmm, but wait: if I create h1 as a new D3 hypothesis (status draft), and its alternative is an existing plausible hypothesis (c63feed4), and I rank h1 above c63feed4... A new draft ranked 2 while an existing plausible is rank 3. That's fine.
+
+Alternatively, create h2 (format/amorçage) too, as the simpler competing mechanism, and rank it 4. I think a third reading is justified because the "boredom" has two natural explanations. But rule 15: "Propose 2 ou 3 lectures fortes par sujet plutôt qu'une longue liste." We already have 4 on self. Adding 2 → 6. Hmm. I'll add just one (h1) with alternativeTo = a new h2? Ugh.
+
+Let me decide: add h1 (reward deficit) and h2 (format trop court / temps d'amorçage, D2, simpler, status draft, rank null, alternativeTo h1). Hmm, that's 6 readings total for self. But the packet already has 4 — not my doing. Adding 2 relevant ones... Actually, I could fold: make h2's mechanism the "barrier" alternative. Hmm.
+
+I'll go with just h1, and its alternative c63feed4... but hmm, the rule states the alternative must be a genuine competing mechanism and "jamais une simple négation". c63feed4 is genuine. OK. But there's a subtlety: if I use an existing hypothesis as the alternative, and that hypothesis is what I rank 3 while h1 is rank 2 — that's coherent.
+
+Hmm, but a cleaner approach: since 2024209a (contextual) is quite close to h1 in spirit, maybe h1 isn't needed at all — I could just revise 2024209a to incorporate the ennui/gain. Hmm! That's attractive: 2024209a says the writing depends on an external scaffold; the new data refines: solo = no discomfort but no traction/ennui; the scaffold provides activation/reward, not soothing. Then revise 2024209a with evidence c1/c3 supports, c2 contradicts (no discomfort without scaffold). And no new hypothesis needed. But then the "reward deficit" mechanism isn't explicitly proposed as a reading... I can put it in 2024209a's mechanism via revise? revise_hypothesis doesn't allow changing mechanism/statement. Hmm.
+
+OK, create h1. Final structure:
+
+Operations list:
+1. e1 propose_event (outcome)
+2. c1 propose_claim (a laissé le document ouvert, deux minutes chaque soir) — explicit_statement/actual
+3. c2 propose_claim (pas de boule au ventre) — explicit_statement/actual
+4. c3 propose_claim (ennui, arrêt à cinq minutes) — explicit_statement/actual
+5. c4 propose_claim (inference: l'absence d'angoisse quand le jugement est suspendu + l'arrêt par ennui indiquent que ce qui manque est un gain immédiat, pas un apaisement) — inference/actual
+6. k1 propose_critique on f46e4bb8
+7. r1 revise f46e4bb8
+8. r2 revise c63feed4
+9. r3 revise 2024209a
+10. h1 propose_hypothesis (reward deficit, D3, draft, rank 3)
+11. q1 propose_question
+
+Hmm, ranks: f46e4bb8 1, c63feed4 2 or 3, h1 2 or 3. Let me set: f46e4bb8 rank 1; h1 rank 2; c63feed4 rank 3; 2024209a rank 4.
+
+Hmm, but r2 revises c63feed4 while placing h1 (its alternative) above it. Rationale must justify. Fine.
+
+Hmm, hold on. Let me reconsider whether h1 should be rank 2 above c63feed4. The evidence for h1: ennui, absence of anxiety, easy with Zoé. Evidence against: "je suis nul" (self-judgment), the boule au ventre in naturalistic contexts (which the self-esteem reading explains well: judgment frame present → anxiety). Hmm. Honestly, both explain different parts. h1 explains the whole pattern? "Je suis nul" could be an effect of the same self-evaluation... h1's mechanism: what matters is the immediate reward. "Je suis nul" would be a post-hoc reaction to having avoided (a cost), not a driver.
+
+I think ranking h1 at 2 and c63feed4 at 3 is defensible given the new evidence directly tests c63feed4's prediction and it failed. Alternatively keep c63feed4 at 2 and h1 at 3. Hmm. The new result: the direction was designed as a disconfirming experience for the "beliefs" of f46e4bb8. The prediction of "inconfort immédiat" was disconfirmed; the prediction of abandon was confirmed but with a different motive (boredom). Which hypothesis does the new episode most support? A reading where the motive for the session and the writing is external (frame, reward, company). The self-esteem reading predicted that removing judgment would permit writing — it did not. So c63feed4 takes a hit. I'll put h1 at rank 2 and demote c63feed4 to rank 3. Hmm, but is that too aggressive given the new episode is mixed and c63feed4 remains plausible? Ranking is about which reading is primary, so it's fine.
+
+Hmm, hmm. Actually, wait. Let me reconsider: maybe the most defensible rank 1 remains f46e4bb8, rank 2 h1, rank 3 c63feed4, rank 4 2024209a. Yes.
+
+Now, evidence referencing: { "claim": { "kind": "claim", "id": "..." } } or { "proposalKey": "c1" }.
+
+Let me now write out everything.
+
+Citations for e1 and c1-c4: all use the full source dcfadecb: spanStart 0, spanEnd 240, quote = full text.
+
+Let me carefully copy the text:
+"Résultat de l’action « Une séance minuscule et explicitement non jugée, seul » : J'ai laissé le document ouvert et commencé par deux minutes chaque soir. Pas de boule au ventre, mais je me suis ennuyé et j'ai arrêté au bout de cinq minutes."
+
+Yes, use exactly.
+
+Now, event payload:
+{
+ "title": "Séance minuscule en solo : deux minutes, sans angoisse, arrêt par ennui",
+ "text": "Retour d'action : l'utilisateur a laissé le document ouvert et écrit deux minutes chaque soir ; il n'a pas eu de boule au ventre mais s'est ennuyé et a arrêté au bout de cinq minutes.",
+ "category": "explicit_statement",
+ "occurredStart": null,
+ "occurredEnd": null,
+ "temporalPrecision": "unknown",
+ "context": "Retour d'action sur la direction « Une séance minuscule et explicitement non jugée, seul »",
+ "citations": [full]
+}
+
+Claims:
+
+c1: text "L'utilisateur a laissé le document ouvert et a écrit deux minutes chaque soir." category explicit_statement, modality actual. validFrom null, validTo null. citations full.
+
+c2: text "Lors de ces séances seules, l'utilisateur n'a pas ressenti la boule au ventre qu'il associe à l'ouverture du document." explicit_statement actual. Hmm, careful: he said "Pas de boule au ventre". The claim: "L'utilisateur n'a pas eu de boule au ventre pendant ces séances." Good.
+
+c3: text "L'utilisateur s'est ennuyé pendant la séance et a arrêté au bout de cinq minutes." explicit_statement actual.
+
+c4: inference: "L'inconfort à l'ouverture du document dépend du cadre de jugement : supprimé (séance non jugée), il disparaît, mais l'écriture ne se poursuit pas pour autant — l'arrêt vient de l'absence d'intérêt immédiat, non de l'angoisse." category inference, modality actual.
+
+Hmm, split c4 into two? Maybe:
+c4: "L'angoisse ressentie à l'ouverture du document est indexée sur l'enjeu de jugement : sans jugement, elle ne se manifeste pas." (inference, actual)
+c5: "Ce qui manque pour écrire seul n'est pas un apaisement de l'angoisse mais une source d'intérêt ou de stimulation immédiate : sans elle, la séance s'arrête par ennui." (inference, actual)
+
+OK, five claims. Fine.
+
+Now evidence for h1: {proposalKey c4} supports, {proposalKey c5} supports, {proposalKey c3} supports, {claim 4204b60f} supports, {claim 7f0a8d62} contradicts.
+
+Careful: c4 says the anxiety is judgment-indexed — that supports c63feed4 more than h1. Hmm. For h1, the supporting evidence is c5 (absence of immediate interest → stop) and c3 (ennui) and c1 (solo sessions not sustained) and 4204b60f (easy with Zoé → the presence gives a gain). Contradicts: 7f0a8d62 ("je suis nul" → self-judgment exists). And c2 (no boule au ventre) supports h1 in that the blockage isn't fear. Hmm, c2 is neutral-ish but supports the "not anxiety" part. I'll include c2 as supports with a note? Let me include c1, c2, c3, c5 as supports and 7f0a8d62 as contradicts. That's fine and honest.
+
+For c63feed4 (r2), addEvidence: {proposalKey c4} supports, {proposalKey c2} supports (same thing?), {proposalKey c5} contradicts, {proposalKey c3} contradicts.
+
+Hmm, c2 and c4 overlapping. Let me use only c4 as supports for c63feed4 and c5 as contradicts. Keep it clean:
+
+r2 addEvidence: [{claim c4, supports}, {claim c5, contradicts}].
+
+r3 (2024209a) addEvidence: [{c1 supports}, {c3 supports}, {c2 contradicts}].
+
+r1 (f46e4bb8) addEvidence: [{c2 contradicts}, {c3 supports}, {c1 supports}].
+
+Hmm, c3 as supports for f46e4bb8: the loop says the user switches to a substitution activity that immediately relieves; here the user stopped because of boredom — that's not exactly substitution, but the loop's "abandon" is confirmed. Also the loop says writing is only accessible with external scaffolding (Zoé) — the solo attempts didn't sustain writing → supports. I'd mark c1 supports (solo sessions not sustained) and c3 supports (abandon), c2 contradicts (no somatic trigger).
+
+Now the critique k1 findings:
+- simpler_explanation: detail "Le résultat fournit une explication plus simple de l'arrêt : une séance sans jugement ne provoque aucune angoisse et s'arrête par ennui. La bascule vers un substitut n'a pas besoin d'un inconfort somatique pour s'expliquer.", claims: [c2, c3].
+- overgeneralization: detail "La boucle est inférée de trois notes d'un même domaine sur quinze jours, et sa composante « inconfort somatique au déclencheur » est présentée comme stable alors qu'un contre-exemple (séance non jugée, aucune boule au ventre) est désormais disponible.", claims: [c2].
+- Maybe ignored_evidence: hmm, does f46e4bb8 ignore anything? It lists 4204b60f as supports, and 6bef6501 etc. Its statement says "l'écriture ne redevient accessible que lorsqu'un étai externe est en place" — supported. I think two findings suffice.
+
+Now the question q1:
+question: "L'ennui de ces cinq minutes : est-ce que rien ne te venait / le contenu ne t'intéressait pas, ou est-ce que tu aurais continué si la séance avait duré plus longtemps avec une consigne plus prenante ? Et retrouves-tu cet ennui devant d'autres tâches (cours, lectures) ou seulement devant le mémoire ?"
+
+Hmm, compound again. Let me split into two questions? q1 targeting h1 vs h2... but h2 doesn't exist. Target h1 and 415a1743 (generalization question). Let's write:
+
+q1: "Cet ennui, tu le retrouves seulement devant le mémoire ou aussi devant d'autres tâches longues (cours, lectures, autres écrits) ?"
+targets: [{proposalKey: "h1"}, {kind: hypothesis, id: 415a1743...}]
+discriminatingInfo: "Départage un défaut de récompense propre à l'écrit du mémoire (h1) d'une organisation plus générale (415a1743, D4) ou d'un simple effet de format."
+whyNow: "Le retour d'action introduit la seule observation nouvelle (ennui, pas d'angoisse) et rien dans le paquet ne dit si l'ennui déborde du mémoire."
+
+Hmm, but does the answer discriminate? Yes.
+
+Maybe also a second question about whether the difficulty is "quoi écrire" vs "aucun intérêt"? The existing open question already asks "peur de mal écrire / jugé ou ne pas savoir par où commencer". Don't repeat. Note: the user answered partially: no fear (no boule au ventre). Hmm, the existing question's discrimination is partially resolved. I shouldn't re-ask it.
+
+Should I mark the existing question? No operation for that.
+
+Now, summary: short.
+
+Let me double check rule 8 for self-readings (h1 D3 on self): needs at least one evidence being a claim where the user expresses a coût, ressenti, or contrainte. c3 (ennui = ressenti) and c5. Yes. Good.
+
+Rule about D4: 415a1743 untouched — no new operation. Hmm, should I add the new episode as evidence to 415a1743? The new episode is in the same domain (mémoire) so it doesn't support generalization; and it slightly contradicts? "l'évitement se produit dans le mémoire" — hmm. I could add c3 as supports? The D4 reading is about self-evaluation severity; the new episode shows no self-verdict. Adding c3 as contradicts might be fair. But the rules warn not to over-operate. Hmm. Actually it might be valuable: "l'utilisateur rapporte ne pas s'être jugé nul lors de la séance non jugée" → contradicts the D4 claim of durable severe self-evaluation? Weak. Hmm. I'll leave 415a1743 untouched to avoid over-downgrading without solid ground. Hmm, but it is in the focus list. The focus lists hypotheses f46e4bb8, 2024209a, 415a1743, c63feed4. Hmm, the focus includes 415a1743. Maybe I should address it minimally... The task is "revise". Focus means these are the objects of attention. I could note in the summary that 415a1743 is left unchanged (no evidence in either direction). Or add critique? Hmm.
+
+Maybe add the new episode as a contradict to 415a1743? The D4 statement: "l'utilisateur s'auto-évalue sévèrement et son rapport à la production écrite passe par un test de valeur personnelle". The new observation: during an explicitly non-judged session, no discomfort, no self-condemnation reported → doesn't contradict the "test de valeur" claim (the frame removed the test), it contradicts "l'auto-évaluation sévère est le moteur" only weakly. I'd rather leave it. Hmm. But being in the focus, maybe add evidence {c4 supports}? c4: the anxiety is indexed on the judgment frame → supports the "test of personal value" idea! Yes: the D4 hypothesis claims the relation to writing passes through a test of personal value; c4 (anxiety appears only with judgment frame) supports that. Good — add c4 as supports to 415a1743 via r4. That's a positive, honest revision. Keep status draft (D4 requires 3 net episodes over 30 days; still not met), confidence low, rank null.
+
+OK so r4 revise 415a1743 with addEvidence c4 supports.
+
+Hmm, expectedRowVersion for 415a1743: revision 1.
+
+Wait — is revising with only evidence addition and same status OK? Yes, revise_hypothesis with status equal to current is fine (the payload requires status and confidence). It's draft/low already.
+
+Now check rule 19 for each revised hypothesis: needsReview true with reason "disagreement" only applies to f46e4bb8? Let's check: f46e4bb8 needsReview true, reviewReason "context". Not "disagreement". OK, safe.
+
+Now let me also double check r1's expectedRowVersion: f46e4bb8 "revision": 2. Yes, "revision": 2 and updatedAt matches the annotation time.
+
+c63feed4 revision 1; 2024209a revision 1; 415a1743 revision 1.
+
+Now, h1 details:
+
+statement: "Ce qui arrête l'écriture n'est pas l'angoisse mais l'absence de gain immédiat : quand l'enjeu de jugement est retiré, la séance ne procure ni intérêt ni stimulation, et elle perd la comparaison avec des substituts immédiatement gratifiants (défilement, rangement) ; l'ennui est le signal de ce déficit, et ce que la co-présence de Zoé apporte relève de cette même économie de récompense."
+
+depth D3. framework "renforcement / économie comportementale (lecture non clinique)". construct "déficit de récompense immédiate / coût d'activation". confidence low. status draft. rank 2. mechanism as above. subjects [{self:true}]. evidence: c1 supports, c2 supports, c3 supports, c5 supports, 4204b60f supports, 7f0a8d62 contradicts. Hmm, that's a lot; fine. limits: "Un seul retour d'action, une consigne très courte ; rien ne dit si l'ennui vient de la tâche, du format ou d'un état du soir." revisionConditions: "Si une séance avec un gain immédiat ajouté (retour d'une personne, objectif visible, défi court) tient nettement plus longtemps, la lecture se renforce ; si l'ennui persiste identique malgré un gain ajouté, elle cède." alternativeTo: {kind hypothesis, id c63feed4}.
+
+Hmm — should alternativeTo be c63feed4 or should I create h2? I'll go with c63feed4. Then in c63feed4's rationale, mention h1 as the competitor.
+
+Hmm, one concern: c63feed4 will have has alternativeTo = 2024209a already (from packet). A hypothesis can be the alternative of two? Probably fine.
+
+Now ranks: f46e4bb8 rank 1 (r1 payload rank 1), h1 rank 2, c63feed4 rank 3 (r2 payload rank 3), 2024209a rank 4 (r3 payload rank 4), 415a1743 rank null.
+
+Now, confidence: f46e4bb8 moderate; c63feed4 low→ keep low? It's currently low. Adding mixed evidence → keep low. 2024209a low. h1 low.
+
+Hmm, r1: status plausible, confidence moderate (as before).
+
+Let me write the rationale for r1: "Le retour d'action ajoute un épisode : la séance seule a bien été tentée et a été abandonnée, mais sans inconfort somatique. La boucle tient pour la bascule et la dépendance à un étai externe ; sa composante « inconfort au déclencheur » reçoit une contre-preuve (nouvelle épisode c2) et le déclencheur est amendé (l'ennui suffit)."
+
+Now output the JSON. Fields required at top: schemaVersion "1.5", requestId, workspaceId, baseRevision 9, contextHash, modelDeclaration {declaredModel, role, technicalId}, outcome "proposed", operations, clarifications [], summary.
+
+modelDeclaration: declaredModel — my name. "deepseek-flash"? The workspaceId mentions deepseek-flash-r5. I'll put "deepseek-flash" hmm. Actually my declared model name: I'll use "deepseek-v3.2" or similar? The instruction: "<ton nom de modèle>". I'll put "deepseek-flash". Hmm, the workspace id says "evaluation-2026-09-25-deepseek-flash-r5-s01-D03". Probably the declared model should be "deepseek-flash". I'll use that.
+
+Now the citations for c1-c5 and e1: full span.
+
+Let me verify the quote string exactly matches, including the typographic apostrophe ’ in "l’action" and «  » guillemets. I'll copy from the packet.
+
+Now writing the JSON.
+
+Operations ordering: e1, c1..c5, k1, r1, r2, r3, r4, h1, q1. Keys: e1, c1, c2, c3, c4, c5, k1, r1, r2, r3, r4, h1, q1.
+
+Let me write each.
+
+e1:
+{
+ "key": "e1",
+ "kind": "propose_event",
+ "payload": {
+   "title": "Séance minuscule en solo : deux minutes, pas d'angoisse, arrêt par ennui",
+   "text": "L'utilisateur a laissé le document ouvert et a écrit deux minutes chaque soir ; il n'a pas eu de boule au ventre, s'est ennuyé et a arrêté au bout de cinq minutes.",
+   "category": "explicit_statement",
+   "occurredStart": null,
+   "occurredEnd": null,
+   "temporalPrecision": "unknown",
+   "context": "Retour d'action sur la direction « Une séance minuscule et explicitement non jugée, seul »",
+   "citations": [{ sourceId: "dcfadecb-c06f-4c2a-9f38-eeebb06f4249", contentHash: "7214195b8f318918b7b17cd3be22c11b0cacdf5a61cceb4debdcf186075fad93", spanStart: 0, spanEnd: 240, quote: "..." }]
+ },
+ "rationale": "Fait accompli rapporté par l'utilisateur (retour d'action), distinct des intentions."
+}
+
+OK. Now writing everything out.
+
+One more check on rule 13: "Une inférence n'est jamais un ancrage." c4 and c5 are inferences — so evidence must be claims, and inferences can't be anchors. Hmm! Rule 15 says "Preuves : uniquement des claims" and rule 13 "Une inférence n'est jamais un ancrage." So I should not use c4/c5 (inference) as evidence in hypotheses! Hmm, but rule 13 also says evidence are claims cited... An inference claim is still a claim but not an anchor. So h1's evidence should be the factual claims: c1, c2, c3, and existing 4204b60f, 6bef6501, c42a936b. So I'll use non-inference claims as evidence.
+
+Let me redo evidence:
+
+h1 (reward deficit): evidence: c1 supports (attempts solo non tenus), c3 supports (ennui puis arrêt), 4204b60f supports (écriture facile avec Zoé : le gain vient de la présence), c2 supports? c2 is "pas de boule au ventre" — supports the "not anxiety" part. I'll include c2 as supports. contradicts: 7f0a8d62 ("je suis nul" — self-judgment) and 6bef6501? no. Let's put 7f0a8d62 contradicts.
+
+r1 (f46e4bb8): addEvidence: c2 contradicts, c1 supports, c3 supports.
+
+r2 (c63feed4): addEvidence: c2 supports (l'angoisse liée au jugement disparaît quand le jugement est suspendu), c3 contradicts (arrêt pour ennui, sans verdict interne).
+
+r3 (2024209a): addEvidence: c1 supports, c3 supports, c2 contradicts.
+
+r4 (415a1743): addEvidence: c2 supports (l'inconfort est indexé sur le cadre de jugement, donc sur la valeur), c3 contradicts? Hmm — the D4 says avoidance protects the self-image; the ennui-stop doesn't contradict that clearly. Hmm, I'll add only c2 supports. Hmm, but does c2 support "auto-évaluation sévère et test de valeur"? The anxiety appearing only under the judgment frame supports the "test de valeur" idea. Yes, supports. OK.
+
+Hmm, but I'm using c2 in multiple hypotheses with different stances (contradicts for f46e4bb8, supports for c63feed4 and 415a1743). Fine.
+
+Also careful: rule 13 says "Une inférence n'est jamais un ancrage" — using c2 (explicit_statement) fine.
+
+Now, the critique findings can cite claims (including inference ones? It says claims — allowed probably). I'll cite c2 and c3 in findings.
+
+Let me write the final JSON.
+
+Also "limits" and "revisionConditions" required for propose_hypothesis payload (listed as required fields). Yes, include for h1.
+
+For r1/r2/r3/r4 payloads: target, expectedRowVersion, status, confidence, rank, addEvidence (addEvidence is listed; is it required? The schema shows it without "| null", but it's safer to include).
+
+Now write out. Also note: "rank" can be null.
+
+Let me compose the summary: "Le retour d'action dément la prédiction d'inconfort en solo : la séance a eu lieu sans boule au ventre mais s'est arrêtée par ennui. La boucle d'évitement est amendée (déclencheur : ennui/absence de gain, Pas seulement l'angoisse) ; une lecture par déficit de récompense immédiate est proposée, et la piste estime de soi / cadre reste active. Une question cible l'extension de l'ennui hors du mémoire."
+
+Careful with summary: no claim absent from operations. It's fine.
+
+Let me now write the JSON carefully.
+
+For h1's mechanism, include fields: optimizes, protects, defenses, beliefs, triggers, soothes, barrier, prediction.
+
+Writing:
+
+"mechanism": {
+  "optimizes": "obtenir une stimulation ou un résultat immédiat plutôt que de rester dans une activité qui n'en procure pas",
+  "protects": "l'énergie investie, en la portant vers des activités qui rendent un résultat visible tout de suite",
+  "defenses": "bascule vers un substitut gratifiant (défilement, rangement) dès que la séance ne 'donne' rien",
+  "beliefs": "écrire ne m'apporte rien sur le moment ; ce qui compte, c'est ce qui produit un résultat immédiat",
+  "triggers": "séance sans enjeu, sans retour et sans personne à côté",
+  "soothes": "présence d'une amie qui travaille à côté, activité concrète et terminable",
+  "barrier": "les substituts restent disponibles et immédiatement gratifiants ; allonger la durée sans ajouter de gain ne change pas l'arbitrage",
+  "prediction": "une séance à laquelle un gain immédiat est ajouté (objectif visible, retour d'une personne, contrainte courte et datée) tiendra plus longtemps qu'une séance de même durée sans gain"
+}
+
+Good.
+
+h1 evidence list; note format: evidence: [ { "claim": {...} | {proposalKey}, "stance": ... } ].
+
+Now q1 payload.
+
+q1:
+{
+ "key": "q1",
+ "kind": "propose_question",
+ "payload": {
+   "question": "Cet ennui, tu le retrouves seulement devant le mémoire, ou aussi devant d'autres tâches longues (cours, lectures, autres écrits) ?",
+   "targets": [ {"proposalKey": "h1"}, {"kind": "hypothesis", "id": "415a1743-92c8-4318-a56e-1c610fc1775e"} ],
+   "discriminatingInfo": "Départage un déficit de récompense propre à l'écrit du mémoire (h1) d'une organisation plus générale (415a1743) : si l'ennui déborde du mémoire, la lecture D3 locale perd de sa spécificité au profit de la lecture durable.",
+   "whyNow": "Le retour d'action introduit une observation nouvelle (ennui sans angoisse) et rien dans le paquet ne dit si l'ennui sort du champ du mémoire."
+ },
+ "rationale": "La réponse sépare la lecture locale de la lecture durable."
+}
+
+Hmm, rule 20: don't re-ask a question already in the packet. The existing question is different. OK.
+
+Also should I add a clarification? clarifications: [] since outcome "proposed".
+
+Now the critique payload:
+
+{
+ "key": "k1",
+ "kind": "propose_critique",
+ "payload": {
+   "target": {"kind": "hypothesis", "id": "f46e4bb8-141c-4e2c-8947-eeef61ce1615"},
+   "findings": [
+     {"kind": "simpler_explanation",
+      "detail": "Le retour d'action offre une explication plus simple de l'arrêt : une séance sans jugement ne produit aucune angoisse et s'arrête par ennui ; la bascule vers un substitut n'a pas besoin d'un inconfort somatique pour s'expliquer.",
+      "claims": [{"proposalKey": "c2"}, {"proposalKey": "c3"}]},
+     {"kind": "overgeneralization",
+      "detail": "La boucle est inférée de trois notes d'un même domaine sur quinze jours, et sa composante « l'ouverture du document déclenche un inconfort somatique » est posée comme un déclencheur stable alors qu'un contre-exemple existe désormais (séance seule, aucune boule au ventre).",
+      "claims": [{"proposalKey": "c2"}]}
+   ]
+ },
+ "rationale": "Cherche ce qui affaiblit la boucle avant de la réviser."
+}
+
+Note: the critique must be for a hypothesis present in the packet — yes f46e4bb8.
+
+Now r1:
+
+{
+ "key": "r1",
+ "kind": "revise_hypothesis",
+ "payload": {
+   "target": {"kind": "hypothesis", "id": "f46e4bb8-..."},
+   "expectedRowVersion": 2,
+   "status": "plausible",
+   "confidence": "moderate",
+   "rank": 1,
+   "addEvidence": [
+     {"claim": {"proposalKey": "c2"}, "stance": "contradicts"},
+     {"claim": {"proposalKey": "c1"}, "stance": "supports"},
+     {"claim": {"proposalKey": "c3"}, "stance": "supports"}
+   ]
+ },
+ "rationale": "La boucle reste la lecture la mieux ancrée (substitution, dépendance à un étai externe, écriture tenue seulement en contexte accompagné), mais sa composante somatique reçoit une contre-preuve : le déclencheur n'est pas toujours l'angoisse, l'ennui suffit à faire basculer."
+}
+
+r2 (c63feed4):
+status "plausible", confidence "low", rank 3, addEvidence: [c2 supports, c3 contradicts].
+rationale: "Le nouvel épisode est mixte : l'inconfort disparaît quand le jugement est explicitement suspendu (ce qui soutient l'indexation de l'angoisse sur l'enjeu de valeur), mais l'écriture ne reprend pas pour autant et s'arrête par ennui (ce qui affaiblit la lecture sans la contredire)."
+
+r3 (2024209a):
+status "draft", confidence "low", rank 4, addEvidence: [c1 supports, c3 supports, c2 contradicts].
+rationale: "L'étai externe se confirme (en solo, aucune écriture tenue), mais la partie « l'inconfort est l'effet de la solitude sans cadre » est démentie : seul, l'utilisateur n'a pas eu de boule au ventre."
+
+r4 (415a1743):
+status "draft", confidence "low", rank null, addEvidence: [c2 supports].
+rationale: "L'angoisse n'apparaît que lorsque le cadre de jugement est présent, ce qui va dans le sens d'un rapport à l'écrit indexé sur la valeur personnelle ; rien ne permet encore d'en faire une organisation durable."
+
+Now h1 rationale: "Le retour d'action introduit un mécanisme que les lectures existantes ne portent pas : ce qui arrête n'est ni l'angoisse (absente) ni la difficulté à démarrer, mais l'absence de gain immédiat, qui fait perdre la séance face aux substituts gratifiants."
+
+Everything checks. Also add "modelDeclaration".
+
+Double-check operation count: e1, c1-c5, k1, r1, r2, r3, r4, h1, q1 = 13 operations. Fine.
+
+Wait — one issue: rule 4 "Un fait accompli donne un propose_event ET un propose_claim qui porte sa provenance." Done (e1 + c1/c2/c3).
+
+Another: should c1-c3 be separate claims or one? Fine.
+
+Let me double check the citation for the existing claims referenced (not needed, we reference ids).
+
+Also, the proposalKey references in evidence: {"proposalKey": "c2"} — valid.
+
+Now write final JSON. Ensure no trailing comments.
+
+One more consideration on h1's rank: rank 2. And it is D3 status draft. OK.
+
+Let me also double check "validFrom"/"validTo" fields for claims: include null.
+
+For h1 payload: validFrom null, validTo null.
+
+Writing final.

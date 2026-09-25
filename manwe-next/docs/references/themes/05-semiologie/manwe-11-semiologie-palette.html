@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MANWË — Boîte à crayons sémiologique</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{--bg:#040404;--tx:#ECEFF5;--tx2:#B4BACA;--tx3:#8A90A3;--bone:#D8D6D0;--line:#1C1F29;--indigo:#3E40C1}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg)}
+body{width:1440px;font-family:'IBM Plex Sans',sans-serif;color:var(--tx);padding:44px 56px 60px}
+.scan{position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 1px,transparent 1px 4px)}
+header{display:flex;align-items:flex-end;gap:28px;border-bottom:1px solid var(--line);padding-bottom:22px}
+.logo{font-family:'Chakra Petch';font-weight:600;font-size:30px;letter-spacing:.2em;color:#fff;text-shadow:-2px 0 #D14523,2px 0 #2A66F0}
+header h1{margin:0;font-family:'Chakra Petch';font-weight:500;font-size:28px}
+header p{margin:6px 0 0;max-width:760px;font-size:14px;line-height:1.55;color:var(--tx2)}
+.ser{margin-left:auto;font-family:'Space Mono';font-size:10.5px;line-height:1.7;color:#1F9FB8;text-align:right}
+h2{font-family:'Chakra Petch';font-weight:500;font-size:19px;letter-spacing:.08em;text-transform:uppercase;margin:40px 0 4px;display:flex;gap:14px;align-items:baseline}
+h2 span{font-family:'Space Mono';font-size:11px;letter-spacing:.1em;color:#DD771B;text-transform:none}
+.lead{font-size:13.5px;color:var(--tx2);margin:0 0 18px;max-width:900px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.grid.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid.g8{grid-template-columns:repeat(8,minmax(0,1fr))}
+.cell{background:#060608;padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px}
+.cell canvas{display:block;width:100%;background:#040404;border:1px solid #11131A}
+.cell .id{display:flex;justify-content:space-between;align-items:baseline}
+.cell .id b{font-family:'Chakra Petch';font-weight:500;font-size:15px;color:#fff}
+.cell .id code{font-family:'Space Mono';font-size:10px;color:var(--tx3)}
+.cell .m{font-size:12px;line-height:1.45;color:var(--tx2)}
+.cell .u{font-size:11px;line-height:1.4;color:var(--tx3)}
+.cell .u i{font-style:normal;color:#D6D4F5}
+.dom{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 16px;font-size:12.5px;color:var(--tx2)}
+.dom span{display:flex;align-items:center;gap:8px}
+.dom b{width:22px;height:2px}
+.comp{display:grid;grid-template-columns:420px 1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+.comp pre{margin:0;background:#060608;padding:16px 18px;font-family:'Space Mono';font-size:10.5px;line-height:1.5;color:#B9C0D0;white-space:pre-wrap;word-break:break-word}
+.comp pre .k{color:#DFBA23}.comp pre .s{color:#8FD08F}.comp pre .c{color:#5E6477}
+.comp .r{background:#040404;position:relative}.comp canvas{display:block;width:100%}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:18px;font-size:12.5px;line-height:1.5;color:var(--tx2)}
+.rules b{display:block;font-family:'Chakra Petch';font-weight:500;color:#fff;font-size:14px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="scan"></div>
+<header>
+<div class="logo">MANWË</div>
+<div><h1>Boîte à crayons sémiologique</h1>
+<p>Le vocabulaire visuel que MANWË assemble pour construire ses propres schémas explicatifs. Chaque relation a une forme en mouvement. Couleur, statut, certitude et intensité sont des canaux indépendants, combinables sans ambiguïté.</p></div>
+<div class="ser">SEMIO v0.1<br>rendu : fils fins, 0,8 px<br>notation : SBGN, boucles causales</div>
+</header>
+
+<h2>01 · Relations <span>rel</span></h2>
+<p class="lead">Quinze manières dont deux choses peuvent être liées. La forme dit le type de relation ; les canaux de la section 02 s'y ajoutent. Les notations d'activation, d'inhibition et de boucle reprennent la notation standard de la biologie des systèmes (SBGN) et des diagrammes de boucles causales.</p>
+<div class="dom"><span><b style="background:#DFBA23"></b>élan · approche</span><span><b style="background:#2A66F0"></b>retenue · protection</span><span><b style="background:#D14523"></b>lien · attachement</span><span><b style="background:#24A642"></b>contexte · cadre</span><span><b style="background:#1F9FB8"></b>sens · valeurs</span><span><b style="background:#C9C3E0"></b>résultante · neutre</span></div>
+<div class="grid" id="rels"></div>
+
+<h2>02 · Canaux orthogonaux <span>status · certainty · intensity · tempo</span></h2>
+<p class="lead">Ils s'appliquent à n'importe quelle relation. La même relation « flux » est déclinée ici sur chaque canal.</p>
+<div class="grid g4" id="mods"></div>
+
+<h2>03 · Glyphes de nœuds <span>glyph</span></h2>
+<p class="lead">Ce qui est relié. Un contour plein signale un élément observé, pointillé un élément inféré, gris avec « ? » un élément inconnu.</p>
+<div class="grid g8" id="glyphs"></div>
+
+<h2>04 · Composition <span>MANWË émet · le moteur rend</span></h2>
+<p class="lead">MANWË ne dessine pas : il décrit un schéma avec ce vocabulaire, et le moteur le rend. La mise en page peut être automatique. Exemple : la dynamique de Marc, recomposée avec les crayons.</p>
+<div class="comp"><pre id="json"></pre><div class="r"><canvas id="compo" width="906" height="470"></canvas></div></div>
+<div class="rules">
+<div><b>Économie</b>Sept relations au plus par schéma et deux couleurs de domaine dominantes. Un schéma répond à une seule question.</div>
+<div><b>Honnêteté</b>Le statut épistémique ne peut jamais être omis. Une relation sans source est au mieux inférée, jamais observée.</div>
+<div><b>Lisibilité</b>Aucune information ne repose sur le seul mouvement : chaque relation a aussi une forme fixe lisible sur une capture ou par un lecteur d'écran.</div>
+</div>
+
+<script>
+const TAU=Math.PI*2;
+const DOM={elan:'#DFBA23',retenue:'#2A66F0',lien:'#D14523',contexte:'#24A642',sens:'#1F9FB8',neutre:'#C9C3E0',gris:'#6E7488'};
+const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const col=(h,a)=>{const[r,g,b]=rgb(h);return`rgba(${r},${g},${b},${a})`};
+// ---------- geometry ----------
+function curve(a,b,bend=0){const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+ const c={x:(a.x+b.x)/2+nx*bend*L,y:(a.y+b.y)/2+ny*bend*L};
+ const at=s=>{const u=1-s;return{x:u*u*a.x+2*u*s*c.x+s*s*b.x,y:u*u*a.y+2*u*s*c.y+s*s*b.y}};
+ const nor=s=>{const u=1-s,tx=2*u*(c.x-a.x)+2*s*(b.x-c.x),ty=2*u*(c.y-a.y)+2*s*(b.y-c.y),l=Math.hypot(tx,ty)||1;return{x:-ty/l,y:tx/l,tx:tx/l,ty:ty/l}};
+ return{a,b,c,at,nor,L}}
+// ---------- the core stroke: a bundle of hairlines gliding along a curve ----------
+function bundle(g,cv,o,t){
+ const n=o.n??3,gap=o.gap??3.2,color=o.color??DOM.neutre,st=o.status??'observed',unc=o.unc??0,dir=o.dir??1,speed=o.speed??40,s0=o.s0??0,s1=o.s1??1;
+ let alpha=o.alpha??.9,dash=o.dash??[16,20],c=color;
+ if(st==='inferred'){alpha*=.55+.3*Math.sin(t*1.8+(o.ph||0));dash=[6,9]}
+ if(st==='unknown'){c=DOM.gris;alpha=.55;dash=[1.5,5];}
+ if(st==='reported'){dash=[10,4,2,4]}
+ const env=o.env??(s=>Math.sin(Math.PI*Math.min(1,Math.max(0,s)))**.6);
+ for(let k=0;k<n;k++){const off=(k-(n-1)/2)*gap;
+  g.beginPath();for(let i=0;i<=48;i++){const s=s0+(s1-s0)*i/48,p=cv.at(s),q=cv.nor(s);
+   let d=off*env(s)*(o.squeeze?o.squeeze(s):1);
+   d+=unc*Math.sin(t*3+s*14+k*1.7)*6*env(s);
+   if(st==='reported')d+=Math.sin(s*90+k*3)*.7;
+   i?g.lineTo(p.x+q.x*d,p.y+q.y*d):g.moveTo(p.x+q.x*d,p.y+q.y*d)}
+  g.setLineDash([]);g.strokeStyle=col(c,alpha*.18);g.lineWidth=.8;g.stroke();
+  g.setLineDash(dash);g.lineDashOffset=st==='unknown'?0:-t*speed*dir+k*9;g.strokeStyle=col(c,alpha);g.lineWidth=o.w??.9;g.stroke()}
+ g.setLineDash([]);
+ if(o.arrow!==false&&st!=='unknown'){const s=dir>0?s1:s0,p=cv.at(s),q=cv.nor(s),f=dir>0?1:-1;
+  g.strokeStyle=col(c,alpha);g.lineWidth=1;g.beginPath();g.moveTo(p.x-q.tx*7*f+q.x*4,p.y-q.ty*7*f+q.y*4);g.lineTo(p.x,p.y);g.lineTo(p.x-q.tx*7*f-q.x*4,p.y-q.ty*7*f-q.y*4);g.stroke()}}
+function node(g,p,o={}){const r=o.r??9,st=o.status??'observed';
+ g.fillStyle='#040404';g.beginPath();g.arc(p.x,p.y,r,0,TAU);g.fill();
+ g.setLineDash(st==='observed'?[]:st==='inferred'?[3,2.5]:[1.5,3]);g.strokeStyle=st==='unknown'?col(DOM.gris,.9):col(o.color||DOM.neutre,.95);g.lineWidth=1.1;
+ g.beginPath();g.arc(p.x,p.y,r,0,TAU);g.stroke();g.setLineDash([]);
+ if(o.fill){g.fillStyle=col(o.color||DOM.neutre,.9);g.beginPath();g.arc(p.x,p.y,r-3,0,TAU);g.fill()}
+ if(o.label){g.fillStyle=o.lc||'#B4BACA';g.font='10px Space Mono';g.textAlign='center';g.fillText(o.label,p.x,p.y+r+13)}}
+// ---------- relation primitives ----------
+const W0=240,H0=120;
+const A={x:34,y:62},B={x:206,y:62};
+const R=[
+ {id:'flux',nm:'Flux',m:'Une énergie ou une motivation passe de A vers B.',u:'<i>pousse, nourrit, motive</i>',d:(g,t)=>{bundle(g,curve(A,B,-.12),{color:DOM.elan,n:4},t);node(g,A);node(g,B)}},
+ {id:'inhib',nm:'Inhibition',m:'A freine B. Le flux se comprime contre une barre.',u:'SBGN ⊣ · <i>retient, empêche</i>',d:(g,t)=>{const cv=curve(A,{x:192,y:62},0);bundle(g,cv,{color:DOM.retenue,n:5,gap:3.4,squeeze:s=>1-.8*s,arrow:false,speed:30},t);
+  g.strokeStyle=col(DOM.retenue,.95);g.lineWidth=1.6;g.beginPath();g.moveTo(194,48);g.lineTo(194,76);g.stroke();
+  for(let i=0;i<3;i++){const x=188-((t*12+i*5)%14);g.strokeStyle=col(DOM.retenue,.25+.2*i);g.lineWidth=.7;g.beginPath();g.moveTo(x,54);g.lineTo(x,70);g.stroke()}node(g,A);node(g,B)}},
+ {id:'conflit',nm:'Conflit',m:'Deux forces opposées se rencontrent et interfèrent.',u:'<i>tiraillé entre</i> · moiré au point de rencontre',d:(g,t)=>{const M={x:120,y:62};
+  bundle(g,curve(A,M,.1),{color:DOM.elan,n:3,s1:.92,arrow:false,env:s=>Math.sin(Math.PI*s/2)**.5},t);bundle(g,curve(B,M,-.1),{color:DOM.retenue,n:3,s1:.92,arrow:false,env:s=>Math.sin(Math.PI*s/2)**.5},t);
+  for(let i=1;i<7;i++){const r=i*3.2+(t*6%3.2);g.strokeStyle=col(DOM.elan,.5-i*.06);g.lineWidth=.6;g.beginPath();g.arc(M.x-2,M.y,r,0,TAU);g.stroke();g.strokeStyle=col(DOM.retenue,.5-i*.06);g.beginPath();g.arc(M.x+2,M.y,r,0,TAU);g.stroke()}
+  node(g,A);node(g,B)}},
+ {id:'tension',nm:'Tension',m:'Deux pôles liés par un ressort qui vibre selon la charge.',u:'<i>équilibre instable, charge</i>',d:(g,t)=>{const k=.5+.5*Math.sin(t*1.3);g.strokeStyle=col(DOM.lien,.9);g.lineWidth=.9;g.beginPath();
+  for(let i=0;i<=120;i++){const s=i/120,x=A.x+12+(B.x-A.x-24)*s,amp=(6+4*k)*Math.sin(Math.PI*s)**.5;const y=62+Math.sin(s*TAU*9+t*6)*amp;i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke();
+  g.strokeStyle=col(DOM.lien,.2);g.beginPath();g.moveTo(A.x,62);g.lineTo(B.x,62);g.stroke();node(g,A);node(g,B)}},
+ {id:'boucle',nm:'Rétroaction',m:'Une boucle causale. Le signe « − » stabilise, le signe « + » amplifie.',u:'boucles causales · <i>se régule, s\'emballe</i>',d:(g,t)=>{const C={x:120,y:60},rx=62,ry=30;
+  g.strokeStyle=col(DOM.neutre,.2);g.lineWidth=.8;g.beginPath();g.ellipse(C.x,C.y,rx,ry,0,0,TAU);g.stroke();
+  for(let k=0;k<3;k++){g.setLineDash([22,40]);g.lineDashOffset=-t*40+k*20;g.strokeStyle=col(DOM.neutre,.85);g.beginPath();g.ellipse(C.x,C.y,rx+(k-1)*3,ry+(k-1)*3,0,0,TAU);g.stroke()}g.setLineDash([]);
+  g.fillStyle='#fff';g.font='600 16px Chakra Petch';g.textAlign='center';g.fillText('−',C.x,C.y+5);node(g,{x:C.x-rx,y:C.y});node(g,{x:C.x+rx,y:C.y})}},
+ {id:'transfo',nm:'Transformation',m:'A passe par un processus qui change sa nature.',u:'<i>devient, se convertit en</i>',d:(g,t)=>{const M={x:120,y:62};bundle(g,curve(A,M,0),{color:DOM.elan,n:4,arrow:false,env:s=>Math.sin(Math.PI*(s*.5))**.5},t);
+  bundle(g,curve(M,B,0),{color:DOM.neutre,n:2,gap:5,env:s=>Math.sin(Math.PI*(.5+s*.5))**.5},t);
+  g.strokeStyle=col(DOM.neutre,.9);g.lineWidth=1;g.strokeRect(M.x-9,M.y-9,18,18);g.beginPath();g.moveTo(M.x-9,M.y+9);g.lineTo(M.x+9,M.y-9);g.stroke();node(g,A);node(g,B)}},
+ {id:'seuil',nm:'Seuil',m:'La pression s\'accumule et ne passe qu\'au-delà d\'un niveau.',u:'<i>jusqu\'au moment où</i>',d:(g,t)=>{const lv=(t*.35)%1.2,th=.7,box={x:100,y:28,w:40,h:66};
+  bundle(g,curve(A,{x:98,y:62},0),{color:DOM.elan,n:3,arrow:false},t);
+  g.strokeStyle=col(DOM.neutre,.5);g.lineWidth=.8;g.strokeRect(box.x,box.y,box.w,box.h);
+  const L=Math.min(lv,1);for(let y=box.y+box.h-2;y>box.y+box.h-L*box.h;y-=3){g.strokeStyle=col(DOM.elan,.55);g.beginPath();g.moveTo(box.x+3,y);g.lineTo(box.x+box.w-3,y);g.stroke()}
+  const ty=box.y+box.h-th*box.h;g.setLineDash([3,3]);g.strokeStyle='#fff';g.beginPath();g.moveTo(box.x-6,ty);g.lineTo(box.x+box.w+6,ty);g.stroke();g.setLineDash([]);
+  if(lv>th)bundle(g,curve({x:142,y:62},B,0),{color:DOM.elan,n:3,alpha:Math.min(1,(lv-th)*3)},t);node(g,A);node(g,B)}},
+ {id:'ambi',nm:'Ambivalence',m:'A oscille entre deux destinations.',u:'<i>hésite entre</i>',d:(g,t)=>{const B1={x:206,y:30},B2={x:206,y:94},k=.5+.5*Math.sin(t*1.2);
+  bundle(g,curve(A,B1,-.1),{color:DOM.lien,n:3,alpha:.15+.8*k},t);bundle(g,curve(A,B2,.1),{color:DOM.lien,n:3,alpha:.15+.8*(1-k)},t);node(g,A);node(g,B1);node(g,B2)}},
+ {id:'influence',nm:'Influence diffuse',m:'A rayonne sur son entourage, sans canal précis.',u:'<i>ambiance, contagion émotionnelle</i>',d:(g,t)=>{for(let i=0;i<6;i++){const r=((t*18+i*22)%132);g.strokeStyle=col(DOM.lien,Math.max(0,.6-r/220));g.lineWidth=.7;g.beginPath();g.arc(A.x,A.y,r,-.9,.9);g.stroke()}
+  node(g,A);[[150,34],[196,62],[160,96]].forEach(([x,y])=>node(g,{x,y},{r:6,color:DOM.lien}))}},
+ {id:'attraction',nm:'Attraction',m:'B attire. Les lignes de champ convergent vers lui.',u:'<i>tend vers, est aspiré par</i>',d:(g,t)=>{for(let k=0;k<7;k++){g.strokeStyle=col(DOM.elan,.55);g.lineWidth=.7;g.beginPath();
+  for(let i=0;i<=60;i++){const s=i/60,r=(1-s)*95,a=k*TAU/7+s*2.4+t*.4;const x=B.x-20+Math.cos(a)*r,y=62+Math.sin(a)*r*.5;i?g.lineTo(x,y):g.moveTo(x,y)}g.setLineDash([8,10]);g.lineDashOffset=-t*30;g.stroke()}g.setLineDash([]);node(g,{x:B.x-20,y:62},{fill:true,color:DOM.elan})}},
+ {id:'attache',nm:'Attachement',m:'Un fil qui se tend quand la distance augmente.',u:'Bowlby · <i>tient à, ne lâche pas</i>',d:(g,t)=>{const bx=160+36*Math.sin(t*.9),tense=(bx-124)/72,sag=26*(1-tense);
+  g.strokeStyle=col(DOM.lien,.35+.6*tense);g.lineWidth=.9+tense;g.beginPath();g.moveTo(A.x,62);g.quadraticCurveTo((A.x+bx)/2,62+sag*2,bx,62);g.stroke();node(g,A);node(g,{x:bx,y:62})}},
+ {id:'recip',nm:'Réciprocité',m:'Un échange dans les deux sens, en double hélice.',u:'<i>donne et reçoit</i>',d:(g,t)=>{[[DOM.elan,1,0],[DOM.lien,-1,Math.PI]].forEach(([c,dir,ph])=>{g.strokeStyle=col(c,.9);g.lineWidth=.9;g.beginPath();
+  for(let i=0;i<=80;i++){const s=i/80,x=A.x+(B.x-A.x)*s,y=62+Math.sin(s*TAU*2+ph+t*1.5)*10*Math.sin(Math.PI*s);i?g.lineTo(x,y):g.moveTo(x,y)}g.setLineDash([14,10]);g.lineDashOffset=-t*30*dir;g.stroke()});g.setLineDash([]);node(g,A);node(g,B)}},
+ {id:'apaise',nm:'Apaisement',m:'La charge se dissipe vers ce qui apaise.',u:'<i>décharge, se calme par</i>',d:(g,t)=>{for(let k=0;k<6;k++){const cv=curve(A,{x:150+k*10,y:100},(k-2.5)*.06);bundle(g,cv,{color:DOM.sens,n:1,alpha:.7,arrow:false,speed:25,ph:k},t)}
+  g.strokeStyle=col(DOM.sens,.9);g.lineWidth=1;[[140,210,100],[155,195,106],[168,182,112]].forEach(([x1,x2,y])=>{g.beginPath();g.moveTo(x1,y);g.lineTo(x2,y);g.stroke()});node(g,A)}},
+ {id:'trace',nm:'Trace',m:'Un épisode passé qui influence encore, en s\'estompant.',u:'<i>garde la marque de</i>',d:(g,t)=>{for(let k=0;k<5;k++){const cv=curve(A,B,-.15+k*.07),a=.85*Math.pow(.55,k);bundle(g,cv,{color:DOM.neutre,n:1,alpha:a,arrow:k===0,speed:20-k*3},t)}node(g,A);node(g,B)}},
+ {id:'latent',nm:'Latent',m:'Une relation supposée, sous la surface, rarement visible.',u:'<i>non dit, refoulé, en arrière-plan</i>',d:(g,t)=>{g.strokeStyle=col(DOM.neutre,.25);g.lineWidth=.7;g.beginPath();g.moveTo(10,48);g.lineTo(230,48);g.stroke();
+  g.fillStyle=col(DOM.neutre,.35);g.font='9px Space Mono';g.textAlign='left';g.fillText('surface',12,42);
+  const cv=curve({x:34,y:84},{x:206,y:84},.12);g.setLineDash([1,6]);g.strokeStyle=col(DOM.lien,.45);g.beginPath();for(let i=0;i<=40;i++){const p=cv.at(i/40);i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)}g.stroke();g.setLineDash([]);
+  const gl=(t*.5)%1;if(gl<.35){const p=cv.at(gl/.35);g.fillStyle=col(DOM.lien,.9);g.beginPath();g.arc(p.x,p.y,1.6,0,TAU);g.fill()}
+  node(g,{x:34,y:84},{status:'inferred'});node(g,{x:206,y:84},{status:'inferred'})}},
+];
+// ---------- channels ----------
+const MODS=[
+ {nm:'Statut épistémique',code:'status',m:'Observé : net et continu. Rapporté : trait haché. Inféré : trait qui respire. Inconnu : gris pointillé, immobile.',d:(g,t)=>{['observed','reported','inferred','unknown'].forEach((st,i)=>{const y=20+i*28;bundle(g,curve({x:26,y},{x:214,y},0),{color:DOM.elan,n:3,gap:2.6,status:st},t);g.fillStyle='#8A90A3';g.font='9px Space Mono';g.textAlign='left';g.fillText(st,4,y-7)})}},
+ {nm:'Certitude',code:'certainty',m:'Le faisceau vibre latéralement : plus il tremble, moins c\'est sûr. Aucune couleur n\'est ajoutée.',d:(g,t)=>{[[.05,'0.9'],[.35,'0.6'],[.9,'0.3']].forEach(([u,l],i)=>{const y=26+i*36;bundle(g,curve({x:26,y},{x:214,y},0),{color:DOM.lien,n:3,unc:u,status:'inferred',ph:i},t);g.fillStyle='#8A90A3';g.font='9px Space Mono';g.fillText(l,4,y-8)})}},
+ {nm:'Intensité',code:'intensity',m:'Nombre de fils et vitesse de glissement. L\'épaisseur ne varie jamais, pour garder l\'élégance.',d:(g,t)=>{[[1,20],[3,40],[7,70]].forEach(([n,s],i)=>{const y=26+i*36;bundle(g,curve({x:26,y},{x:214,y},0),{color:DOM.retenue,n,gap:2.4,speed:s},t)})}},
+ {nm:'Tempo',code:'tempo',m:'Une relation aiguë respire vite, une relation chronique lentement. Une relation passée est figée et estompée.',d:(g,t)=>{[['aigu',3],['chronique',.5],['passé',0]].forEach(([l,k],i)=>{const y=26+i*36;bundle(g,curve({x:26,y},{x:214,y},0),{color:DOM.contexte,n:3,speed:k*25,alpha:k?(.5+.4*Math.sin(t*k*2)):.35},t);g.fillStyle='#8A90A3';g.font='9px Space Mono';g.textAlign='left';g.fillText(l,4,y-8)})}},
+];
+// ---------- glyphs ----------
+const GL=[
+ {nm:'Personne',code:'person',d:(g,t)=>{const c={x:60,y:46};for(let y=c.y-20;y<=c.y+20;y+=3){const h=Math.sqrt(Math.max(0,400-(y-c.y)**2));g.strokeStyle=col(y<c.y?DOM.elan:DOM.lien,.7);g.lineWidth=.8;g.beginPath();g.moveTo(c.x-h,y+Math.sin(y+t*2)*.8);g.lineTo(c.x+h,y);g.stroke()}g.strokeStyle=col(DOM.neutre,.4);g.beginPath();g.arc(c.x,c.y,22,0,TAU);g.stroke()}},
+ {nm:'Motif · besoin',code:'motive',d:(g,t)=>{node(g,{x:60,y:46},{r:16,status:'inferred',color:DOM.elan});g.strokeStyle=col(DOM.elan,.5);g.beginPath();g.arc(60,46,10,0,TAU);g.stroke()}},
+ {nm:'État interne',code:'state',d:(g,t)=>{node(g,{x:60,y:46},{r:14,status:'inferred'})}},
+ {nm:'Conflit',code:'conflict',d:(g,t)=>{const x=60,y=56,r=24;const gr=g.createLinearGradient(x-r,0,x+r,0);gr.addColorStop(0,DOM.retenue);gr.addColorStop(1,DOM.lien);g.strokeStyle=gr;g.lineWidth=2;g.beginPath();g.arc(x,y,r,Math.PI,0);g.stroke();
+  const a=Math.PI*1.5+Math.sin(t)*.3;g.strokeStyle='#fff';g.lineWidth=1.2;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*20,y+Math.sin(a)*20);g.stroke()}},
+ {nm:'Régulation',code:'process',d:(g,t)=>{g.strokeStyle=col(DOM.neutre,.9);g.lineWidth=1;g.strokeRect(44,36,32,20);g.beginPath();g.moveTo(44,46);g.lineTo(55,46);g.moveTo(65,46);g.lineTo(76,46);g.stroke()}},
+ {nm:'Comportement',code:'behavior',d:(g,t)=>{node(g,{x:60,y:46},{r:13,fill:true})}},
+ {nm:'Contexte',code:'context',d:(g,t)=>{g.setLineDash([2,4]);g.strokeStyle=col(DOM.contexte,.8);g.lineWidth=1;g.beginPath();g.roundRect(26,24,68,44,10);g.stroke();g.setLineDash([])}},
+ {nm:'Question',code:'question',d:(g,t)=>{node(g,{x:60,y:46},{r:14,status:'unknown'});g.fillStyle='#8A90A3';g.font='13px Space Mono';g.textAlign='center';g.fillText('?',60,51)}},
+];
+// ---------- build cells ----------
+const cells=[];
+function mk(parent,w,h,title,code,m,u,draw){const d=document.createElement('div');d.className='cell';const c=document.createElement('canvas');c.width=w*2;c.height=h*2;c.style.height=h+'px';
+ d.innerHTML=`<div class="id"><b>${title}</b><code>${code}</code></div>`;d.appendChild(c);if(m)d.insertAdjacentHTML('beforeend',`<div class="m">${m}</div>`);if(u)d.insertAdjacentHTML('beforeend',`<div class="u">${u}</div>`);
+ parent.appendChild(d);const g=c.getContext('2d');g.scale(2,2);cells.push({g,w,h,draw})}
+R.forEach(r=>mk(document.getElementById('rels'),W0,H0,r.nm,r.id,r.m,r.u,r.d));
+MODS.forEach(r=>mk(document.getElementById('mods'),W0,130,r.nm,r.code,r.m,'',r.d));
+GL.forEach(r=>mk(document.getElementById('glyphs'),120,92,r.nm,r.code,'','',r.d));
+
+// ---------- composition from a declarative spec ----------
+const SPEC={
+ question:"Pourquoi Marc passe-t-il toujours par le jeu ?",
+ nodes:[
+  {id:"aff",glyph:"motive",label:"Affiliation",status:"inferred",domain:"elan",x:120,y:360},
+  {id:"prot",glyph:"motive",label:"Autoprotection",status:"inferred",domain:"retenue",x:120,y:150},
+  {id:"cf",glyph:"conflict",label:"Proximité ↔ autarcie",status:"inferred",x:360,y:260},
+  {id:"sel",glyph:"process",label:"Sélection de situation",status:"inferred",x:580,y:330},
+  {id:"jeu",glyph:"behavior",label:"Propose une partie ×2",status:"observed",x:780,y:330},
+  {id:"dir",glyph:"question",label:"Invitation directe ?",status:"unknown",x:780,y:120},
+  {id:"vous",glyph:"person",label:"Vous",status:"observed",x:780,y:420}
+ ],
+ links:[
+  {from:"aff",to:"cf",rel:"flux",domain:"elan",status:"inferred",certainty:.6,intensity:.8},
+  {from:"prot",to:"cf",rel:"flux",domain:"retenue",status:"inferred",certainty:.5,intensity:.7},
+  {from:"cf",to:"sel",rel:"transfo",status:"inferred",certainty:.5},
+  {from:"prot",to:"dir",rel:"inhib",domain:"retenue",status:"inferred",certainty:.4},
+  {from:"sel",to:"jeu",rel:"flux",domain:"neutre",status:"observed",intensity:.8},
+  {from:"jeu",to:"vous",rel:"recip",status:"observed"},
+  {from:"vous",to:"cf",rel:"boucle",sign:"-",status:"unknown",note:"votre réponse le rassure ?"}
+ ]};
+const hl=s=>s.replace(/"(\w+)":/g,'<span class="k">"$1"</span>:').replace(/: ?"([^"]*)"/g,': <span class="s">"$1"</span>');
+document.getElementById('json').innerHTML='<span class="c">// émis par MANWË, validé par le contrat</span>\n'+hl(JSON.stringify(SPEC,null,1).replace(/\n\s+([}\]])/g,' $1').replace(/{\n\s+/g,'{').replace(/,\n\s+(?=")/g,', ').replace(/\n\s+(?=[{"])/g,'\n  '));
+const cg=document.getElementById('compo').getContext('2d');
+const P=Object.fromEntries(SPEC.nodes.map(n=>[n.id,n]));
+function compo(t){const g=cg;g.clearRect(0,0,946,470);
+ g.fillStyle='#D8D6D0';g.font='500 15px Chakra Petch';g.textAlign='left';g.fillText(SPEC.question,24,34);
+ g.fillStyle='#5E6477';g.font='10px Space Mono';g.fillText('rendu automatique · 7 nœuds · 7 relations',24,52);
+ SPEC.links.forEach((l,i)=>{const a=P[l.from],b=P[l.to],pa={x:a.x,y:a.y},pb={x:b.x,y:b.y};
+  const o={color:DOM[l.domain||'neutre'],status:l.status,unc:1-(l.certainty??.8),n:Math.round(1+(l.intensity??.5)*4),ph:i};
+  if(l.rel==='flux')bundle(g,curve(pa,pb,.06),o,t);
+  if(l.rel==='transfo'){bundle(g,curve(pa,pb,-.05),{...o,color:DOM.neutre,n:2,gap:5},t)}
+  if(l.rel==='inhib'){const cv=curve(pa,pb,-.05);bundle(g,cv,{...o,n:5,squeeze:s=>1-.8*s,arrow:false,s1:.86},t);const p=cv.at(.88),q=cv.nor(.88);g.strokeStyle=col(o.color,.9);g.lineWidth=1.6;g.beginPath();g.moveTo(p.x+q.x*14,p.y+q.y*14);g.lineTo(p.x-q.x*14,p.y-q.y*14);g.stroke()}
+  if(l.rel==='recip'){[[DOM.elan,1,0],[DOM.lien,-1,Math.PI]].forEach(([c,dir,ph])=>{g.strokeStyle=col(c,.9);g.lineWidth=.9;g.beginPath();for(let k=0;k<=60;k++){const s=k/60,x=pa.x+(pb.x-pa.x)*s+Math.sin(s*TAU*2+ph+t*1.5)*9*Math.sin(Math.PI*s),y=pa.y+(pb.y-pa.y)*s;k?g.lineTo(x,y):g.moveTo(x,y)}g.setLineDash([12,9]);g.lineDashOffset=-t*30*dir;g.stroke()});g.setLineDash([])}
+  if(l.rel==='boucle'){const cv=curve(pa,pb,-.35);bundle(g,cv,{...o,n:2},t);const m=cv.at(.5);g.fillStyle='#8A90A3';g.font='600 14px Chakra Petch';g.textAlign='center';g.fillText(l.sign,m.x,m.y+5);g.font='10px Space Mono';g.fillText(l.note,m.x,m.y+22)}});
+ SPEC.nodes.forEach(n=>{const p={x:n.x,y:n.y};
+  if(n.glyph==='conflict'){const r=30;g.fillStyle='#040404';g.beginPath();g.arc(p.x,p.y+10,r+4,Math.PI,0);g.fill();const gr=g.createLinearGradient(p.x-r,0,p.x+r,0);gr.addColorStop(0,DOM.retenue);gr.addColorStop(1,DOM.lien);g.strokeStyle=gr;g.lineWidth=2;g.beginPath();g.arc(p.x,p.y+10,r,Math.PI,0);g.stroke();
+   const a=Math.PI*1.5-.15+Math.sin(t*2.2)*.05;g.strokeStyle='#fff';g.lineWidth=1.3;g.beginPath();g.moveTo(p.x,p.y+10);g.lineTo(p.x+Math.cos(a)*26,p.y+10+Math.sin(a)*26);g.stroke()}
+  else if(n.glyph==='process'){g.fillStyle='#040404';g.fillRect(p.x-18,p.y-11,36,22);g.setLineDash([3,2.5]);g.strokeStyle=col(DOM.neutre,.9);g.lineWidth=1;g.strokeRect(p.x-18,p.y-11,36,22);g.setLineDash([]);g.beginPath();g.moveTo(p.x-18,p.y);g.lineTo(p.x-6,p.y);g.moveTo(p.x+6,p.y);g.lineTo(p.x+18,p.y);g.stroke()}
+  else if(n.glyph==='person'){for(let y=p.y-14;y<=p.y+14;y+=3){const h=Math.sqrt(Math.max(0,196-(y-p.y)**2));g.strokeStyle=col(DOM.lien,.7);g.lineWidth=.8;g.beginPath();g.moveTo(p.x-h,y);g.lineTo(p.x+h,y);g.stroke()}}
+  else if(n.glyph==='question'){node(g,p,{r:12,status:'unknown'});g.fillStyle='#8A90A3';g.font='12px Space Mono';g.textAlign='center';g.fillText('?',p.x,p.y+4)}
+  else node(g,p,{r:n.glyph==='motive'?14:11,status:n.status,color:DOM[n.domain]||DOM.neutre,fill:n.glyph==='behavior'});
+  g.fillStyle=n.status==='unknown'?'#8A90A3':'#ECEFF5';g.font='12px IBM Plex Sans';g.textAlign='center';g.fillText(n.label,p.x,p.y+(n.glyph==='conflict'?46:30))})}
+function loop(ts){const t=ts/1000;cells.forEach(c=>{c.g.clearRect(0,0,c.w,c.h);c.draw(c.g,t)});compo(t);requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

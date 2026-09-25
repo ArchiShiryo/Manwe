@@ -139,12 +139,29 @@ test("capture, recherche, correction et redémarrage utilisent la même mémoire
     assert.equal((await filteredSearch.json()).results.length, 1);
     await context.restart();
     cookie = await session(context.origin);
+    const graph = await request(context.origin, cookie, "/api/graph?kind=self");
+    assert.equal(graph.status, 200);
+    const projection = await graph.json();
+    assert.equal(projection.focus.kind, "self");
+    assert.ok(projection.nodes.some((node) => node.id === "self"));
+    assert.equal(projection.synthesis.revision, projection.revision);
+    const status = await (
+      await request(context.origin, cookie, "/api/status")
+    ).json();
+    assert.equal(status.revision, projection.revision);
+    assert.equal(status.analyses.awaitingResponse, 0);
     const snapshot = await request(context.origin, cookie, "/api/workspace");
     const body = await snapshot.json();
     assert.equal(body.workspace.revision, 2);
-    assert.equal(body.events.length, 1);
-    assert.equal(body.events[0].category, "unclassified_note");
+    // L'annotation de contexte crée sa propre note citable (BRIEF-003).
+    assert.equal(body.events.length, 2);
+    assert.ok(
+      body.events.every((item) => item.category === "unclassified_note"),
+    );
     assert.equal(body.annotations[0].target.id, event.id);
+    assert.ok(
+      body.sources.some((source) => source.id === body.annotations[0].sourceId),
+    );
   }));
 
 test("les erreurs de validation de l’API n’écrivent pas d’état partiel", () =>
@@ -209,9 +226,13 @@ test("l’API prépare, prévisualise et applique explicitement une proposition 
     });
     assert.equal(preparedResponse.status, 201);
     const packet = await preparedResponse.json();
+    // R4.7 : l'état léger signale l'analyse assistée en attente.
+    const pending = await (await request(origin, cookie, "/api/status")).json();
+    assert.equal(pending.analyses.awaitingResponse, 1);
+    assert.deepEqual(pending.analyses.modes, ["assisted"]);
     const source = packet.sources[0];
     const proposal = {
-      schemaVersion: "1.0",
+      schemaVersion: "1.4",
       requestId: packet.requestId,
       workspaceId: packet.workspaceId,
       baseRevision: packet.baseRevision,
@@ -229,6 +250,7 @@ test("l’API prépare, prévisualise et applique explicitement une proposition 
           payload: {
             text: "Claire préfère rester seule ce week-end.",
             category: "explicit_statement",
+            modality: "actual",
             validFrom: null,
             validTo: null,
             citations: [

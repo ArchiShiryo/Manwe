@@ -1,13 +1,16 @@
 import { createHash } from "node:crypto";
 import {
   DomainError,
+  type ClaimModality,
   type EntityRef,
   type InformationCategory,
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.0" as const;
-export const COGNITION_VALIDATOR_VERSION = "1.0.0" as const;
+export const COGNITION_SCHEMA_VERSION = "1.7" as const;
+/** Versions acceptées : 1.4 reste valide (prompt v6), 1.5 ajoute les directions. */
+export const SUPPORTED_SCHEMA_VERSIONS = ["1.4", "1.5", "1.6", "1.7"] as const;
+export const COGNITION_VALIDATOR_VERSION = "1.2.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;
 
@@ -24,7 +27,183 @@ export type AnalysisStatus =
   | "cancelled"
   | "expired";
 
-export type CognitiveOperationKind = "propose_event" | "propose_claim";
+export type CognitiveOperationKind =
+  | "propose_event"
+  | "propose_claim"
+  | "propose_hypothesis"
+  | "revise_hypothesis"
+  | "propose_question"
+  | "propose_critique"
+  | "propose_role"
+  | "propose_direction"
+  | "propose_goal";
+
+export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
+  "propose_event",
+  "propose_claim",
+  "propose_hypothesis",
+  "revise_hypothesis",
+  "propose_question",
+  "propose_critique",
+  "propose_role",
+  "propose_direction",
+  "propose_goal",
+];
+
+/** Opérations proposées par défaut selon la tâche (contrat 1.2). */
+export const DEFAULT_OPERATIONS: Record<
+  AnalysisTask,
+  CognitiveOperationKind[]
+> = {
+  extract: ["propose_event", "propose_claim", "propose_role"],
+  interpret: [
+    "propose_event",
+    "propose_claim",
+    "propose_role",
+    "propose_hypothesis",
+    "propose_question",
+    "propose_critique",
+    "propose_goal",
+  ],
+  revise: [
+    "propose_event",
+    "propose_claim",
+    "propose_role",
+    "propose_hypothesis",
+    "revise_hypothesis",
+    "propose_question",
+    "propose_critique",
+  ],
+  // BRIEF-005 : explorer, c'est aussi proposer des directions pour un objectif.
+  explore: ["propose_question", "propose_direction", "propose_goal"],
+};
+
+import {
+  CLAIM_CATEGORIES,
+  CLAIM_MODALITIES,
+  CONFIDENCES,
+  CREATION_STATUSES,
+  EFFORTS,
+  LEVER_KINDS,
+  PREDICTION_PHASES,
+  type LeverKind,
+  type PredictionPhase,
+  DEPTHS,
+  EVIDENCE_STANCES,
+  HYPOTHESIS_STATUSES,
+  TEMPORAL_PRECISIONS,
+  type Confidence,
+  type EvidenceStance,
+  type HypothesisDepth,
+  type HypothesisStatus,
+} from "./vocabulary.ts";
+import {
+  EPISODE_ROLES,
+  ROLE_OUTCOMES,
+  type EpisodeRole,
+  type RoleOutcome,
+} from "./relations.ts";
+
+/** Référence à un objet existant, ou à une opération de la même proposition. */
+export type LocalRef = { proposalKey: string };
+export type TargetRef = EntityRef | LocalRef;
+
+export type MemberInput =
+  | { person: EntityRef }
+  | { mention: string }
+  | { self: true };
+/** Un sujet est une personne, l'utilisateur, ou une relation entre deux membres (D-012). */
+export type HypothesisSubjectInput = MemberInput | { relation: MemberInput[] };
+
+export type EvidenceInput = {
+  claim: TargetRef;
+  stance: EvidenceStance;
+};
+
+/**
+ * Formulation mécaniste d'une lecture (D-017, D-019) : ce que la personne
+ * optimise ou protège, comment, et ce que cela prédit. Tous les champs sont
+ * facultatifs ; une formulation vide est refusée.
+ */
+export const MECHANISM_KEYS = [
+  "optimizes",
+  "protects",
+  "defenses",
+  "beliefs",
+  "triggers",
+  "soothes",
+  "barrier",
+  "prediction",
+] as const;
+export type Mechanism = Partial<
+  Record<(typeof MECHANISM_KEYS)[number], string>
+>;
+
+type HypothesisPayload = {
+  statement: string;
+  depth: HypothesisDepth;
+  framework: string | null;
+  construct: string | null;
+  confidence: Confidence;
+  subjects: HypothesisSubjectInput[];
+  evidence: EvidenceInput[];
+  limits: string;
+  revisionConditions: string;
+  alternativeTo: TargetRef | null;
+  validFrom: string | null;
+  validTo: string | null;
+  /** Statut demandé dès la création ; « plausible » seulement si les règles l'autorisent (D-015). */
+  status: (typeof CREATION_STATUSES)[number];
+  /** Classement parmi les lectures d'un même sujet ; 1 = lecture principale. */
+  rank: number | null;
+  mechanism: Mechanism | null;
+};
+
+type RevisePayload = {
+  target: EntityRef;
+  expectedRowVersion: number;
+  status: HypothesisStatus;
+  confidence: Confidence;
+  addEvidence: EvidenceInput[];
+  /** Nouveau classement ; absent = inchangé. */
+  rank?: number | null;
+};
+
+export const CRITIQUE_KINDS = [
+  "ignored_evidence",
+  "simpler_explanation",
+  "overgeneralization",
+  "alternative_not_distinct",
+  "circular_reasoning",
+  "other",
+] as const;
+
+export type CritiqueFinding = {
+  kind: (typeof CRITIQUE_KINDS)[number];
+  detail: string;
+  claims: TargetRef[];
+};
+
+type CritiquePayload = {
+  target: EntityRef;
+  findings: CritiqueFinding[];
+};
+
+type RolePayload = {
+  /** Événement du paquet, ou propose_event de cette réponse. */
+  event: TargetRef;
+  subject: MemberInput;
+  role: EpisodeRole;
+  outcome: RoleOutcome | null;
+  citations: SourceCitation[];
+};
+
+type QuestionPayload = {
+  question: string;
+  targets: TargetRef[];
+  discriminatingInfo: string;
+  whyNow: string;
+};
 
 export type SourceCitation = {
   sourceId: string;
@@ -37,6 +216,7 @@ export type SourceCitation = {
 type ClaimPayload = {
   text: string;
   category: Exclude<InformationCategory, "unclassified_note">;
+  modality: ClaimModality;
   validFrom: string | null;
   validTo: string | null;
   citations: SourceCitation[];
@@ -53,6 +233,39 @@ type EventPayload = {
   citations: SourceCitation[];
 };
 
+/** Réponse prédite d'un acteur à une direction (D-017). */
+export type DirectionPrediction = {
+  actor: MemberInput;
+  response: string;
+  phase: PredictionPhase;
+  horizonDays: number | null;
+};
+
+export type DirectionPayload = {
+  goal: EntityRef | null;
+  title: string;
+  action: string;
+  lever: {
+    kind: LeverKind;
+    /** Lecture actionnée ; null seulement pour « ne rien entreprendre ». */
+    hypothesis: TargetRef | null;
+    mechanismKey: (typeof MECHANISM_KEYS)[number] | null;
+  };
+  conditions: string;
+  effort: (typeof EFFORTS)[number];
+  limits: string;
+  signals: string[];
+  learnsIfFails: string;
+  predictions: DirectionPrediction[];
+};
+
+/** R5.4 : problème et objectif formulés avec les mots de l'utilisateur, cités. */
+export type GoalPayload = {
+  problem: string;
+  goal: string;
+  citations: SourceCitation[];
+};
+
 export type CognitiveOperation =
   | {
       key: string;
@@ -65,10 +278,52 @@ export type CognitiveOperation =
       kind: "propose_event";
       payload: EventPayload;
       rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_hypothesis";
+      payload: HypothesisPayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "revise_hypothesis";
+      payload: RevisePayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_question";
+      payload: QuestionPayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_critique";
+      payload: CritiquePayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_role";
+      payload: RolePayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_direction";
+      payload: DirectionPayload;
+      rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_goal";
+      payload: GoalPayload;
+      rationale: string;
     };
 
 export type CognitiveProposal = {
-  schemaVersion: typeof COGNITION_SCHEMA_VERSION;
+  schemaVersion: (typeof SUPPORTED_SCHEMA_VERSIONS)[number];
   requestId: string;
   workspaceId: string;
   baseRevision: number;
@@ -105,7 +360,16 @@ export type ContextPacket = {
   annotations: unknown[];
   questions: unknown[];
   goals: unknown[];
+  /** Rôles des épisodes du paquet (D-013). */
+  roles: unknown[];
+  /** Relations pertinentes et leurs indicateurs calculés (D-012). */
+  relations: unknown[];
+  /** Directions en cours et actions avec prédictions figées et résultat (BRIEF-005). */
+  directions: unknown[];
+  actions: unknown[];
   coverage: { included: string[]; omissions: string[]; truncated: boolean };
+  /** D-026 : mémoire de travail ou relecture complète. */
+  memory?: "working" | "full";
   allowedOperations: CognitiveOperationKind[];
   limits: { maxBytes: number; maxOperations: number };
 };
@@ -130,6 +394,12 @@ export type PrepareAnalysisCommand = {
   expiresAt?: string;
   mode?: AnalysisMode;
   providerId?: string;
+  /**
+   * D-026 : « working » (par défaut) envoie l'état compact du modèle du monde
+   * et le texte des seules notes non encore analysées ; « full » est la
+   * relecture complète du texte brut, contre l'ancrage.
+   */
+  context?: "working" | "full";
 };
 
 export type AnalysisPreview = {
@@ -146,6 +416,13 @@ export type AnalysisPreview = {
   summary: string | null;
   operations: CognitiveOperation[];
   errors: Array<{ code: string; message: string }>;
+  /** D-025 : opérations écartées (citation fausse ou dépendante), le reste s'applique. */
+  droppedOperations: Array<{
+    key: string;
+    kind: string;
+    code: string;
+    message: string;
+  }>;
   applicationResult: ApplicationResult | null;
   telemetry: {
     manualWaitDurationMs: number | null;
@@ -276,35 +553,581 @@ function citations(value: unknown) {
   return value.map(citation);
 }
 
-const categories: Array<Exclude<InformationCategory, "unclassified_note">> = [
-  "explicit_statement",
-  "sourced_observation",
-  "reported_observation",
-  "user_impression",
-  "inference",
-];
-const precisions: TemporalPrecision[] = [
-  "exact",
-  "day",
-  "approximate",
-  "interval",
-  "unknown",
-];
+const categories: readonly Exclude<InformationCategory, "unclassified_note">[] =
+  CLAIM_CATEGORIES;
+const claimModalities: readonly ClaimModality[] = CLAIM_MODALITIES;
+const precisions: readonly TemporalPrecision[] = TEMPORAL_PRECISIONS;
+
+function targetRef(value: unknown, name: string): TargetRef {
+  const input = object(value, name);
+  if ("proposalKey" in input) {
+    exactKeys(input, ["proposalKey"], name);
+    return { proposalKey: text(input.proposalKey, `${name}.proposalKey`, 80) };
+  }
+  return reference(input);
+}
+
+function oneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  code: string,
+  message: string,
+): T {
+  if (!allowed.includes(value as T)) throw new DomainError(code, message);
+  return value as T;
+}
+
+function textOrNull(value: unknown, name: string, maximum: number) {
+  return value === null ? null : text(value, name, maximum);
+}
+
+function evidenceList(value: unknown, name: string): EvidenceInput[] {
+  if (!Array.isArray(value) || value.length > 50)
+    throw new DomainError(
+      "invalid_evidence",
+      `${name} doit être une liste de 0 à 50 preuves.`,
+    );
+  return value.map((item) => {
+    const input = object(item, name);
+    exactKeys(input, ["claim", "stance"], name);
+    return {
+      claim: targetRef(input.claim, `${name}.claim`),
+      stance: oneOf(
+        input.stance,
+        EVIDENCE_STANCES,
+        "invalid_evidence",
+        "stance doit valoir supports ou contradicts.",
+      ),
+    };
+  });
+}
+
+const depths = DEPTHS;
+const confidences = CONFIDENCES;
+const hypothesisStatuses = HYPOTHESIS_STATUSES;
+
+function subjectInput(value: unknown): HypothesisSubjectInput {
+  const input = object(value, "subject");
+  // D-025 : une relation est une dyade ou un groupe (3 à 8 membres), écrit
+  // { relation: [...] } ou { group: [...] } ; les deux formes sont stockées
+  // comme une relation à plusieurs membres.
+  if ("relation" in input || "group" in input) {
+    const key = "relation" in input ? "relation" : "group";
+    exactKeys(input, [key], "subject");
+    const members = input[key];
+    if (!Array.isArray(members) || members.length < 2 || members.length > 8)
+      throw new DomainError(
+        "invalid_subject",
+        "Une relation réunit 2 membres, un groupe de 3 à 8 membres.",
+      );
+    return { relation: members.map(memberInput) };
+  }
+  return memberInput(value);
+}
+
+function memberInput(value: unknown): MemberInput {
+  const input = object(value, "subject");
+  // RAPPORT-010 : le paquet décrit les membres sous la forme
+  // { kind: "self" } ou { kind: "person", personId }. Le modèle recopie
+  // parfois cette forme ; elle est sans ambiguïté, on la normalise.
+  if (input.kind === "self" && Object.keys(input).length === 1)
+    return { self: true };
+  if (input.kind === "person") {
+    const id = input.personId ?? input.id;
+    const extra = Object.keys(input).filter(
+      (key) => !["kind", "personId", "id"].includes(key),
+    );
+    if (typeof id === "string" && id && !extra.length)
+      return { person: { kind: "person", id } };
+  }
+  const keys = Object.keys(input);
+  if (keys.length !== 1)
+    throw new DomainError(
+      "invalid_subject",
+      "Un sujet est { person }, { mention } ou { self: true }.",
+    );
+  if ("person" in input) {
+    const person = reference(input.person);
+    if (person.kind !== "person")
+      throw new DomainError(
+        "invalid_subject",
+        "Le sujet doit être une personne.",
+      );
+    return { person };
+  }
+  if ("mention" in input)
+    return { mention: text(input.mention, "subject.mention", 120) };
+  if ("self" in input && input.self === true) return { self: true };
+  throw new DomainError(
+    "invalid_subject",
+    "Un sujet est { person }, { mention } ou { self: true }.",
+  );
+}
+
+function hypothesisOperation(
+  key: string,
+  rationale: string,
+  payload: Record<string, unknown>,
+): CognitiveOperation {
+  exactKeys(
+    payload,
+    [
+      "statement",
+      "depth",
+      "framework",
+      "construct",
+      "confidence",
+      "subjects",
+      "evidence",
+      "limits",
+      "revisionConditions",
+      "alternativeTo",
+      "validFrom",
+      "validTo",
+      "status",
+      "rank",
+      "mechanism",
+    ],
+    "propose_hypothesis.payload",
+  );
+  if (!Array.isArray(payload.subjects) || payload.subjects.length === 0)
+    throw new DomainError(
+      "invalid_subject",
+      "Une hypothèse exige au moins un sujet.",
+    );
+  const evidence = evidenceList(payload.evidence, "hypothesis.evidence");
+  if (!evidence.some((item) => item.stance === "supports"))
+    throw new DomainError(
+      "invalid_evidence",
+      "Une hypothèse exige au moins une preuve favorable.",
+    );
+  return {
+    key,
+    kind: "propose_hypothesis",
+    rationale,
+    payload: {
+      statement: text(payload.statement, "hypothesis.statement", 2_000),
+      depth: oneOf(
+        payload.depth,
+        depths,
+        "invalid_depth",
+        "Profondeur inconnue.",
+      ),
+      framework: textOrNull(payload.framework, "hypothesis.framework", 240),
+      construct: textOrNull(payload.construct, "hypothesis.construct", 240),
+      confidence: oneOf(
+        payload.confidence,
+        confidences,
+        "invalid_confidence",
+        "Confiance inconnue.",
+      ),
+      subjects: payload.subjects.map(subjectInput),
+      evidence,
+      limits: text(payload.limits, "hypothesis.limits", 2_000),
+      revisionConditions: text(
+        payload.revisionConditions,
+        "hypothesis.revisionConditions",
+        2_000,
+      ),
+      alternativeTo:
+        payload.alternativeTo === null
+          ? null
+          : targetRef(payload.alternativeTo, "hypothesis.alternativeTo"),
+      validFrom: dateOrNull(payload.validFrom, "hypothesis.validFrom"),
+      validTo: dateOrNull(payload.validTo, "hypothesis.validTo"),
+      status:
+        payload.status === undefined
+          ? "draft"
+          : oneOf(
+              payload.status,
+              CREATION_STATUSES,
+              "invalid_status",
+              "À la création, le statut est « draft » ou « plausible ».",
+            ),
+      rank: rankOrNull(payload.rank, "hypothesis.rank"),
+      mechanism: mechanismOrNull(payload.mechanism),
+    },
+  };
+}
+
+function rankOrNull(value: unknown, name: string) {
+  if (value === undefined || value === null) return null;
+  if (!Number.isInteger(value) || Number(value) < 1 || Number(value) > 20)
+    throw new DomainError(
+      "invalid_rank",
+      `${name} doit être un entier entre 1 et 20, ou null.`,
+    );
+  return Number(value);
+}
+
+function mechanismOrNull(value: unknown): Mechanism | null {
+  if (value === undefined || value === null) return null;
+  const input = object(value, "hypothesis.mechanism");
+  exactKeys(input, [...MECHANISM_KEYS], "hypothesis.mechanism");
+  const mechanism: Mechanism = {};
+  for (const key of MECHANISM_KEYS)
+    if (input[key] !== undefined && input[key] !== null)
+      mechanism[key] = text(input[key], `mechanism.${key}`, 1_000);
+  if (!Object.keys(mechanism).length)
+    throw new DomainError(
+      "invalid_mechanism",
+      "Une formulation mécaniste renseigne au moins un champ.",
+    );
+  return mechanism;
+}
+
+function reviseOperation(
+  key: string,
+  rationale: string,
+  payload: Record<string, unknown>,
+): CognitiveOperation {
+  exactKeys(
+    payload,
+    [
+      "target",
+      "expectedRowVersion",
+      "status",
+      "confidence",
+      "addEvidence",
+      "rank",
+    ],
+    "revise_hypothesis.payload",
+  );
+  const target = reference(payload.target);
+  if (target.kind !== "hypothesis")
+    throw new DomainError(
+      "invalid_reference",
+      "revise_hypothesis vise une hypothèse existante.",
+    );
+  if (
+    !Number.isInteger(payload.expectedRowVersion) ||
+    Number(payload.expectedRowVersion) < 1
+  )
+    throw new DomainError(
+      "invalid_proposal",
+      "expectedRowVersion doit être un entier positif.",
+    );
+  return {
+    key,
+    kind: "revise_hypothesis",
+    rationale,
+    payload: {
+      target,
+      expectedRowVersion: Number(payload.expectedRowVersion),
+      status: oneOf(
+        payload.status,
+        hypothesisStatuses,
+        "invalid_status",
+        "Statut d’hypothèse inconnu.",
+      ),
+      confidence: oneOf(
+        payload.confidence,
+        confidences,
+        "invalid_confidence",
+        "Confiance inconnue.",
+      ),
+      addEvidence: evidenceList(payload.addEvidence, "revise.addEvidence"),
+      ...(payload.rank === undefined
+        ? {}
+        : { rank: rankOrNull(payload.rank, "revise.rank") }),
+    },
+  };
+}
+
+function questionOperation(
+  key: string,
+  rationale: string,
+  payload: Record<string, unknown>,
+): CognitiveOperation {
+  exactKeys(
+    payload,
+    ["question", "targets", "discriminatingInfo", "whyNow"],
+    "propose_question.payload",
+  );
+  if (
+    !Array.isArray(payload.targets) ||
+    payload.targets.length === 0 ||
+    payload.targets.length > 10
+  )
+    throw new DomainError(
+      "invalid_question",
+      "Une question cible entre 1 et 10 hypothèses.",
+    );
+  return {
+    key,
+    kind: "propose_question",
+    rationale,
+    payload: {
+      question: text(payload.question, "question.question", 500),
+      targets: payload.targets.map((item) =>
+        targetRef(item, "question.targets"),
+      ),
+      discriminatingInfo: text(
+        payload.discriminatingInfo,
+        "question.discriminatingInfo",
+        1_000,
+      ),
+      whyNow: text(payload.whyNow, "question.whyNow", 1_000),
+    },
+  };
+}
+
+function critiqueOperation(
+  key: string,
+  rationale: string,
+  payload: Record<string, unknown>,
+): CognitiveOperation {
+  exactKeys(payload, ["target", "findings"], "propose_critique.payload");
+  const target = reference(payload.target);
+  if (target.kind !== "hypothesis")
+    throw new DomainError(
+      "invalid_reference",
+      "propose_critique vise une hypothèse existante.",
+    );
+  if (!Array.isArray(payload.findings) || payload.findings.length > 20)
+    throw new DomainError(
+      "invalid_critique",
+      "findings est une liste de 0 à 20 constats.",
+    );
+  return {
+    key,
+    kind: "propose_critique",
+    rationale,
+    payload: {
+      target,
+      findings: payload.findings.map((item) => {
+        const finding = object(item, "critique.finding");
+        exactKeys(finding, ["kind", "detail", "claims"], "critique.finding");
+        if (!Array.isArray(finding.claims) || finding.claims.length > 20)
+          throw new DomainError(
+            "invalid_critique",
+            "claims est une liste de 0 à 20 références.",
+          );
+        return {
+          kind: oneOf(
+            finding.kind,
+            CRITIQUE_KINDS,
+            "invalid_critique",
+            "Type de constat critique inconnu.",
+          ),
+          detail: text(finding.detail, "critique.detail", 1_000),
+          claims: finding.claims.map((claim) =>
+            targetRef(claim, "critique.claims"),
+          ),
+        };
+      }),
+    },
+  };
+}
+
+function stringList(
+  value: unknown,
+  name: string,
+  minimum: number,
+  maximum: number,
+  length: number,
+) {
+  if (!Array.isArray(value) || value.length < minimum || value.length > maximum)
+    throw new DomainError(
+      "invalid_direction",
+      `${name} doit contenir entre ${minimum} et ${maximum} éléments.`,
+    );
+  return value.map((item, index) => text(item, `${name}[${index}]`, length));
+}
+
+/** BRIEF-005 : une direction nomme son levier et prédit la réponse des acteurs. */
+function directionPayload(payload: Record<string, unknown>): DirectionPayload {
+  exactKeys(
+    payload,
+    [
+      "goal",
+      "title",
+      "action",
+      "lever",
+      "conditions",
+      "effort",
+      "limits",
+      "signals",
+      "learnsIfFails",
+      "predictions",
+    ],
+    "propose_direction.payload",
+  );
+  const lever = object(payload.lever, "direction.lever");
+  exactKeys(lever, ["kind", "hypothesis", "mechanismKey"], "direction.lever");
+  const kind = oneOf(
+    lever.kind,
+    LEVER_KINDS,
+    "invalid_direction",
+    `lever.kind doit valoir ${LEVER_KINDS.join(", ")}.`,
+  );
+  const hypothesis =
+    lever.hypothesis === null || lever.hypothesis === undefined
+      ? null
+      : targetRef(lever.hypothesis, "direction.lever.hypothesis");
+  if (kind !== "do_nothing" && !hypothesis)
+    throw new DomainError(
+      "direction_without_lever",
+      "Une direction d’action doit nommer la lecture qu’elle actionne (lever.hypothesis).",
+    );
+  const goal =
+    payload.goal === null || payload.goal === undefined
+      ? null
+      : reference(payload.goal);
+  if (goal && goal.kind !== "goal")
+    throw new DomainError(
+      "invalid_direction",
+      "direction.goal doit viser un objectif { kind: goal }.",
+    );
+  if (
+    !Array.isArray(payload.predictions) ||
+    payload.predictions.length < 1 ||
+    payload.predictions.length > 5
+  )
+    throw new DomainError(
+      "direction_without_prediction",
+      "Une direction porte entre 1 et 5 prédictions.",
+    );
+  return {
+    goal,
+    title: text(payload.title, "direction.title", 160),
+    action: text(payload.action, "direction.action", 800),
+    lever: {
+      kind,
+      hypothesis,
+      mechanismKey:
+        lever.mechanismKey === null || lever.mechanismKey === undefined
+          ? null
+          : oneOf(
+              lever.mechanismKey,
+              MECHANISM_KEYS,
+              "invalid_direction",
+              `lever.mechanismKey doit valoir ${MECHANISM_KEYS.join(", ")} ou null.`,
+            ),
+    },
+    conditions: text(payload.conditions, "direction.conditions", 800),
+    effort: oneOf(
+      payload.effort,
+      EFFORTS,
+      "invalid_direction",
+      "effort doit valoir low, moderate ou high.",
+    ),
+    limits: text(payload.limits, "direction.limits", 800),
+    signals: stringList(payload.signals, "direction.signals", 1, 5, 300),
+    learnsIfFails: text(payload.learnsIfFails, "direction.learnsIfFails", 600),
+    predictions: payload.predictions.map((item, index) => {
+      const prediction = object(item, `direction.predictions[${index}]`);
+      exactKeys(
+        prediction,
+        ["actor", "response", "phase", "horizonDays"],
+        "direction.prediction",
+      );
+      const horizon = prediction.horizonDays;
+      if (
+        horizon !== undefined &&
+        horizon !== null &&
+        (!Number.isInteger(horizon) ||
+          Number(horizon) < 1 ||
+          Number(horizon) > 365)
+      )
+        throw new DomainError(
+          "invalid_direction",
+          "horizonDays doit être un entier entre 1 et 365, ou null.",
+        );
+      return {
+        actor: memberInput(prediction.actor),
+        response: text(prediction.response, "prediction.response", 600),
+        phase: oneOf(
+          prediction.phase,
+          PREDICTION_PHASES,
+          "invalid_direction",
+          "phase doit valoir immediate, transitional ou equilibrium.",
+        ) as PredictionPhase,
+        horizonDays:
+          horizon === undefined || horizon === null ? null : Number(horizon),
+      };
+    }),
+  };
+}
 
 function operation(value: unknown): CognitiveOperation {
   const input = object(value, "operation");
   exactKeys(input, ["key", "kind", "payload", "rationale"], "operation");
   const key = text(input.key, "operation.key", 80);
-  const rationale = text(input.rationale, "operation.rationale", 800);
+  const rationale = text(input.rationale, "operation.rationale", 1500);
   const payload = object(input.payload, "operation.payload");
+  if (input.kind === "propose_goal") {
+    exactKeys(
+      payload,
+      ["problem", "goal", "citations"],
+      "propose_goal.payload",
+    );
+    const list = citations(payload.citations);
+    if (list.length > 5)
+      throw new DomainError(
+        "invalid_goal",
+        "Un objectif proposé porte entre 1 et 5 citations.",
+      );
+    return {
+      key,
+      kind: "propose_goal",
+      rationale,
+      payload: {
+        problem: text(payload.problem, "goal.problem", 600),
+        goal: text(payload.goal, "goal.goal", 240),
+        citations: list,
+      },
+    };
+  }
+  if (input.kind === "propose_direction")
+    return {
+      key,
+      kind: "propose_direction",
+      rationale,
+      payload: directionPayload(payload),
+    };
+  if (input.kind === "propose_role") {
+    exactKeys(
+      payload,
+      ["event", "subject", "role", "outcome", "citations"],
+      "propose_role.payload",
+    );
+    return {
+      key,
+      kind: "propose_role",
+      rationale,
+      payload: {
+        event: targetRef(payload.event, "role.event"),
+        subject: memberInput(payload.subject),
+        role: oneOf(
+          payload.role,
+          EPISODE_ROLES,
+          "invalid_role",
+          "Rôle d’épisode inconnu.",
+        ),
+        outcome:
+          payload.outcome === null || payload.outcome === undefined
+            ? null
+            : oneOf(
+                payload.outcome,
+                ROLE_OUTCOMES,
+                "invalid_role",
+                "Issue de rôle inconnue.",
+              ),
+        citations: citations(payload.citations),
+      },
+    };
+  }
   if (input.kind === "propose_claim") {
     exactKeys(
       payload,
-      ["text", "category", "validFrom", "validTo", "citations"],
+      ["text", "category", "modality", "validFrom", "validTo", "citations"],
       "propose_claim.payload",
     );
     if (!categories.includes(payload.category as (typeof categories)[number]))
       throw new DomainError("invalid_category", "Catégorie de claim inconnue.");
+    if (!claimModalities.includes(payload.modality as ClaimModality))
+      throw new DomainError("invalid_modality", "Modalité de claim inconnue.");
     return {
       key,
       kind: input.kind,
@@ -312,6 +1135,7 @@ function operation(value: unknown): CognitiveOperation {
       payload: {
         text: text(payload.text, "claim.text", 2_000),
         category: payload.category as ClaimPayload["category"],
+        modality: payload.modality as ClaimModality,
         validFrom: dateOrNull(payload.validFrom, "claim.validFrom"),
         validTo: dateOrNull(payload.validTo, "claim.validTo"),
         citations: citations(payload.citations),
@@ -377,6 +1201,14 @@ function operation(value: unknown): CognitiveOperation {
       },
     };
   }
+  if (input.kind === "propose_hypothesis")
+    return hypothesisOperation(key, rationale, payload);
+  if (input.kind === "revise_hypothesis")
+    return reviseOperation(key, rationale, payload);
+  if (input.kind === "propose_question")
+    return questionOperation(key, rationale, payload);
+  if (input.kind === "propose_critique")
+    return critiqueOperation(key, rationale, payload);
   throw new DomainError(
     "operation_not_allowed",
     "Opération cognitive inconnue.",
@@ -401,9 +1233,13 @@ export function parseCognitiveProposal(value: unknown): CognitiveProposal {
     ],
     "proposal",
   );
-  if (input.schemaVersion !== COGNITION_SCHEMA_VERSION)
+  if (
+    !SUPPORTED_SCHEMA_VERSIONS.includes(
+      input.schemaVersion as (typeof SUPPORTED_SCHEMA_VERSIONS)[number],
+    )
+  )
     throw new DomainError(
-      "unsupported_schema",
+      "unsupported_schema_version",
       "Version cognitive non prise en charge.",
     );
   if (!Number.isInteger(input.baseRevision) || Number(input.baseRevision) < 0)
@@ -504,7 +1340,15 @@ export function parsePrepareAnalysisCommand(
   const input = object(value, "analysis.prepare");
   exactKeys(
     input,
-    ["task", "focus", "allowedOperations", "expiresAt", "mode", "providerId"],
+    [
+      "task",
+      "focus",
+      "allowedOperations",
+      "expiresAt",
+      "mode",
+      "providerId",
+      "context",
+    ],
     "analysis.prepare",
   );
   const tasks: AnalysisTask[] = ["extract", "interpret", "revise", "explore"];
@@ -513,16 +1357,19 @@ export function parsePrepareAnalysisCommand(
   const focus = input.focus ?? [];
   if (!Array.isArray(focus))
     throw new DomainError("invalid_focus", "focus doit être une liste.");
-  const allowed = input.allowedOperations ?? ["propose_event", "propose_claim"];
+  const allowed =
+    input.allowedOperations ?? DEFAULT_OPERATIONS[input.task as AnalysisTask];
   if (!Array.isArray(allowed))
     throw new DomainError(
       "invalid_allowed_operations",
       "allowedOperations doit être une liste.",
     );
-  const known: CognitiveOperationKind[] = ["propose_event", "propose_claim"];
   if (
     allowed.length === 0 ||
-    allowed.some((kind) => !known.includes(kind as CognitiveOperationKind))
+    allowed.some(
+      (kind) =>
+        !COGNITIVE_OPERATION_KINDS.includes(kind as CognitiveOperationKind),
+    )
   )
     throw new DomainError(
       "invalid_allowed_operations",
@@ -551,5 +1398,14 @@ export function parsePrepareAnalysisCommand(
       input.providerId === undefined
         ? undefined
         : text(input.providerId, "providerId", 160),
+    context:
+      input.context === undefined
+        ? undefined
+        : oneOf(
+            input.context,
+            ["working", "full"] as const,
+            "invalid_context",
+            "context vaut working ou full.",
+          ),
   };
 }

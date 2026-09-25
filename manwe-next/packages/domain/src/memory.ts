@@ -10,6 +10,8 @@ export type InformationCategory =
   | "inference"
   | "unclassified_note";
 
+export type ClaimModality = "actual" | "intended" | "hypothetical";
+
 export type AnnotationType =
   | "factual_correction"
   | "context"
@@ -33,7 +35,7 @@ export type TargetKind =
   | "question"
   | "goal";
 
-export type EntityKind = TargetKind | "annotation";
+export type EntityKind = TargetKind | "annotation" | "direction" | "action";
 export type EntityRef = { kind: EntityKind; id: string };
 
 export type Source = {
@@ -71,6 +73,8 @@ export type HumanAnnotation = {
   target: EntityRef;
   text: string;
   annotationType: AnnotationType;
+  /** Source citable créée pour une correction, un contexte ou un désaccord. */
+  sourceId: string | null;
   revision: number;
   createdAt: string;
 };
@@ -80,10 +84,29 @@ export type Goal = {
   workspaceId: string;
   text: string;
   confirmedByUser: boolean;
+  /** R5.4 : problème formulé avec l'objectif, s'il vient de l'analyse. */
+  problem: string | null;
+  origin: "user" | "analysis";
+  citations: Array<{ sourceId: string; quote: string }>;
+  /** Proposition écartée par l'utilisateur. */
+  dismissed: boolean;
   revision: number;
   createdAt: string;
   updatedAt: string;
 };
+
+/** Objectif courant : le plus récent confirmé par l'utilisateur et non écarté. */
+export function currentGoal(goals: Goal[]): Goal | undefined {
+  return goals.find((goal) => goal.confirmedByUser && !goal.dismissed);
+}
+
+/** Proposition d'objectif en attente : non confirmée, non écartée. */
+export function pendingGoal(goals: Goal[]): Goal | undefined {
+  return goals.find(
+    (goal) =>
+      goal.origin === "analysis" && !goal.confirmedByUser && !goal.dismissed,
+  );
+}
 
 export type Person = {
   id: string;
@@ -108,21 +131,187 @@ export type Episode = {
   updatedAt: string;
 };
 
+export type RelationMember =
+  | { kind: "person"; personId: string }
+  | { kind: "self" };
+
+/** Une hypothèse porte sur une personne, sur l'utilisateur ou sur une relation (D-012). */
+export type HypothesisSubject =
+  | RelationMember
+  | { kind: "relation"; relationId: string; members: RelationMember[] };
+
+/** Rôle tenu dans un épisode, extrait avec citation (D-013). */
+export type EpisodeRoleRecord = {
+  id: string;
+  eventId: string;
+  subject: RelationMember;
+  role:
+    | "initiator"
+    | "recipient"
+    | "requester"
+    | "helper"
+    | "responder"
+    | "observer";
+  outcome: "accepted" | "declined" | "unknown" | null;
+  citations: Array<{
+    sourceId: string;
+    contentHash: string;
+    spanStart: number;
+    spanEnd: number;
+    quote: string;
+  }>;
+  createdRevision: number;
+};
+
+/** Direction proposée pour un objectif (BRIEF-005, D-017) : levier et prédictions. */
+export type DirectionRecord = {
+  id: string;
+  goalId: string | null;
+  title: string;
+  action: string;
+  lever: {
+    kind:
+      | "change_reward"
+      | "lower_barrier"
+      | "alternative_source"
+      | "disconfirming_experience"
+      | "change_game"
+      | "do_nothing";
+    hypothesisId: string | null;
+    mechanismKey: string | null;
+  };
+  conditions: string;
+  effort: "low" | "moderate" | "high";
+  limits: string;
+  signals: string[];
+  learnsIfFails: string;
+  predictions: Array<{
+    actor: RelationMember;
+    response: string;
+    phase: "immediate" | "transitional" | "equilibrium";
+    horizonDays: number | null;
+  }>;
+  status: "proposed" | "chosen" | "dismissed" | "superseded";
+  createdRevision: number;
+  createdAt: string;
+};
+
+/** Action choisie par l'utilisateur (D-016) : attente figée avant l'essai, puis résultat. */
+export type ActionRecord = {
+  id: string;
+  directionId: string;
+  status: "planned" | "done" | "abandoned";
+  expectation: {
+    predictions: DirectionRecord["predictions"];
+    userExpectation: string | null;
+  };
+  expectationRecordedAt: string;
+  chosenRevision: number;
+  outcome: {
+    text: string;
+    annotationId: string;
+    sourceId: string | null;
+    recordedAt: string;
+  } | null;
+  /** Verdict facultatif de l'utilisateur, un par prédiction. */
+  verdicts: Array<"confirmed" | "refuted" | "unclear" | null> | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Relation (dyade) et ses indicateurs calculés, jamais des preuves à eux seuls. */
+export type RelationRecord = {
+  id: string;
+  members: RelationMember[];
+  indicators: {
+    episodes: number;
+    initiatives: Record<string, number>;
+    requests: Record<string, number>;
+    acceptedRequests: Record<string, number>;
+    declinedRequests: Record<string, number>;
+    help: Record<string, number>;
+    counterexamples: number;
+    firstAt: string | null;
+    lastAt: string | null;
+    spanDays: number;
+    episodesPer30Days: number | null;
+  };
+};
+
+export type HypothesisEvidence = {
+  claimId: string;
+  stance: "supports" | "contradicts";
+  addedRevision: number;
+  supersededRevision: number | null;
+};
+
 export type Hypothesis = {
   id: string;
   workspaceId: string;
   statement: string;
-  status: "draft" | "plausible" | "review" | "superseded";
+  depth: "D1" | "D2" | "D3" | "D4" | "D5";
+  framework: string | null;
+  construct: string | null;
+  confidence: "low" | "moderate" | "high";
+  status: "draft" | "plausible" | "contradicted" | "superseded";
+  needsReview: boolean;
+  reviewReason: "correction" | "context" | "disagreement" | "answer" | null;
+  reviewSinceRevision: number | null;
+  limits: string | null;
+  revisionConditions: string | null;
+  validFrom: string | null;
+  validTo: string | null;
+  alternativeTo: string | null;
+  /** Rang parmi les lectures d'un même sujet ; 1 = lecture principale (D-015). */
+  rank: number | null;
+  /** Formulation mécaniste (D-017, D-019) : ce qui est optimisé, protégé, prédit. */
+  mechanism: Partial<
+    Record<
+      | "optimizes"
+      | "protects"
+      | "defenses"
+      | "beliefs"
+      | "triggers"
+      | "soothes"
+      | "barrier"
+      | "prediction",
+      string
+    >
+  > | null;
+  subjects: HypothesisSubject[];
+  evidence: HypothesisEvidence[];
+  /** Comptages calculés par le backend (D-007), jamais déclarés par le modèle. */
+  counts: {
+    supportUnits: number;
+    contradictUnits: number;
+    anchoredSupports: number;
+    anchoredContradicts: number;
+    supportSpanDays: number;
+  };
+  /** Passes critiques (R3.4) : jamais des preuves, à traiter par une révision. */
+  critiques: HypothesisCritique[];
+  createdRevision: number;
   revision: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type HypothesisCritique = {
+  id: string;
+  findings: Array<{ kind: string; detail: string; claimIds: string[] }>;
+  createdRevision: number;
+  resolvedRevision: number | null;
 };
 
 export type OpenQuestion = {
   id: string;
   workspaceId: string;
   question: string;
-  status: "open" | "answered" | "dismissed";
+  status: "open" | "answered" | "unknown" | "dismissed";
+  targets: EntityRef[];
+  discriminatingInfo: string | null;
+  whyNow: string | null;
+  answerSourceId: string | null;
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -133,7 +322,17 @@ export type Claim = {
   workspaceId: string;
   text: string;
   category: Exclude<InformationCategory, "unclassified_note">;
+  modality: ClaimModality;
   knowledgeStatus: "unresolved" | "supported" | "contradicted" | "superseded";
+  /** Révision de la correction factuelle de l'utilisateur ; le claim ne compte plus. */
+  contestedRevision: number | null;
+  /** Extraits exacts qui fondent le claim. */
+  citations: Array<{
+    sourceId: string;
+    spanStart: number;
+    spanEnd: number;
+    quote: string;
+  }>;
   validFrom: string | null;
   validTo: string | null;
   revision: number;
@@ -149,7 +348,10 @@ export type RevisionEntry = {
     | "identity.resolve"
     | "annotate"
     | "goal.update"
-    | "analysis.apply";
+    | "analysis.apply"
+    | "question.answer"
+    | "action.choose"
+    | "action.outcome";
   changedRefs: EntityRef[];
   createdAt: string;
 };
@@ -177,6 +379,10 @@ export type WorkspaceSnapshot = {
   episodes: Episode[];
   hypotheses: Hypothesis[];
   questions: OpenQuestion[];
+  roles: EpisodeRoleRecord[];
+  relations: RelationRecord[];
+  directions: DirectionRecord[];
+  actions: ActionRecord[];
   identityAmbiguities: IdentityAmbiguity[];
   revisions: RevisionEntry[];
 };
@@ -263,6 +469,15 @@ export type AnnotationCommand = {
   text: string;
   annotationType: AnnotationType;
   createdAt?: string;
+};
+
+export type AnswerQuestionCommand = {
+  idempotencyKey: string;
+  questionId: string;
+  /** Réponse libre, « je ne sais pas » ou « ne plus poser ». */
+  choice: "text" | "unknown" | "dismiss";
+  text?: string;
+  recordedAt?: string;
 };
 
 export type GoalCommand = {
@@ -690,6 +905,70 @@ export function parseResolveIdentityCommand(
   };
 }
 
+/** Choix d'une direction par l'utilisateur (D-016) : l'attente est figée ici. */
+export type ChooseDirectionCommand = {
+  idempotencyKey: string;
+  directionId: string;
+  userExpectation?: string | null;
+};
+
+/** Résultat observé d'une action ; verdicts facultatifs, un par prédiction. */
+export type RecordOutcomeCommand = {
+  idempotencyKey: string;
+  actionId: string;
+  text: string;
+  verdicts?: Array<"confirmed" | "refuted" | "unclear" | null> | null;
+  recordedAt?: string;
+};
+
+export function parseChooseDirectionCommand(
+  value: unknown,
+): ChooseDirectionCommand {
+  const input = requireObject(value);
+  if (typeof input.directionId !== "string" || !input.directionId)
+    throw new DomainError("invalid_direction", "Direction inconnue.");
+  return {
+    idempotencyKey: requireIdempotencyKey(input.idempotencyKey),
+    directionId: input.directionId,
+    userExpectation:
+      input.userExpectation === undefined || input.userExpectation === null
+        ? null
+        : requireText(input.userExpectation, "userExpectation", 2_000),
+  };
+}
+
+export function parseRecordOutcomeCommand(
+  value: unknown,
+): RecordOutcomeCommand {
+  const input = requireObject(value);
+  if (typeof input.actionId !== "string" || !input.actionId)
+    throw new DomainError("invalid_action", "Action inconnue.");
+  const verdicts =
+    input.verdicts === undefined || input.verdicts === null
+      ? null
+      : input.verdicts;
+  if (
+    verdicts !== null &&
+    (!Array.isArray(verdicts) ||
+      verdicts.length > 5 ||
+      verdicts.some(
+        (item) =>
+          item !== null && !["confirmed", "refuted", "unclear"].includes(item),
+      ))
+  )
+    throw new DomainError(
+      "invalid_verdicts",
+      "Les verdicts valent confirmed, refuted, unclear ou null.",
+    );
+  return {
+    idempotencyKey: requireIdempotencyKey(input.idempotencyKey),
+    actionId: input.actionId,
+    text: requireText(input.text, "text", 4_000),
+    verdicts: verdicts as RecordOutcomeCommand["verdicts"],
+    recordedAt: optionalDate(input.recordedAt, "recordedAt") ?? undefined,
+  };
+}
+
 export function parseAnnotationCommand(value: unknown): AnnotationCommand {
   const input = requireObject(value);
   const target = requireObject(input.target);
@@ -729,6 +1008,33 @@ export function parseAnnotationCommand(value: unknown): AnnotationCommand {
     text: requireText(input.text, "text", 4_000),
     annotationType: input.annotationType as AnnotationType,
     createdAt: optionalDate(input.createdAt, "createdAt") ?? undefined,
+  };
+}
+
+export function parseAnswerQuestionCommand(
+  value: unknown,
+  questionId: string,
+): AnswerQuestionCommand {
+  const input = requireObject(value);
+  const choices = ["text", "unknown", "dismiss"] as const;
+  if (!choices.includes(input.choice as (typeof choices)[number]))
+    throw new DomainError(
+      "invalid_answer",
+      "choice vaut text, unknown ou dismiss.",
+    );
+  const choice = input.choice as AnswerQuestionCommand["choice"];
+  if (choice !== "text" && input.text !== undefined)
+    throw new DomainError(
+      "invalid_answer",
+      "Seule une réponse libre porte un texte.",
+    );
+  return {
+    idempotencyKey: requireIdempotencyKey(input.idempotencyKey),
+    questionId,
+    choice,
+    text:
+      choice === "text" ? requireText(input.text, "text", 12_000) : undefined,
+    recordedAt: optionalDate(input.recordedAt, "recordedAt") ?? undefined,
   };
 }
 

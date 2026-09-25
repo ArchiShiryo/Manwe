@@ -1,0 +1,133 @@
+Good. Now let me build directions.
+
+Facts relevant:
+- 28/02 (most recent): Léa asked user to organize end-of-season meal; he hesitated then accepted. So the most recent event is another charge accepted — supports d297e3be prediction.
+- 24/02: fatigue expressed, goal confirmed.
+- 26/02: Samir notes he looked lighter the weekend he wasn't at the tournament — external evidence the charge costs him, and that the difference is visible.
+
+Now directions (goal f9df0dc4):
+
+D1: "Nommer le repas comme tâche partagée dès maintenant" — Since the meal is fresh and undivided, use it as the test case: announce what you'll do and ask for two named pieces (Léa takes the room or the invitations, Hugo the drinks/venue, Samir the music). Actually keep concrete: ask one named person for one dated piece. lever: lower_barrier, hypothesis e3b30489 (absence de canal; barrier = formuler une demande change sa position), mechanismKey "barrier". Effort low. Predictions: Léa: immediate (accueille mais renvoie la tenue?) → hmm; Hugo: transitional refus/silence; Samir: immediate acceptation? Signals. learnsIfFails: whether a named, precise, dated request gets a response.
+
+D2: "Rendre à Léa la tâche qui est à son tour" (ballons/maillots): change_reward, hypothesis 8674f4fe (asymétrie stable, barrier: tenir le planning obligerait Léa à porter la charge), mechanismKey "barrier". Action: when Léa relays a task that's hers this month, say "c'était ton tour ce mois-ci — je te le laisse ou on échange ?" Concrete, small step. Predictions: Léa immediate: surprise/justification (transitional), then either executes or proposes a swap (equilibrium).
+
+D3: "Laisser un manquement apparent au lieu de rattraper" — change_reward on bc1f6b60 (Hugo filet de sécurité; barrier: aucune conséquence) mechanismKey "barrier". Action: for one low-stakes, non-critical item (not the match sheets), don't compensate; say plainly "je ne peux pas le faire, il faut que ce soit toi". Predictions: Hugo transitional: insistance/retrait/agacement; group: quelqu'un d'autre se saisit ou non (equilibrium). Limits: risky on critical tasks; may hit the club. learnsIfFails: whether the group absorbs or the void stays.
+
+D4: "Écrire la rotation et la faire valider une fois par le groupe" — change_game on ab81112f (norme non négociable; barrier: personne n'intéresse à ouvrir la question), mechanismKey "barrier" — action: bring a written one-page rotation with names and dates at the next training, read it, and ask each person to confirm their own line; user keeps only his own line. Predictions: Hugo transitional: refuse framework ("je déteste les plannings") ; Léa: approves in form and returns the holding (as before) → so add a counter-move in action: refuse to be the keeper ("je ne tiens pas la liste, chacun coche la sienne"). Hmm, but the action must be concrete/simple. Maybe make D4 about "ne plus être le teneur" — that is the crux of previous failure. Let's keep D4 = written rotation validated by each in person, user not the keeper.
+
+D5: "Ouvrir une source de lien hors club" — alternative_source on d297e3be (D4 attachment; protects: appartenance/estime; soothes: jouer avec eux, être reconnu), mechanismKey "protects". Action: accepter la prochaine proposition de Samir (ou en faire une) hors échéance, et répondre à sa question "pourquoi toujours toi". small. Predictions: Samir immediate: repropose/accueille; self equilibrium: la place au club cesse d'être le seul support. Also test: refuser une petite demande? No.
+
+Hmm, should D5 be tied to 93aab574 (Samir) — plausible D2 — also fine. O2 says each direction must actuate a reading in the packet. d297e3be is D4 — "n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides": d297e3be has 5 anchored supports, 29 days — solid enough. Ok, but maybe safer to tie alternative_source to 93aab574 (D2 plausible) with mechanismKey... 93aab574 mechanism has soothes/barrier. Use hypothesis 93aab574, mechanismKey "barrier" or "soothes". The lever alternative_source: offers another source of the same gain (link, being seen) outside club duties. On 93aab574 the gain: Samir keeps the friendly link; the user avoids explaining. Hmm, targeting the user's gain is on d297e3be. I could reference d297e3be and set mechanismKey "protects". I'll do that, mentioning Samir in the action. Actually maybe reference hypothesis d297e3be with mechanismKey "soothes". Fine: "soothes".
+
+D6: do_nothing.
+
+Optionally D7: "Demander au groupe de nommer un responsable par tâche au tournoi" — overlaps D4. Skip.
+
+Maybe also a direction targeting the group's recognition: "rendre visible la charge" (list publicly what you did) — close to D4.
+
+I'll go with 5 actions? O1 says at least two when possible. 4-5 is fine. Let's do 5 action directions + do_nothing = 6 operations. Plus one question. Total 7 ops, within limits.
+
+Ranks: predictions phases; horizonDays integers.
+
+Let me now write each direction carefully with conditions, effort, limits, signals, learnsIfFails, predictions.
+
+d1 (lower_barrier, e3b30489, barrier): "Demander une chose précise à une personne nommée"
+action: "Pour le repas de fin de saison (2026-02-28), ne pas repartir avec la totalité : demander à une personne nommée une contribution datée et bornée — par exemple « Léa, tu réserves la salle avant vendredi ? » — et laisser la réponse venir sans reprendre la tâche."
+conditions: "Un cadre où la demande peut être refusée sans conséquence grave (tâche non critique, délai court)."
+effort low
+limits: "Un refus ou un silence ne dit pas que le groupe est hostile ; la tâche reste à faire si personne ne la prend, et l'utilisateur devra résister à l'envie de reprendre."
+signals: ["une réponse nominative (oui/non) dans les 48 h", "quelqu'un d'autre pose une question sur l'organisation", "la tâche reste non prise et l'utilisateur la reprend"]
+learnsIfFails: "Si personne ne répond à une demande nominative et datée, la barrière n'est pas le défaut de canal mais la norme du groupe (ab81112f)."
+predictions: 
+- {person Léa}: "répond et prend la tâche ou propose un échange" immediate 3
+- {person Hugo}: "répond par une esquive ou un silence, puis s'engage sur la partie qui l'arrange" transitional 7
+- {self}: "démêle l'angoisse de la tâche non prise sans tout reprendre" transitional 14
+- {person Samir}: "propose spontanément de prendre une part" equilibrium 21
+
+d2 (change_reward, 8674f4fe, barrier): "Rendre à Léa la tâche qui est à son tour"
+action: "La prochaine fois que Léa transmet une tâche qui est au tour d'un autre ce mois-ci (comme les ballons en février), répondre : « ce mois-ci c'était ton tour — je te la laisse, ou on échange ? »"
+conditions: "Quand la rotation est documentée et que la tâche n'est pas urgente au point de faire échouer le club."
+effort low
+limits: "Peut passer pour un comptage ; Léa peut renvoyer la tenue et l'utilisateur se retrouver à tenir la liste."
+signals: ["Léa exécute la tâche ou propose un échange explicite", "la demande revient quand même à l'utilisateur", "Léa formule à son tour une demande nominative à quelqu'un d'autre"]
+learnsIfFails: "Si la tâche reste attribuée à l'utilisateur malgré la rotation rappelée, l'asymétrie ne vient pas d'un malentendu sur le tour mais de la place d'exécutant (846539c8)."
+predictions: 
+- Léa immediate 2: "surprise ou justification (« je croyais que… »), puis exécution ou proposition d'échange"
+- self transitional 10: "inconfort à tenir la position sans reprendre la tâche"
+- Hugo equilibrium 21: "voit la règle s'appliquer et ajuste ou s'esquive davantage"
+
+Hmm Hugo is not in the Léa relation lever... predictions actors can be anyone presumably. Keep it simple: 2-3 predictions.
+
+d3 (change_reward, bc1f6b60, barrier): "Laisser un manquement visible, sans rattraper"
+action: "Choisir une tâche logistique non critique promise par Hugo (clé, trajet, courses) et, cette fois, ne pas compenser : prévenir une fois, à l'avance, « je ne pourrai pas le faire à ta place », puis ne rien faire."
+conditions: "Tâche qui ne met en danger ni un match ni l'argent du club ; prévenir avant plutôt que se taire."
+effort moderate
+limits: "Sur une échéance critique, le vide retombe sur le club ; un silence sans mot peut passer pour un retrait et non pour une limite."
+signals: ["Hugo fait la tâche", "Hugo relance ou demande à quelqu'un d'autre", "la tâche n'est pas faite et personne ne le remarque"]
+learnsIfFails: "Si Hugo exécute dès qu'on cesse de compenser, la lecture « absence de coût » (2296bb92) est confirmée ; si rien ne se passe et que le groupe ne remarque rien, la charge ne tient pas au seul filet personnel."
+predictions:
+- Hugo immediate 5: "relance, minimisation (« je le ferai demain ») ou retrait silencieux"
+- Hugo transitional 14: "insistance ou bouderie avant de prendre la tâche ou de l'abandonner"
+- self transitional 7: "tension à supporter le vide et la tentation de reprendre"
+
+d4 (change_game, ab81112f, barrier): "Faire valider une rotation écrite, chacun sa ligne"
+action: "Apporter à l'entraînement une page unique : tâche, nom, date. La lire à voix haute, demander à chacun de confirmer sa ligne — et annoncer clairement que ce n'est pas toi qui tiens la liste : chacun coche la sienne."
+conditions: "Après un moment où la charge a été visible (tournoi, repas) ; en présence du plus grand nombre."
+effort moderate
+limits: "Hugo a déjà dit détester les plannings ; le groupe peut approuver la forme en renvoyant la tenue à l'utilisateur — c'est exactement le point à ne pas céder."
+signals: ["au moins une personne coche sa ligne sans relance", "la liste est renvoyée à l'utilisateur pour tenue", "Hugo conteste le cadre, pas la tâche"]
+learnsIfFails: "Si la forme est approuvée mais la tenue renvoyée, ce n'est pas le planning qui manque : c'est le refus que quelqu'un d'autre porte la contrainte (ab81112f / 00514913)."
+predictions:
+- Hugo transitional 14: "refuse le cadre (« je déteste les plannings ») ou ne dit rien, puis laisse sa ligne non tenue"
+- Léa immediate 7: "approuve la forme et demande qui tient la liste"
+- self transition/equilibrium...
+
+d5 (alternative_source, d297e3be, soothes): "Prendre le lien hors des tâches"
+action: "Accepter la prochaine proposition de Samir (ou en faire une) hors échéance de tournoi, et répondre à sa question « pourquoi toujours toi ? » — au moins par une phrase sur ce que ça te coûte."
+conditions: "Une semaine sans échéance collective ; une sortie courte suffit."
+effort low
+limits: "Cela ne réduit pas la charge ; si le lien au club reste le seul support de la place, l'effet retombera."
+signals: ["une sortie a lieu", "l'utilisateur dit une phrase sur le coût", "Samir propose de nouveau"]
+learnsIfFails: "Si une sortie hors club ne réduit pas le besoin de porter, la place au club n'est pas la seule ressource en jeu."
+predictions:
+- Samir immediate 7: "repropose et relance la conversation sur la charge"
+- self transitional 21: "découvre que le lien tient sans la charge" (equilibrium 30)
+- Léa/Hugo equilibrium: rien ne change de leur côté sans autre levier.
+
+d6 do_nothing: 
+title "Ne rien changer", action "Continuer comme aujourd'hui : accepter les demandes, compenser les manquements, organiser seul."
+lever: do_nothing, hypothesis null.
+predictions: 
+- self: "charge et fatigue croissantes ; nouveaux renoncements (loisirs) lors des échéances" equilibrium 60
+- Léa: "nouvelles demandes à chaque échéance" equilibrium 30
+- Hugo: "nouveaux désistements aux échéances logistiques" equilibrium 30
+- Samir: "continue de nommer ce qu'il voit, sans suite" equilibrium 30
+conditions/limits/signals/learnsIfFails: still required fields (conditions, effort, limits, signals, learnsIfFails). For do_nothing: conditions "si l'objectif peut attendre la fin de saison", effort low... effort is required field (not nullable per schema, no null allowed? "les champs listés sont obligatoires sauf rank, mechanism et horizonDays"). So effort required for directions — give "low". limits: "l'épuisement et le point de défaillance unique ; la charge augmente avec la saison." signals: ["fatigue exprimée plus souvent", "manquement non rattrapé"]. learnsIfFails: "rien ne change ⇒ le système tient sans redistribution".
+
+Question q1: discriminating: has the user already left a task unfilled and what happened? Targets: 3acf14c1 (no redistribution mechanism), e3b30489 (defect of channel), bc1f6b60. Hmm but predictions of d3 rely on it. Fine.
+
+Question wording: "Quand tu as laissé une tâche du club sans la faire (ou failli le faire), quelqu'un s'en est-il saisi — ou est-ce resté en attente ?" discriminatingInfo: "Départage un groupe qui n'a aucun mécanisme de reprise (3acf14c1) d'un simple défaut de canal (e3b30489) ou d'un filet personnel à Hugo (bc1f6b60) : une reprise par un tiers invalide le do_nothing et soutient les leviers de redistribution." whyNow: "Le repas de fin de saison vient d'être accepté (28/02) : c'est le moment de savoir ce que le groupe fait quand la tâche n'est pas prise."
+
+Ensure not duplicating existing questions: existing #4 asks about 22/02 asking for help; #5 asks hypothetical refusal. Mine asks about past instances of a task left undone. Slight overlap with #4 but distinct (demander de l'aide vs ne pas faire). Hmm, risk of being flagged as repeat? #4: "est-ce que tu as demandé de l'aide... ou est-ce que tu ne l'as pas demandé ?" Mine: did the void ever get filled by someone else. Different discriminator. I'll keep it but phrase clearly differently.
+
+Also, should I propose_goal? G3: no, confirmed goal exists equivalent. Good.
+
+Now, precision: goal reference for directions: {kind:"goal", id:"f9df0dc4-6f95-40a8-9dfb-4a38c1329c02"}.
+
+Lever hypothesis refs: {kind:"hypothesis", id:"..."}.
+
+Outcome: "proposed".
+
+modelDeclaration declaredModel: I'm DeepSeek? The workspace says deepseek-flash. I'll say "deepseek-flash" ... Hmm "ton nom de modèle". I'll put "deepseek-v3.2-flash"? Safer: "deepseek-flash". technicalId null.
+
+Summary: short.
+
+Let me write the JSON. Keys: d1..d6, q1.
+
+Each direction's predictions actor must be MEMBER: {mention:"Léa"} or {kind:"person"...} or {self:true}. Use mention for compact? "mention": prénom tel qu'il apparaît dans une source. Léa, Hugo, Samir appear. Or person refs with ids. I'll use person refs with ids for robustness: 3f2d7c24-6dc5-41e2-b6c7-49b61e128bad (Léa), 3c578f11... (Hugo), 0fb8d632... (Samir).
+
+Write it out.
+
+Also ensure rationale at op level, short, no assertion absent from ops.
+
+Let me draft the final JSON.

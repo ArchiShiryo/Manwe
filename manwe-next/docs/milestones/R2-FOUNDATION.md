@@ -1,6 +1,6 @@
 # R2 — Fondation du transport Sol assisté
 
-Date : 14 septembre 2026. Statut : en cours. **Ne pas annoncer R2 validé.**
+Date : 14 septembre 2026. Statut au 24 septembre 2026 : **validé — mode assisté** (lot à l'aveugle B01, voir [RAPPORT-001](../pilotage/rapports/RAPPORT-001.md)) ; R2.4 complété par le moteur de révision ([RAPPORT-002](../pilotage/rapports/RAPPORT-002.md)). IA-A non validé.
 
 ## Ce qui est implémenté
 

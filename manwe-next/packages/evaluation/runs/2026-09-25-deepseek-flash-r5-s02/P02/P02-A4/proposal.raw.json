@@ -1,0 +1,196 @@
+{
+  "schemaVersion": "1.6",
+  "requestId": "e77771fe-9577-48a4-ba09-02d1491f2005",
+  "workspaceId": "evaluation-2026-09-25-deepseek-flash-r5-s02-P02",
+  "baseRevision": 24,
+  "contextHash": "9b9a938be1183fa8a58240de626fa222fd3595dc84cdae3e51ec5938141a5fa6",
+  "modelDeclaration": {
+    "declaredModel": "deepseek-flash",
+    "role": "analyst",
+    "technicalId": null
+  },
+  "outcome": "proposed",
+  "operations": [
+    {
+      "key": "d1",
+      "kind": "propose_direction",
+      "payload": {
+        "goal": { "kind": "goal", "id": "8dbcc0bd-e55a-4848-bb96-4f81c650ac7b" },
+        "title": "Une tâche, une personne, une date",
+        "action": "Choisir une seule tâche du club à venir et la confier nommément à une personne avec une date précise (par exemple demander à Samir l'appel au gymnase, ou à Hugo une remise datée), puis ne pas la reprendre : ne pas rappeler, ne pas faire à sa place si elle est faite autrement ou plus tard.",
+        "lever": {
+          "kind": "lower_barrier",
+          "hypothesis": { "kind": "hypothesis", "id": "2c85f3df-e9fb-4dd4-99e4-f54817e50983" },
+          "mechanismKey": "barrier"
+        },
+        "conditions": "Une échéance concrète et proche existe et une personne est identifiable ; aucun refus public ni réunion n'est nécessaire.",
+        "effort": "low",
+        "limits": "Ne règle pas la répartition d'ensemble ni les demandes de Léa ; la personne peut accepter puis ne pas faire, et le coût retomberait sur l'utilisateur ; la tentation de vérifier ou de reprendre est le principal point de rupture.",
+        "signals": [
+          "une tâche est faite par quelqu'un d'autre sans intervention de l'utilisateur",
+          "l'utilisateur se surprend à vérifier si c'est fait",
+          "une remarque du type « je croyais que tu t'en occupais »"
+        ],
+        "learnsIfFails": "Si la tâche est faite sans lui, le frein était de son côté plus que du côté du club ; si elle retombe toujours sur lui, le frein est dans le club ou dans la relation ; si c'est lui qui la reprend, le frein est chez lui.",
+        "predictions": [
+          {
+            "actor": { "person": { "kind": "person", "id": "a5e7aa3a-2c0a-4a3f-90fc-e0f166af15ee" } },
+            "response": "Accueille favorablement la demande et laisse la suite à l'utilisateur (« super, tu le tiens à jour ? »), comme au planning du 27 janvier.",
+            "phase": "immediate",
+            "horizonDays": 7
+          },
+          {
+            "actor": { "self": true },
+            "response": "Hésite ou vérifie discrètement si la tâche confiée a été faite, et ressent l'envie de la reprendre.",
+            "phase": "transitional",
+            "horizonDays": 21
+          },
+          {
+            "actor": { "person": { "kind": "person", "id": "671cb28d-fe7c-4e0d-a2d4-13a4287a7dd5" } },
+            "response": "Remarque le changement ou propose de prendre une part, lui qui nomme déjà la charge.",
+            "phase": "equilibrium",
+            "horizonDays": 45
+          }
+        ]
+      },
+      "rationale": "Petit pas qui abaisse la barrière de la lecture principale sur lui-même : refuser ou déléguer rendrait le déséquilibre visible et risquerait sa place, donc la demande porte sur une seule tâche nominative."
+    },
+    {
+      "key": "d2",
+      "kind": "propose_direction",
+      "payload": {
+        "goal": { "kind": "goal", "id": "8dbcc0bd-e55a-4848-bb96-4f81c650ac7b" },
+        "title": "Faire écrire la répartition par le groupe",
+        "action": "Lors de la prochaine réunion, faire lister les échéances à venir et demander à chacun d'inscrire lui-même son nom en face d'une tâche ; annoncer une ou deux tâches que l'utilisateur ne prend plus, et ne pas tenir la liste à leur place : chacun lit la sienne.",
+        "lever": {
+          "kind": "change_game",
+          "hypothesis": { "kind": "hypothesis", "id": "7c1d79d4-6ff1-48cd-b5a3-56048f628610" },
+          "mechanismKey": "optimizes"
+        },
+        "conditions": "Un moment collectif existe déjà (réunion, entraînement, fil de l'équipe) et l'utilisateur accepte que la liste ne soit pas tenue par lui.",
+        "effort": "moderate",
+        "limits": "Léa peut approuver puis demander qui tient la liste, et Hugo peut ne rien inscrire ; des tâches sans nom devront rester sans nom sans qu'il les reprenne, sinon le jeu se referme ; cela ne garantit pas que Léa et Hugo se répartissent entre eux.",
+        "signals": [
+          "au moins une tâche porte un autre nom que le sien",
+          "Hugo s'inscrit ou ne s'inscrit pas",
+          "une échéance reste sans nom",
+          "l'utilisateur est sollicité pour reprendre une tâche sans nom"
+        ],
+        "learnsIfFails": "Si les tâches sans nom restent sans nom sans conséquence, c'est que la répétition n'est pas entretenue par le groupe ; si une échéance rate, on apprend qui vient réparer et par quel chemin la charge revient.",
+        "predictions": [
+          {
+            "actor": { "person": { "kind": "person", "id": "a5e7aa3a-2c0a-4a3f-90fc-e0f166af15ee" } },
+            "response": "Approuve la liste nominative et demande qui la tient à jour.",
+            "phase": "immediate",
+            "horizonDays": 7
+          },
+          {
+            "actor": { "person": { "kind": "person", "id": "2ede28ab-c6ca-40f6-b4e5-618455b2a271" } },
+            "response": "Ne s'inscrit sur aucune tâche et ne dit rien, comme lors du planning du 27 janvier.",
+            "phase": "immediate",
+            "horizonDays": 7
+          },
+          {
+            "actor": { "self": true },
+            "response": "Voit une ou deux échéances sans nom et ressent l'envie de les reprendre ; la fatigue ne baisse pas encore.",
+            "phase": "transitional",
+            "horizonDays": 30
+          },
+          {
+            "actor": { "person": { "kind": "person", "id": "a5e7aa3a-2c0a-4a3f-90fc-e0f166af15ee" } },
+            "response": "S'agace qu'une tâche non attribuée ne soit pas faite, comme pour les maillots, et le déséquilibre devient visible devant l'équipe.",
+            "phase": "transitional",
+            "horizonDays": 30
+          },
+          {
+            "actor": { "self": true },
+            "response": "Si les tâches sans nom restent sans lui, les échéances suivantes arrivent nommément à d'autres et la charge baisse.",
+            "phase": "equilibrium",
+            "horizonDays": 90
+          }
+        ]
+      },
+      "rationale": "Change le jeu au niveau du club : la charge se concentre là où personne ne la refuse et la reconnaissance en est le paiement ; faire écrire les noms par chacun déplace ce paiement et la barrière d'apprentissage des démarches."
+    },
+    {
+      "key": "d3",
+      "kind": "propose_direction",
+      "payload": {
+        "goal": { "kind": "goal", "id": "8dbcc0bd-e55a-4848-bb96-4f81c650ac7b" },
+        "title": "Ne rien changer",
+        "action": "Continuer comme aujourd'hui : accepter les demandes qui arrivent, préparer seul ce qui n'a pas de volontaire, et se contenter de dire la fatigue.",
+        "lever": {
+          "kind": "do_nothing",
+          "hypothesis": null,
+          "mechanismKey": null
+        },
+        "conditions": "Choix par défaut, si aucun petit pas n'est possible maintenant.",
+        "effort": "low",
+        "limits": "Le problème exprimé (être fatigué de tout porter) n'est pas traité ; le risque est l'épuisement ou une échéance ratée qui rende le retrait plus coûteux.",
+        "signals": [
+          "une nouvelle demande arrive par Léa",
+          "Samir reformule l'épuisement",
+          "l'utilisateur repousse une sortie pour une tâche du club"
+        ],
+        "learnsIfFails": "Si rien ne change et que la fatigue augmente, cela indique que l'équilibre actuel ne se corrige pas de lui-même et que la redistribution doit être provoquée.",
+        "predictions": [
+          {
+            "actor": { "person": { "kind": "person", "id": "a5e7aa3a-2c0a-4a3f-90fc-e0f166af15ee" } },
+            "response": "Continue de transmettre les demandes du club à l'utilisateur.",
+            "phase": "immediate",
+            "horizonDays": 14
+          },
+          {
+            "actor": { "self": true },
+            "response": "La fatigue reste dite sans que la répartition change et sans que les demandes diminuent.",
+            "phase": "transitional",
+            "horizonDays": 45
+          },
+          {
+            "actor": { "person": { "kind": "person", "id": "671cb28d-fe7c-4e0d-a2d4-13a4287a7dd5" } },
+            "response": "Nomme à nouveau la charge, plus directement.",
+            "phase": "transitional",
+            "horizonDays": 60
+          },
+          {
+            "actor": { "self": true },
+            "response": "Une échéance de plus retombe sur lui, ou une échéance rate et le point de rupture se déplace là.",
+            "phase": "equilibrium",
+            "horizonDays": 90
+          }
+        ]
+      },
+      "rationale": "Direction do_nothing : elle prédit ce que produit le maintien de la répartition actuelle, qui est l'état décrit par le paquet."
+    },
+    {
+      "key": "q1",
+      "kind": "propose_question",
+      "payload": {
+        "question": "Quand quelqu'un d'autre fait une tâche du club à ta place, qu'est-ce que tu ressens : du soulagement, ou une gêne parce que ce n'est pas fait comme tu le ferais ?",
+        "targets": [
+          { "kind": "hypothesis", "id": "2c85f3df-e9fb-4dd4-99e4-f54817e50983" },
+          { "kind": "hypothesis", "id": "7c1d79d4-6ff1-48cd-b5a3-56048f628610" }
+        ],
+        "discriminatingInfo": "Le soulagement sans gêne soutient la lecture où la charge tient au club et à ses procédures (le frein est dans le groupe) ; la gêne ou l'envie de vérifier soutient la lecture où la place d'indispensable est protégée (le frein est de son côté) — ce qui départage un levier de petit pas personnel d'un levier sur le cadre du groupe.",
+        "whyNow": "Les deux lectures principales prédisent la même chose tant que rien ne change, et le choix entre les deux directions dépend de ce qui bloque."
+      },
+      "rationale": "Départage la lecture D3 sur lui-même et la lecture D5 sur le club, qui orientent des leviers différents."
+    },
+    {
+      "key": "q2",
+      "kind": "propose_question",
+      "payload": {
+        "question": "Après le planning proposé le 27 janvier, qu'est-ce qui s'est passé : tu l'as tenu à jour, ou il est tombé sans que personne ne le reprenne ?",
+        "targets": [
+          { "kind": "hypothesis", "id": "9076b52b-f0d6-42da-9a4e-04fb616da820" },
+          { "kind": "hypothesis", "id": "46a35c53-3cb1-436a-b126-49fa03f1ad33" }
+        ],
+        "discriminatingInfo": "Si l'utilisateur a tenu le planning seul, cela soutient la lecture d'une redistribution approuvée puis rendue à celui qui l'a proposée ; si le planning est tombé sans conséquence, cela soutient l'explication plus simple d'une organisation saisonnière où la relation à Léa n'est pas le ressort.",
+        "whyNow": "Le paquet ne dit pas ce que le planning est devenu, et c'est ce qui départage les deux lectures de la relation à Léa."
+      },
+      "rationale": "Le devenir du planning du 27 janvier n'est pas dans le paquet et départage une redistribution rendue à l'utilisateur d'une organisation saisonnière."
+    }
+  ],
+  "clarifications": [],
+  "summary": "Deux directions pour l'objectif confirmé, plus un do_nothing : un petit pas de délégation nominative (abaisser la barrière), et faire écrire la répartition par le groupe (changer le jeu) ; deux questions départagent ce qui bloque, sa place ou le cadre du club."
+}

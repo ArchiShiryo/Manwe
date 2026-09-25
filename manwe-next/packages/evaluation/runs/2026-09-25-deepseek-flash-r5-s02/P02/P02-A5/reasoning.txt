@@ -1,0 +1,496 @@
+Let me analyze this ContextPacket carefully.
+
+Task: "revise". Focus includes a goal, many events, many hypotheses. Allowed operations: propose_event, propose_claim, propose_role, propose_hypothesis, revise_hypothesis, propose_question, propose_critique. Note: no propose_goal, no propose_direction, no propose_critique... wait propose_critique is allowed. propose_goal and propose_direction are NOT in allowedOperations. So I cannot propose directions.
+
+The key new element: the annotation on hypothesis 2c85f3df (the D3 self-hypothesis "L'utilisateur tient et protège sa place de celui grâce à qui le club tient"). The annotation is a "context" with the result of the action "Une tâche, une personne, une date": "J'ai confié un match à chacun pour l'organisation. Hugo a oublié le sien et Léa a râlé que c'était compliqué. Au troisième match, chacun a géré le sien sans que j'intervienne."
+
+This is the outcome of the chosen direction (action 9fcc307d, direction 8fc6dd02, lever lower_barrier targeting hypothesis 2c85f3df mechanismKey "barrier").
+
+So I must: compare predictions to result. The predictions were:
+1. Léa accueille favorablement et laisse la suite à l'utilisateur (immediate) → partially contradicted: Léa a râlé que c'était compliqué.
+2. self hésite/vérifie (transitional) → not directly evidenced.
+3. Samir remarque le changement (equilibrium) → not evidenced.
+
+Result: Hugo a oublié son match; Léa a râlé; au troisième match, chacun a géré le sien sans que l'utilisateur intervienne.
+
+This supports the lever's hypothesis (barrier lowering works: when the user did not intervene, the team eventually self-organized). It contradicts the prediction that Léa would leave it to the user — actually she râlé but eventually each managed their own.
+
+So revise hypothesis 2c85f3df: this hypothesis has needsReview=true, reviewReason "context", needsReview since revision 27. Let me check rule 19: A hypothesis "needsReview" with reviewReason "disagreement" can only be revised by proposing an alternative, adding a contre-preuve, or superseding. Here reviewReason is "context", not "disagreement". So normal rules apply for revision.
+
+Rule for revise: expectedRowVersion = hypothesis "revision" field = 2 for 2c85f3df.
+
+For "plausible" status via revise_hypothesis: requires 2 anchored net episodes for D2 and D3, plus an active alternative must exist and a critical pass (rule 17). The alternative 8219602d exists (alternativeTo). A critique passe: has a critique been done on 2c85f3df? "critiques": []. So no critique yet. So I need to propose a critique (propose_critique) and then revise. Can do in same response.
+
+Also, evidence: add the outcome annotation as a new claim? The result is a source (sourceId e32fa165...). The rule says the result figures in sources. I should propose_claim for the result, and propose_event? The result of the action is... Let's think. The outcome text describes: the user confided a match to each person for the organization; Hugo forgot his; Léa grumbled; at the third match, each managed their own without the user intervening. This is a fait accompli (user's own explicit statement/observation). So propose_event for the outcome, plus propose_claim.
+
+Actually the annotation is a context annotation on the hypothesis. The category: it's the user reporting his own action and observation → explicit_statement or sourced_observation. The user "J'ai confié un match à chacun" → explicit_statement (user speaking about himself). "Hugo a oublié le sien" → sourced_observation (user saw). "Léa a râlé que c'était compliqué" → sourced_observation. "chacun a géré le sien sans que j'intervienne" → sourced_observation / explicit.
+
+I could propose claims:
+- c: L'utilisateur a confié à chacun un match à organiser, avec une date (explicit_statement, actual).
+- c: Hugo a oublié le match qui lui était confié (sourced_observation, actual).
+- c: Léa a râlé que c'était compliqué (sourced_observation).
+- c: Au troisième match, chacun a géré le sien sans que l'utilisateur intervienne (sourced_observation).
+- inference: la délégation nominale a tenu sans intervention au troisième match, ce qui dément que la charge doive revenir à l'utilisateur.
+
+Also propose_event for the delegation outcome.
+
+Then revise hypotheses:
+1. 2c85f3df (self, D3, rank 1): the prediction "de nouvelles demandes seront acceptées, la fatigue restera verbalisée sans que la répartition change" — partially contradicted by the outcome (the redistribution happened when he didn't intervene). But contrarily: Hugo forgot, Léa grumbled. Hmm. The barrier mechanism: "refuser ou déléguer rendrait visible le déséquilibre et risquerait la place et le lien". The result shows he delegated and it worked (at the third match) — this weakens the barrier reading, and supports... Actually the result shows the barrier was his own intervention (he took over the tasks). When he stopped intervening, the group managed. So the barrier hypothesis is partially supported (the barrier existed, and lowering it worked) — but the hypothesis said the barrier protects his place; the result suggests the place isn't threatened by withdrawal.
+
+Hmm. Let's think about what revision makes sense. Add evidence supporting (the outcome shows delegation succeeded when he didn't intervene — supports that the mechanism is his own non-intervention, i.e. barrier) and contradicting (Léa râlé; Hugo forgot — the prediction that Léa would leave the task to the user was contradicted... actually the prediction was Léa "accueille favorablement la demande et laisse la suite à l'utilisateur") — Léa a râlé, so outcome partly contradicts.
+
+Also new: the hypothèse 8219602d (conjoncturel, D3, rank 2 alternative) — the result: at the third match everyone managed their own; the fatigue... Hmm.
+
+Let me decide the operations. Given constraints (100 ops max, but should propose 2-3 readings per subject), and this is a "revise" task with focus. Let me be reasonably thorough but not bloated.
+
+Key operations:
+
+1. propose_event: e1 — "Une tâche, une personne, une date : délégation des matchs" with occurredStart? temporalPrecision "unknown" (annotation has no date; createdAt 2026-09-25). Actually occurredStart null, precision unknown.
+
+2. propose_claim(s): 
+   - c1: "L'utilisateur a confié à chacun un match à organiser." (explicit_statement, actual)
+   - c2: "Hugo a oublié le match d'organisation qui lui était confié." (sourced_observation, actual)
+   - c3: "Léa a râlé que c'était compliqué." (sourced_observation, actual)
+   - c4: "Au troisième match, chacun a géré le sien sans que l'utilisateur intervienne." (sourced_observation, actual)
+   - c5 (inference): "Quand l'utilisateur ne reprend pas la tâche, les membres finissent par gérer la leur : le point de blocage est son intervention, pas l'incapacité du groupe." (inference, actual)
+
+3. propose_role(s): for the event e1: self initiator, Hugo responder? Hmm. Let's keep roles minimal but useful: 
+   - self: initiator (confie les tâches)
+   - Hugo: responder outcome "declined"? He forgot — not exactly declined. Maybe role "responder" outcome "unknown". Hmm, could be a role assignment: Hugo helper? Let's think. Roles available: initiator, recipient, helper, requester, responder, observer. The user confided a match to each — he initiated (delegation). Hugo was recipient; Hugo forgot → he did not do it, but "responder" declined fits weakly. At the third match, chacun a géré le sien → helper roles for Hugo, Léa, Samir? The text says "un match à chacun" — who are the others? Not clear (Hugo, Léa, and possibly others). We can assign: Hugo recipient; Léa recipient; and at the third match chacun = helper. Since the identities of "chacun" beyond Hugo and Léa aren't given, I'd assign roles for Hugo and Léa as recipients (of the delegation) and as helpers (third match). Hmm, "recipient = reçoit la proposition". The user confided a match to each: the match is confided → roles recipient for Hugo and Léa.
+
+   Maybe: 
+   - r1: event e1, self, initiator.
+   - r2: event e1, Hugo, recipient.
+   - r3: event e1, Léa, recipient.
+   Actually could also add "helper" for self? self helped at first two matches? Not stated. Keep it simple: three roles. Maybe add a role "observer" for self in the third match? No.
+
+4. propose_critique on 2c85f3df (target with id and findings). The critique should find weakness. Findings:
+   - ignored_evidence: the outcome of the delegated action (Hugo a oublié, Léa a râlé but then chacun a géré le sien sans intervention) — not taken into account by the hypothesis which predicted the fatigue would remain verbalized without change in distribution. Actually the outcome is new, so "ignored_evidence" is more about existing claims. Could use "simpler_explanation": The result supports a simpler reading — the concentration was maintained by the user's own taking-over, not by a need to protect his place; when he simply stopped intervening (without any negotiation or refusal), the group coped. That's a "simpler_explanation" finding citing the new claims.
+   - overgeneralization: the hypothesis posits a D3 mechanism about protecting his place from the club period only; the outcome shows withdrawal without loss of place.
+   
+   Let me formulate findings with claim references (proposalKey to my claims).
+
+5. revise_hypothesis 2c85f3df: expectedRowVersion 2. status... Currently draft. Should I promote to plausible? Criteria for plausible via revise at D3: 2 net anchored episodes + active alternative exists + critical pass done. The hypothesis currently has counts supportUnits 5, contradictUnits 2, anchoredSupports 5, anchoredContradicts 2 → net 3. Alternative 8219602d exists and is active (draft). And a critique is being done in the same response. Hmm, but rule 17 says "Dès D3, une hypothèse ne devient 'plausible' qu'après une passe critique suivie d'un revise_hypothesis, qui peut figurer dans la même réponse que la critique." So OK, we can promote to plausible.
+
+   But wait — does the new outcome contradict it? The hypothesis states the user protects his place as the one thanks to whom the club holds, and the load is the price of the link. The outcome shows he delegated and it worked. That's a significant modification: the mechanism shifts. Hmm. Maybe I should revise to "plausible" with added evidence and adjust the rank? Or maybe the better move is to revise it to plausible with new evidence (one supports, one contradicts) and rank still 1 but noting the mechanism is revised? The payload for revise doesn't allow changing statement/mechanism. So the revision only changes status/confidence/rank/evidence.
+
+   Alternatively, propose a new hypothesis that captures the revised reading: the concentration is maintained by the user's own immediate taking-over, and when he stops intervening the group absorbs the task — D3, draft, alternativeTo 2c85f3df... Hmm but is it a real alternative or a refinement? It's a competing mechanism: barrier located in his own reflex to take over (self) vs. barrier located in protecting his place/reconnaissance. These are compatible but somewhat distinct. Actually they're quite distinguishable: if the barrier were the need to protect his place, withdrawal would threaten the link; the outcome shows no threat. If the barrier is his own habit/reflex, then a small delegation removes it. I could propose a new hypothesis D3 (or D2) that the concentration is maintained by the user's own immediate recovery of tasks rather than by the group — but careful: rule for revision "needsReview disagreement" doesn't apply (context). 
+
+   Hmm, I think the cleanest: 
+   - revise 2c85f3df: add evidence (supports: the outcome claim that no intervention was needed after three matches — supports that the barrier was his intervention; contradicts: Léa a râlé / Hugo a oublié — the withdrawal produced friction, contradicting the smooth-prediction... hmm). Actually what contradicts 2c85f3df? The hypothesis predicted "de nouvelles demandes seront acceptées, la fatigue restera verbalisée sans que la répartition change". The outcome shows the répartition changed at the third match without his intervention. That contradicts the prediction → contradicts stance. Also the hypothesis's barrier claim is contradicted: he delegated without a threat to his place... hmm, that's an inference. I'll add one contradicting claim.
+
+   Status: promote to plausible (net anchored supports remain ≥2 with the new episode). Rank: 1.
+
+   Wait, careful: "en épisodes ancrés nets (favorables moins contraires), 2 pour D2 et D3". If I add 1 support and 1 contradict, net remains within. Fine.
+
+   Confidence: moderate (capped at moderate for D3).
+
+6. revise 8219602d (conjoncturelle, D3, rank 2, alternative): the outcome — hmm. The delegation outcome isn't much about conjunctural fatigue. Maybe not necessary.
+
+7. revise 9076b52b (D3 "les tentatives de répartir la charge échouent ... la charge revient à celui qui a tenté de la répartir")? The outcome is a counterexample: the delegation succeeded at the third match, suggesting redistribution can work. Actually the direction "Une tâche, une personne, une date" is precisely a redistribution attempt that eventually worked. So hypothesis 9076b52b's prediction "Les prochaines tentatives de répartition seront approuvées puis remises à l'utilisateur pour la mise en œuvre" is contradicted by the outcome (the third match: chacun a géré le sien sans que j'intervienne). Hmm — that's a meaningful revision: add contradicting evidence, maybe lower rank or keep draft. Also there's rule about "contradicted" status requiring as many contre-preuves as preuves. 9076b52b has anchoredSupports 1, so one contradicting claim would make it "contradicted"? It says "contradicted" exige autant de contre-preuves ancrées que de preuves favorables. With 1 support and 1 contradict → equal → contradicted. Hmm, but I might prefer keeping it draft with the new contradicting evidence. Let me think: The outcome shows the redistribution worked after a friction phase (Hugo forgot, Léa râla, then each managed). So indeed the prediction was wrong. I'd add the evidence as contradicts and set status... The rule: status "contradicted" exige autant de contre-preuves que de preuves favorables. That's a condition to *allow* contradicted, not a mandate. I could set it to "draft" with added contradicting evidence, or "contradicted". Hmm. Given that the third-match outcome is a genuine counterexample and it also has the alternative 46a35c53 not relevant... I'd say mark it as contradicted? But careful: the result "au troisième match, chacun a géré le sien" shows a distribution happened — but through the user's direction (he confided tasks). Hmm, the hypothesis says "les tentatives de répartition échouent ... la charge revient à celui qui a tenté de la répartir". The result: at first Hugo forgot, Léa grumbled — friction; then it worked. So partial. I think marking "contradicted" may be too strong; keep "draft", add contradict evidence, and maybe lower rank? Let me keep rank 2 or set null. I'll add contradicting evidence and keep status draft with rank 2. Hmm, but the rule says "une seule a le rang 1" among mutually exclusive alternatives — 9076b52b's alternative is 46a35c53. Fine.
+
+   Actually wait. Rule for revise with "contradicted": also needs igual. I'll be safe: keep draft.
+
+8. Also relevant: hypothesis 9241269d (Hugo, D3) — the outcome shows Hugo forgot his match. That's a third manquement (clé, covoiturage, match oublié) and supports it; also contradicts the alternative 0a0b3629 (financial). Add support to 9241269d and contradict to 0a0b3629. That strengthens the "Hugo laisse tomber" reading. 9241269d is draft with 4 supports; adding support, maybe promote to plausible? Criteria: 2 net anchored episodes, plus active alternative + critique pass. Its alternative 0a0b3629 exists (draft). A critique pass on 9241269d? There's none. Hmm, rule 17: "Dès D3, une hypothèse ne devient 'plausible' qu'après une passe critique suivie d'un revise_hypothesis". So to promote 9241269d to plausible I'd need a critique on it too. That could be done. Is it worth it? Maybe. But note review: 9241269d has needsReview false. Let me consider the budget. I could do: critique on 2c85f3df (required for its promotion) and promote it. For 9241269d, just add support evidence, stay draft.
+
+   Hmm, but the task is "revise" focused on the goal/event outcomes. The main deliverable is comparing predictions to outcome. Let me focus:
+
+   - New claims/event about the outcome.
+   - Revision of the hypothesis targeted by the lever (2c85f3df), with prediction comparison in rationale.
+   - Revision of alternate hypotheses whose predictions were affected: 8219602d (conjonctural) — hmm, the outcome doesn't clearly affect it; 9076b52b (redistribution attempts fail) — clearly affected (contradicted); 9241269d (Hugo, D3) — supported.
+   - Critique pass on 2c85f3df.
+   - Maybe a question? Rule 20: don't re-ask questions already in the package. Existing open questions cover Léa's declaration feeling, Hugo's money, Samir's ciné, the planning outcome... The question "Après le planning proposé le 27 janvier, qu'est-ce qui s'est passé" — now partially answered? The new outcome is about a different action ("Une tâche, une personne, une date"). Hmm, the question about the planning is still unanswered. I shouldn't re-ask it. Maybe a new question: about whether the third match outcome felt relieving or guilt-inducing, targeting 2c85f3df vs 8219602d? There's already question 128f2222 and 2b6e6ff4 on that theme. Let me check: 2b6e6ff4 asks "Quand quelqu'un d'autre fait une tâche du club à ta place, qu'est-ce que tu ressens : du soulagement, ou une gêne parce que ce n'est pas fait comme tu le ferais ?" — that covers it. So maybe no new question, or one targeted specifically at the new episode: "Au troisième match, quand chacun a géré le sien sans que tu interviennes, qu'as-tu ressenti ?" Hmm, that's близко to 2b6e6ff4 but not identical, and it's a fresh episode. Rule 20 says don't re-ask a question present in the package whatever its status. The new one is distinct enough: it targets the actual observed success. I'll consider adding one question. Actually, it could discriminate: 2c85f3df (his place protected by the load) vs a new hypothesis (his intervention compulsion). I'll add a question maybe. Hmm, but I also want to be careful about bloat. Let me decide: yes, add one question targeting the two self-readings about the new episode's ressenti. Wait — but rule 8: a reading on the user requires at least one support claim where the user expresses his own cost/feeling/constraint. For 2c85f3df, the support includes claim 8f53b482 ("Je suis fatigué de tout porter...") — that's the user's cost expression. Good, so the D3 self reading is legitimately anchored.
+
+   But careful: if I now revise 2c85f3df, the new evidence... fine.
+
+9. Should I propose a new hypothesis? Given the outcome, a natural new reading: "Le frein à la répartition est l'intervention immédiate de l'utilisateur : quand il s'abstient de reprendre, le groupe finit par absorber les tâches (au troisième match, chacun a géré le sien), au prix d'une friction transitoire (Hugo oublie, Léa râle)." That's D2/D3 on self. But rule 8: a reading on the user (D3, self only) requires his own cost expression — the fatigue claim works. This could be proposed as a new hypothesis, alternative to... it's actually a refinement of the barrier. Hmm. Or is it a genuinely competing mechanism vs 2c85f3df? 2c85f3df says the load buys his place (belief: without me the club doesn't hold). The new reading says the load is maintained by his own reflex of taking over, not by relational stakes. These are distinct mechanisms explaining the same variance. I think proposing it as a D3 hypothesis with alternativeTo 2c85f3df and rank... hmm, rank 2? And 8219602d also rank 2. Could have multiple rank-2 readings? Rule: "Parmi des alternatives mutuelles, une seule a le rang 1". Ranks 2 for several alternatives is fine I think.
+
+   Hmm, but careful about "alternativeTo" — must be a real concurrent mechanism. Yes.
+
+   Actually, hold on. The new outcome — does it really support the "reflex" reading more than the "place" reading? At the third match everyone managed. That means the group could organize; the previous concentration had been sustained by the user's intervention. That supports a reading that the barrier was his own taking over. I think it's worth proposing. But is it needed? Let me consider fewer, stronger ops. The prompt asks to compare predictions to outcome and say so in the revise rationale. The core deliverable: revise_hypothesis on 2c85f3df with prediction comparison in rationale.
+
+   I think proposing one new hypothesis is good (the revised mechanism), plus revisions to affected hypotheses.
+
+Let me now also reconsider: should the outcome be a propose_event? Yes — a fait accompli with citation. Category: the user's own account of his action and observations. Rule 3: sourced_observation = "l'utilisateur l'a vu ou entendu lui-même, y compris un document ou une note qu'il a trouvé". The delegation result is his own observation of his action and others' behavior. I'd use sourced_observation for the event (mixed), or explicit_statement since he speaks of what he did. Hmm, for the event I'll use "sourced_observation"? The event includes his own act ("J'ai confié un match à chacun") which is explicit_statement, and others' behavior which is sourced_observation. The event category is single. I'll pick sourced_observation since the substance is the observed outcome. Hmm. Alternatively, split into two events? Overkill. Let me use "sourced_observation".
+
+Wait — actually, is this an "annotation" with the action result? The text is in annotations with annotationType "context" and also appears in entities (e225e282) as "Annotation (context)". The source is e32fa165-... The instruction says: "Actions et résultats : le paquet peut contenir des actions... le résultat figure aussi parmi les sources." So I can use it as a source for claims and events. Good.
+
+Citation format: for source e32fa165-3e6d-45fb-9c5e-843955127c07, contentHash e52e370f..., spanStart 0, spanEnd 236, quote = the full text. I must ensure the quote matches exactly text.slice(0,236). The text is "Résultat de l’action « Une tâche, une personne, une date » : J'ai confié un match à chacun pour l'organisation. Hugo a oublié le sien et Léa a râlé que c'était compliqué. Au troisième match, chacun a géré le sien sans que j'intervienne."
+
+Let me count characters roughly: The source in the packet says spanEnd 236. I'll copy sourceId/contentHash/spanStart/spanEnd/quote exactly as given. Safe approach: cite the whole source with the exact given values.
+
+For claims, I can cite the same single citation (full source). Good, safest.
+
+For claims citing other sources, I need exact quotes and offsets — I can take the citations already present in the packet's claims (they show spanStart 0, spanEnd N, quote). E.g., claim 8f53b482 cites source 4302f404 with span 0-157 quote "Je suis fatigué...". I can reuse those. But careful: rule about citations: quotes must be exact slices. Reusing existing packet citations is safe.
+
+For my new claims about the outcome, I cite the e32fa165 source with full span.
+
+Now let's draft operations.
+
+e1: propose_event
+ payload: title "Résultat de l'action « Une tâche, une personne, une date »", text "L'utilisateur confie à chacun un match à organiser : Hugo oublie le sien, Léa râle que c'est compliqué, puis au troisième match chacun gère le sien sans que l'utilisateur intervienne.", category "sourced_observation", occurredStart null, occurredEnd null, temporalPrecision "unknown", context "Club — résultat de l'action choisie", citations [e32fa165 full].
+
+Hmm, occurredStart: we don't know. The annotation is created 2026-09-25 but describes the club season (spring?). The events are dated Jan-Mar 2026 supposedly... Actually events have occurredStart dates in Jan-Feb 2026 and the createdAt is Sept 2026. Hmm, weird: the packet createdAt is 2026-09-25 and events occurred in Jan-Feb 2026. So the "third match" outcome occurred... unspecified, likely after Feb 28, 2026. I'll leave occurredStart null with precision unknown. Actually since the action was chosen at revision 26 and the outcome recorded at revision 27/28, and the events are Jan-Feb... The action's expectationRecordedAt is 2026-09-25 (system time). Confusing. Safest: occurredStart null, temporalPrecision "unknown".
+
+Claims:
+c1: "L'utilisateur a confié à chacun un match à organiser." explicit_statement, actual, validFrom null. Citation: e32fa165 full.
+c2: "Hugo a oublié le match d'organisation qui lui avait été confié." sourced_observation, actual.
+c3: "Léa a râlé que l'organisation par match était compliquée." sourced_observation, actual.
+c4: "Au troisième match, chacun a géré son match sans que l'utilisateur intervienne." sourced_observation, actual.
+c5 (inference): "La délégation a tenu dès que l'utilisateur s'est abstenu d'intervenir, ce qui indique que la concentration des tâches tenait d'abord à sa reprise immédiate plus qu'à une incapacité du groupe." inference, actual.
+
+Maybe also: c6 inference: "L'annonce nominative des tâches s'accompagne d'une friction transitoire (Hugo oublie, Léa râle) avant que le groupe ne s'organise." Hmm, c5 covers enough. Maybe merge. I'll include c5 and perhaps a c6 about friction. Let me keep c5 only plus maybe c6. Actually I could use claims for the revision evidence: revision needs claim refs. Use c1..c5.
+
+Roles:
+r1: event e1, self, initiator.
+r2: event e1, Hugo (person id 2ede28ab...), recipient. Hmm — outcome? The role "recipient" doesn't take outcome... The schema has "outcome": accepted|declined|unknown|null. For recipient, outcome null. But maybe better: at the third match, each managed their own → Hugo could be "helper". Two roles for Hugo? Let me do:
+r1: self initiator (confie les tâches).
+r2: Hugo recipient (reçoit le match confié).
+r3: Léa recipient.
+r4: self observer at the third match? Meh.
+Maybe r4: Hugo helper (au troisième match il gère le sien)? That's a different sub-event. I'll keep three roles: initiator self, recipient Hugo, recipient Léa. Hmm, but maybe more useful: the use of roles for relations. The indicators include the relation Hugo-self with help: self 4. Adding a role "helper" for self? No.
+
+Let me also consider adding a role for the third match: chacun gère le sien → Hugo helper and Léa helper, self observer. That's making facts. The text says "chacun a géré le sien" — includes Hugo, Léa, and possibly others (Samir?). I can't name who is "chacun" beyond Hugo and Léa (and the user). Actually "chacun" refers to those who got a match — Hugo, Léa, and possibly others unnamed. I'd rather not over-assign. I'll add roles: self initiator; Hugo recipient; Léa recipient. And maybe Hugo "helper" outcome null for the third match... skip.
+
+Hmm, but the role "recipient = reçoit la proposition" — the user confided/assigned the matches, so recipients are those who received them. OK.
+
+Hypotheses:
+
+h1: new hypothesis D3 on self.
+statement: "La concentration des tâches tient d'abord à la reprise immédiate par l'utilisateur plutôt qu'à une place à défendre : quand il confie un match à chacun et ne reprend pas la main (Hugo l'oublie, Léa râle), le groupe finit par gérer ses propres tâches au troisième match sans qu'il intervienne."
+depth D3, framework null, construct null, confidence low/moderate? Evidence: c4, c1, c2, c3 supports; plus existing claims fd22cfc4 (refusal of ciné) contradicts? Hmm. Let me use supports: c1, c4 (delegation worked), and maybe 8f53b482 (fatigue) supports. Contradicts: c3 (Léa râle → friction exists), or the claim that he re-took tasks... Let's use supports: c1, c4; contradicts: c2? No, c2 (Hugo forgot) is part of the friction but it doesn't contradict the reading — actually it supports the "friction transitoire" framing. Add contradicts: 0c3b440d (accepter après hésitation le repas) — that's a re-taking behavior which contradicts the claim that he doesn't take over? Hmm no, it's from a different period. Hmm.
+
+Let me think about the ranking: this new reading competes with 2c85f3df (rank 1, self, "la charge est le prix du lien et de la reconnaissance") and 8219602d (rank 2, conjoncturel). The new reading is supported by the new episode: when he doesn't intervene and there's no negotiation needed, the load distributes. So maybe this should be rank 1 and 2c85f3df demoted to rank 2? Hmm. The revise payload allows changing rank. 
+
+Which reading should be principal now? Evidence for 2c85f3df: he hesitated then accepted the repas (accepted after naming fatigue) — supports "the load is renewed". The new episode shows he delegated successfully and did not intervene — which shows he can do it, contradicting the prediction that the fatigue would remain verbalized without redistribution. But careful: the new episode is exactly the intervention of the analysis (a direction he chose), so it's evidence about the malleability of the pattern, not exactly about the standing mechanism.
+
+I think a fair revision: 2c85f3df remains the main reading for the earlier period, but the new episode prompts revision of the mechanism. Hmm — but I can't change the statement. So maybe: keep 2c85f3df rank 1 but status plausible, with added evidence supports (c4 shows the barrier was passable and his intervention was the crux → supports the "barrier" field of the mechanism) and contradicts (c2/c3? no...). Hmm.
+
+Alternative approach: keep 2c85f3df as rank 1 but note in rationale that the prediction is partly démentie; and propose the new h1 as rank 2 alternative. Hmm, but a rank-1 reading whose main prediction (distribution won't change) was démentie... Rule 15 says among mutually exclusive alternatives only one has rank 1, and say in its rationale why it wins. If the new reading better explains the new episode, maybe the new reading should be rank 1.
+
+Let me weigh: 2c85f3df is a D3 self hypothesis with 5 supports / 2 contradicts over 53 days, including a user-expressed cost (fatigue) — decent. The new outcome is a single episode (self-driven intervention, not spontaneous behavior). Since the outcome came from the user deliberately applying a lever, it's evidence that the barrier is lowerable, but the fact that the delegation initially failed (Hugo forgot, Léa râle) also shows the group doesn't self-organize spontaneously — supporting that the concentration also comes from the group side.
+
+Hmm, actually the outcome supports 7c1d79d4 (D5: club-level concentration) too: at first, without his intervention, Hugo forgot; only after friction did it settle. And the "au troisième match, chacun a géré le sien" shows the group can adapt.
+
+I think a defensible arrangement:
+- 2c85f3df: revise to plausible, rank 1 (still the main reading of the user's position: he carries, wants the team to organize, doesn't want to leave; the new episode shows he can act on it, which refines but doesn't overturn the mechanism), add supports c4 (action sans intervention → la barrière est franchie) and contradicts c2/c3? Hmm what contradicts it exactly? The prediction "de nouvelles demandes seront acceptées, la fatigue restera verbalisée sans que la répartition change" — the outcome (chacun gère le sien) contradicts the "sans que la répartition change" part. So c4 as contradicts. But then adding c4 as both supports and contradicts is incoherent. Let me assign: c4 contradicts (the répartition changed). c1 supports (he took the initiative to confide tasks, i.e., stays the organizer, the central figure who sets the game). c2 (Hugo oublie) and c3 (Léa râle) — these are frictions supporting the barrier's cost (leaving things undone produces friction, which is part of the barrier). Hmm, "supports"?
+
+Let me be careful and honest. The hypothesis sentence: "L'utilisateur tient et protège sa place de celui grâce à qui le club tient ... la charge est le prix du lien et de la reconnaissance, et sa plainte porte sur la répartition, pas sur l'appartenance."
+
+New evidence:
+- c1 (he confided a task to each): supports the part "sa plainte porte sur la répartition" — he acted to redistribute, consistent.
+- c4 (chacun a géré le sien sans qu'il intervienne): contradicts the prediction "la répartition ne change pas" — but the hypothesis mechanism's prediction was that; so contradicts.
+- c2 + c3 (Hugo oublie, Léa râle): supports the barrier (delegating produces friction and risks the smooth functioning → the temptation to take back is real). Could support the barrier field.
+
+OK: add evidence: c1 supports, c2 supports, c3 supports, c4 contradicts. That gives anchoredSupports 5→8, anchoredContradicts 2→3. Net 5. Fine, still plausible.
+
+Hmm, but is calling c2/c3 "supports" honest? The hypothesis's barrier: "refuser ou déléguer rendrait visible le déséquilibre et risquerait la place et le lien". c2/c3 show that delegation created friction (Léa râle) — consistent with the barrier. Yes, supports is defensible. And it's an important nuance: the friction appeared, and the user did not take the task back (good).
+
+Then the new h1 could be rank 2: "La concentration tient aussi à la reprise immédiate..." Hmm, but then what about 8219602d (conjoncturel) which is currently rank 2? Multiple rank 2s. Hmm, maybe rank: 2c85f3df rank 1, h1 rank 2, 8219602d rank 3? Can I revise 8219602d's rank? Yes via revise_hypothesis rank field. Do I need to? Not necessarily. Ranks can tie? "classe tes lectures avec rank (1 = lecture principale, 2, 3…)". Ties maybe allowed but a clean ordering is better. I'd rather not touch 8219602d unless needed.
+
+Alternatively, don't propose h1 as new — instead treat the new outcome as evidence within the existing hypotheses. Hmm. But rule: "Formule toutes les lectures que les données permettent" and the new episode genuinely opens a distinct mechanism: the barrier is the immediate recovery, i.e., the user's own reflex, which predicts that a small non-intervention suffices (which happened). I think proposing it is valuable (it's the lever's hypothesis refinement). Let me propose it as D3, draft, rank 2, alternativeTo 2c85f3df.
+
+Hmm wait. Is it really "incompatible" with 2c85f3df as required for an alternative at D3 (rule 11: "propose aussi une hypothèse ALTERNATIVE incompatible, un vrai mécanisme concurrent")? Rule 11 applies when proposing a D3+ hypothesis: I must also propose an alternative that is a real competing mechanism. For h1, its alternative could be 2c85f3df (existing in packet) — cite alternativeTo: {"kind":"hypothesis","id":"2c85f3df-..."}. Good, that satisfies rule 11 without needing a brand new alternative.
+
+Now, do I also need a critique+revise to make h1 plausible? No — h1 stays draft (new D3 hypothesis is draft at creation, rule 16).
+
+Critique on 2c85f3df:
+findings:
+- simpler_explanation: "L'intervention immédiate de l'utilisateur suffit à expliquer la concentration : le résultat de l'action montre qu'en ne reprenant pas la main, les membres gèrent leurs propres tâches dès le troisième match, sans qu'aucune reconnaissance ni place soit en jeu." claims: [c1, c4, c3].
+- overgeneralization: "La lecture étend au fonctionnement de l'utilisateur ('la charge est le prix du lien') un épisode unique de délégation réussie ; le paquet ne contient aucun épisode où la place serait menacée s'il ne prenait pas une tâche." claims: [c1, c4].
+- ignored_evidence: "Le résultat de l'action contredit la prédiction de la lecture ('de nouvelles demandes seront acceptées... sans que la répartition change') : au troisième match, chacun a géré le sien sans intervention." claims: [c4].
+
+Then revise 2c85f3df: target id, expectedRowVersion 2, status "plausible", confidence "moderate", rank 1, addEvidence as above.
+
+Hmm — should the status become plausible given a contradicting prediction? Rules for plausible via revise: "en épisodes ancrés nets (favorables moins contraires), 2 pour D2 et D3" — net is 5 ≥ 2 ✔; alternative active ✔; critique pass done ✔. So plausible is allowed. And needsReview "context" is resolved by the annotation? The revise may implicitly clear it? Not specified; fine.
+
+Actually, hmm: should I instead keep 2c85f3df as draft because its core prediction was démentie? The rule doesn't force that; the promotion criteria are met. But intellectually, the new outcome weakened the reading. Let me reconsider: maybe better to keep 2c85f3df at draft and demote rank to 2, and propose h1 as rank 1? Hmm.
+
+Let's think about which is truly principal now. The data: the user says he's tired of carrying everything, wants the team to organize without everything resting on him, doesn't want to leave the club (this is a strong expression). Then he performs a "concrète" action: confide a task to each. Result: after friction, each manages their own without his intervention. So the successful lever.
+
+2c85f3df's core claim: the load is the price of the link and recognition; his complaint is about distribution, not belonging. The new episode: his complaint is about distribution, and he acted on the distribution — consistent. And he didn't leave the club. The mechanism's prediction was that the distribution wouldn't change — this part was wrong for this episode.
+
+I think the honest move: keep 2c85f3df rank 1 as the reading of the position (why he carries, why he stays), note in the revise rationale that one of its predictions (no redistribution) is démentie by the third match while the mechanism's barrier (delegating looked costly) is confirmed by the friction (Hugo forgets, Léa râle) before the group adapted. And demote its "prediction" issue... can't change the statement.
+
+Alternatively I could mark 2c85f3df as... hmm, no.
+
+Decision: revise 2c85f3df → plausible, moderate, rank 1, with 3 supports + 1 contradicts added, plus the critique. And propose h1 (new D3) rank 1? No — rank 1 must be unique among mutually exclusive alternatives. Are 2c85f3df and h1 mutually exclusive? h1 says the concentration is maintained by his immediate recovery rather than a place to defend ("plutôt qu'à une place à défendre") — that's explicitly a competing explanation. So they are mutually exclusive-ish → only one rank 1. Given the burden of evidence, 2c85f3df (5+ supports) vs h1 (1 episode). So h1 rank 2.
+
+Hmm, but 2c85f3df was already rank 1 and 8219602d rank 2. Adding h1 at rank 2 gives two rank-2. Should I bump 8219602d to rank 3? Its prediction ("après la fin de la saison, la charge et la fatigue baisseront sans redistribution") — new outcome shows redistribution happened while... hmm, it's mid/late season. I could add evidence contradicting 8219602d: c4 contradicts (the distribution changed at the third match while the season was still on, and no season-end explanation is needed). Actually c1/c4 contradict "sa place centrale n'est pas recherchée"? Hmm. 8219602d: "la fatigue est conjoncturelle... sa place centrale n'est pas recherchée et la fatigue doit se dissiper quand les échéances retomberont". The new episode doesn't clearly contradict it. I could leave 8219602d untouched. Ranks: 1 for 2c85f3df, 2 for h1 and 2 for 8219602d. Slight untidiness. Alternatively I set h1 rank 3? Or I revise 8219602d to rank 3 with no evidence changes — allowed (rank is a payload field). Hmm, revising 8219602d requires expectedRowVersion = 1. And addEvidence can be empty? The schema shows addEvidence as a list; probably can be empty. Risky? I'll include one contradicting claim maybe. Hmm. Let me not overcomplicate: I'll revise 8219602d → add evidence contradicting (c4? no...). 
+
+Hmm, actually maybe I should keep things simpler and not rank-juggle. Two readings at rank 2 with different mechanisms is acceptable ("2, 3…"). I'll leave 8219602d alone. Actually wait — rule 15: "Parmi des alternatives mutuelles, une seule a le rang 1" — satisfied.
+
+Now 9076b52b (Léa: redistribution attempts fail): The new outcome is a redistribution attempt (confiding a task to each) that succeeded at the third match without his intervention → contradicts its prediction. Add contradicting evidence: c4 (and c1). Set status draft (keep), rank 2. Actually maybe status → "contradicted"? grounded: anchoredSupports 1, anchoring a contradict via c1+c4... "autant de contre-preuves ancrées que de preuves favorables" — 1 support, 1 contradict → equal → contradicted allowed. Hmm, but the claim c3 (Léa râle) actually supports 9076b52b's point that Léa resists (she reacts to the redistribution as complicated). Interesting: Léa râle que c'était compliqué — that's friction, consistent with "les tentatives de répartition échouent". So it's mixed. I'd keep it draft and add both supports (c3) and contradicts (c4)? Hmm, c3 as supports: "Léa a râlé que c'était compliqué" — Léa's resistance to the redistribution. And c4 contradicts. That's honest. Keep draft, keep rank 2.
+
+9241269d (Hugo, D3, rank 1): add support c2 (Hugo a oublié son match). Also maybe 39e05d91 (Hugo, D2 circonstanciel janvier) — add contradicts c2 (the forget happened outside January). Add c2 as contradicts to 0a0b3629 too? Hmm 0a0b3629 is the financial/transient explanation alternative — Hugo forgetting a match doesn't fit a money story; add contradicts. But budget...
+
+Let me consider the ops count: I'll aim for ~15-20 ops.
+
+Planned ops:
+1. e1 propose_event (outcome)
+2. c1 claim (user confided)
+3. c2 claim (Hugo forgot)
+4. c3 claim (Léa râla)
+5. c4 claim (third match, each managed own, no intervention)
+6. c5 claim (inference: delegation held when he abstained)
+7. r1 role self initiator
+8. r2 role Hugo recipient
+9. r3 role Léa recipient
+10. k1 critique on 2c85f3df
+11. h1 new hypothesis (self, D3, alternativeTo 2c85f3df, rank 2)
+12. r4 revise 2c85f3df → plausible/moderate/rank1 + evidence
+13. r5 revise 9076b52b → add evidence (support c3, contradict c4), draft
+14. r6 revise 9241269d → add support c2
+15. r7 revise 39e05d91 → add contradicts c2 (Hugo forgot outside January)
+16. q1 question about his ressenti at the third match? Or skip.
+
+Hmm, is r7 needed? 39e05d91's critique already flagged the 20 février episode as ignored evidence. Adding c2 (the forgotten match) as contradicting further supports the "installed" reading. It's a reasonable revision: status stays draft. Actually the critique on 39e05d91 is unresolved; adding contradicts evidence is fine.
+
+Maybe also revise 0a0b3629 (Hugo financial/transient alternative) with contradicts c2. Hmm, but the forgotten match — a money problem doesn't explain forgetting a match. Add contradicts. But that hypothesis has 3 supports; adding 1 contradict doesn't change status. Maybe skip to limit bloat. I'll include it? Let's see... I'd rather include the most informative. I'll skip 0a0b3629 and instead handle it via... hmm. Actually the comparison matters: Hugo forgetting his organizational match on the third... it's a real datapoint against the "money" explanation. But the money explanation was about the cotisation. A forgotten match isn't contradictory to being short of money per se (though it doesn't support it either). I'll skip.
+
+Let me also consider: should I add a goal? propose_goal is NOT in allowedOperations. Good, skip.
+
+Directions: not allowed. Skip.
+
+So outcome "proposed".
+
+Now the question. Rule 20: don't re-ask existing questions. Existing questions include one about the planning and one about the ressenti when someone else does a task. A new question could be: "Au troisième match, quand chacun a géré le sien sans que tu interviennes, qu'as-tu ressenti — du soulagement, ou l'impression que ça t'échappait ?" Targets: h1 (new) and 2c85f3df. That discriminates: if relief → h1/barrier passable; if malaise/dispossession → 2c85f3df (the place matters). But question 2b6e6ff4 already asks nearly this ("Quand quelqu'un d'autre fait une tâche du club à ta place, qu'est-ce que tu ressens : du soulagement, ou une gêne parce que ce n'est pas fait comme tu le ferais ?"). Rule 20 says "Ne repose jamais une question présente dans le paquet, quel que soit son statut". This is close but distinct (specific to the new observed episode). Risky: it could be seen as a repeat. Hmm. The spirit: don't re-ask. The new episode is a fresh object and the discrimination (relief vs dispossession) maps to h1 vs 2c85f3df. I think a distinct question grounded in the new episode is legitimate and valuable. But to be safe about "repose jamais une question présente", I'll frame it distinctly: ask not about the feeling in general but about what happened after — e.g., "Après le troisième match, as-tu continué à confier un match à chacun, ou as-tu repris la main sur certaines tâches ?" Hmm, that's about behavior continuation → discriminates h1 (if he keeps delegating, the pattern changed) vs 2c85f3df (if he took back tasks, the load protects his place). That's a genuinely new question not in the package. Good. Targets: h1, 2c85f3df. discriminatingInfo: explains. whyNow: the action's result is the only observation where he abstained; whether the abstention held afterwards separates a durable change from a one-off.
+
+I'll include that as q1.
+
+Hmm, but should I include a question at all? It adds value and rule 20 permits. Yes, include one.
+
+Now clarifications: [] (outcome proposed). 
+
+Now let's write the citations carefully.
+
+Source for outcome: 
+sourceId "e32fa165-3e6d-45fb-9c5e-843955127c07", contentHash "e52e370fdde1cf9a6c47429293c4cd8d66d1d51803e1a36af42facb8afc0dc21", spanStart 0, spanEnd 236, quote "Résultat de l’action « Une tâche, une personne, une date » : J'ai confié un match à chacun pour l'organisation. Hugo a oublié le sien et Léa a râlé que c'était compliqué. Au troisième match, chacun a géré le sien sans que j'intervienne."
+
+I'll use this long citation for all my new claims/event. 
+
+For claims in other hypotheses' evidence, I reference claim ids in the packet (no citations needed for evidence refs).
+
+Now write operations.
+
+Let me define keys: e1, c1..c5, r1..r3, k1, h1, v1 (revise 2c85f3df), v2 (9076b52b), v3 (9241269d), v4 (39e05d91), q1.
+
+Order: claims/events first, then critique, then revisions, then question.
+
+Now, the revise payload for v1:
+
+{
+ "key": "v1",
+ "kind": "revise_hypothesis",
+ "payload": {
+   "target": {"kind":"hypothesis","id":"2c85f3df-e9fb-4dd4-99e4-f54817e50983"},
+   "expectedRowVersion": 2,
+   "status": "plausible",
+   "confidence": "moderate",
+   "rank": 1,
+   "addEvidence": [
+     {"claim": {"proposalKey":"c1"}, "stance":"supports"},
+     {"claim": {"proposalKey":"c3"}, "stance":"supports"},
+     {"claim": {"proposalKey":"c4"}, "stance":"contradicts"}
+   ]
+ },
+ "rationale": "..."
+}
+
+Hmm, should c2 (Hugo forgot) be supports? Let me include c2 supports too. Then 8 supports, 3 contradicts. Fine.
+
+Wait: c4 contradicts. But c4 is also central evidence for h1. That's fine (different subjects/hypotheses).
+
+Hmm, one concern: if I add a contradict to 2c85f3df and its status becomes plausible — is that coherent? Yes: plausible means the reading holds with net support.
+
+Rationale for v1 must include the prediction-vs-result comparison (rule O6 / revise rule): "Le résultat de l'action confirme la barrière décrite (déléguer a produit une friction : Hugo oublie, Léa râle) et démentit la prédiction « la répartition ne changera pas » : au troisième match, chacun a géré le sien sans intervention. Deux épisodes ancrés nets subsistent..."
+
+Hmm, but wait: the prediction démentie "affaiblit ou appelle une alternative" — yes, I propose h1 as the alternative. Good.
+
+For v1 status: hmm, one could argue the prediction démentie should keep it at draft. But the promotion criteria are formally met. And the reading remains the best account of the position. Hmm... Let me reconsider once more. Actually, is it wise to promote a hypothesis whose key prediction was just démentie? The rule set says plausible requires net ≥2 anchored episodes, an active alternative, and a critique pass. I've done those. But intellectual honesty: the mechanism is partially revised. Since I can't edit the statement, promoting may overstate. Alternatively keep status "draft" and rank 1. Hmm. The system's own guidance is formal; but "rigueur" also means not overstating. Given the prediction démentie, I'll keep it as... hmm.
+
+Let me think about what a careful analyst would do: the hypothesis's distinguishing prediction failed. The alternative (h1) explains the new episode better. Yet the hypothesis's supports are numerous and the new evidence doesn't contradict its mechanism directly (it contradicts its prediction about the distribution not changing, which the hypothesis itself treated as a consequence of the barrier). The friction (c2, c3) actually supports the barrier's existence.
+
+I'll promote to "plausible" — the criteria are met and the reading retains the strongest support base — while stating explicitly in the rationale that its prediction on the distribution was démentie and that h1 takes over for the levier. Hmm, but if h1 takes over, h1 should perhaps be rank 1... 
+
+Ugh. Let's decide: rank 1 = 2c85f3df (self: his position: carries, wants the team to organize, doesn't leave; the load is tied to his central place and recognition). rank 2 = h1 (the concentration also maintained by his immediate recovery; the barrier is lowerable). rank 2 = 8219602d. Hmm, two rank 2. Let me instead move 8219602d to rank 3 by a revise? That adds an op but tidies. Actually — rank field is per subject. Their subjects: 2c85f3df subject self; 8219602d subject self; h1 subject self. Three readings for the same subject. Ranks 1, 2, 3 would be cleaner. I'll revise 8219602d to rank 3 with no evidence changes? The payload requires addEvidence list — can be [] presumably. To be safe, include a contradicting evidence: is there anything? Its statement: "La fatigue dite le 24 février est conjoncturelle : la fin de saison accumule les échéances ... sa place centrale n'est pas recherchée et la fatigue doit se dissiper quand les échéances retomberont." New outcome c4: the redistribution succeeded when he abstained rather than when the calendar eased — mildly contradicting "conjoncturel" (the fatigue/charge is not only a calendar effect). Hmm, actually early-mid season... I'd say c4 contradicts 8219602d's "place centrale non recherchée / fatigue conjoncturelle"? Eh, weak. I could add c1 as contradicts (he takes the initiative to confide tasks — an active role, showing he's not merely subject to the calendar). Meh.
+
+Simplest: skip changing 8219602d. Two rank-2 readings both explicit alternatives to the rank-1 — acceptable.
+
+Hmm, alternatively give h1 rank null? No, rank is useful.
+
+OK let me go with: v1 (2c85f3df) rank 1; h1 rank 2; leave 8219602d untouched.
+
+Hmm, wait. Actually let me reconsider whether to mark 2c85f3df's status. There's also this: needsReview with reviewReason "context" — the annotation (context) was added, presumably to provide the context needed. Revising resolves it.
+
+Alright.
+
+Now v2 for 9076b52b: expectedRowVersion 1, status "draft", confidence "low", rank 2, addEvidence: [c3 supports, c4 contradicts]. Rationale: the third match is the first redistribution that held; Léa's grumbling at the start is consistent with resistance, but the outcome démentit the prediction that redistribution attempts are returned to the user.
+
+Hmm, careful: if I demote? Keep rank 2.
+
+v3 for 9241269d: expectedRowVersion 1, status "draft"? It's currently draft, confidence moderate (allowed for D3). Add evidence c2 supports. Its counts: 4 supports 1 contradict → 5 supports. Should I promote to plausible? Requires critique pass on it (rule 17). Its critiques: [] — none. I'd need a propose_critique for it too. Is it worth it? The new evidence (Hugo forgetting his match) is a third independent manquement (Jan 12, Jan 20, and now). Hmm, actually there are also Feb 3 (prêt) and Feb 13 (retard) episodes already counted (1da4b556 contradicts per its own table... yes 1da4b556 is listed as contradicts). So c2 adds a fresh support spanning to a later date. Promoting would require a critique. It has an active alternative (0a0b3629). Hmm, adding a second critique op... I think it's justified: the Hugo pattern with a new independent episode. But careful about op budget and value. I'll do: keep draft, add support. Actually hmm — the rule for "plausible" applies "avec revise_hypothesis". It's a permission, not obligation. Keep draft. Fine.
+
+Similarly, could add c2 as contradicts to 39e05d91 (janvier circonstanciel D2) — expectedRowVersion 1, status draft, confidence low, rank 2, addEvidence [c2 contradicts]. Yes, include.
+
+And 0a0b3629 (Hugo, D3, transient financial) — add c2 contradicts? A forgotten match is another non-financial lapse. Its own limits say it "n'explique ni la clé non rendue ni le covoiturage annulé de janvier". Adding c2 contradicts. Hmm, I'll include it — it's the alternative to 9241269d, and the revise strengthens the paired comparison. Actually, moderate value. Let me include it: v5 for 0a0b3629, expectedRowVersion 1, status draft, confidence low, rank 2, addEvidence [c2 contradicts].
+
+Hmm, that's 4 revise ops + 1 critique + 1 new hypothesis. Plus claims/event/roles. Total: 1+5+3+1+1+4+1(question) = 16 ops. Good.
+
+Wait, should I also revise 46a35c53 or dd53019d or eb7cbf27 (Léa-related) with the new episode? The new episode is about matches assigned to each person, not via Léa. "J'ai confié un match à chacun" — the user is the one who confided, so the initiative came from him, not Léa. That is relevant to dd53019d ("l'initiative des tâches vient de Léa et l'exécution de l'utilisateur") — new evidence: the user also initiates (confiding tasks). Hmm, that contradicts dd53019d's asymmetry? dd53019d already has 9a6ea563 as contradict (he relanced Léa and Hugo). Adding c1 contradicts would be reasonable: the user took the initiative this time. Hmm. And eb7cbf27 (Léa-Hugo relation: demand passes through Léa, Hugo withdraws) — the new episode: Hugo forgot his assigned match; Léa grumbled. That supports eb7cbf27? It shows Hugo not delivering when given a task directly by the user (not via Léa). Hmm, and it also shows Léa reacting. Weak.
+
+Also 7c1d79d4 (D5 club: concentration on the one who doesn't refuse) — the new outcome supports that the group can distribute when a framework is given... or contradicts? The statement says "les autres n'ont pas d'intérêt immédiat à redistribuer". The outcome shows they did take on tasks when clearly assigned. Hmm, that's more about "quand les tâches sont attribuées, elles sont prises" — supports the barrier field ("Redistribuer demanderait à chacun d'apprendre les démarches et de renoncer à un membre qui les prend en charge")? Partially contradicts. Eh, skip. Actually it might be worth adding to 7c1d79d4 as contradicting: the group did absorb tasks once they were nominally assigned — its "barrier" prediction overstates. Hmm, but the friction (Hugo forgetting) supports the barrier. Skip to avoid noise. Hmm... Actually maybe I should limit to the directly affected hypotheses: 2c85f3df (target of lever), 9076b52b (redistribution attempt), 9241269d/39e05d91/0a0b3629 (Hugo). And 7c1d79d4 is the D5 that also predicted "Toute nouvelle échéance du club retombera sur l'utilisateur" — the outcome démentit partially. Hmm, the direction b0e51783 targeted 7c1d79d4 but that direction wasn't chosen. The new evidence: tasks confided worked at the third match → contradicts "toute nouvelle échéance retombera sur l'utilisateur". I could add c4 contradicts to 7c1d79d4. That's honest and valuable. Add v6? That's 5 revisions. Let me include it — it's one of the two rank-1 readings of the club-level game, and its prediction was partially démentie. Hmm, but 7c1d79d4's barrier is about the group's interest; the outcome shows... Actually the outcome shows that assigning tasks nominally worked — which supports "the group will do tasks when assigned" (not that concentration is inevitable). So yes, contradict.
+
+Hmm, but I don't want to overreach: the concentration of administrative tasks (mairie, inscriptions, gym) is different from match-day organization. The new episode is about match organization. Still, the prediction was general ("Toute nouvelle échéance du club retombera sur l'utilisateur"). Adding c4 as contradicts with a rationale noting the nuance. OK, include as v6? Six revisions + 1 critique + 1 hypothesis + 5 claims + 1 event + 3 roles + 1 question = 18 ops. Acceptable.
+
+Hmm, but each revision adds cognitive load. Let me prune: maybe drop 0a0b3629 revision (it's low value) and keep 39e05d91 (more directly affected). Then revisions: v1 2c85f3df, v2 9076b52b, v3 9241269d, v4 39e05d91, v5 7c1d79d4. Five revisions. Fine.
+
+Hmm, 7c1d79d4 — is it worth it? Its alternative 1173d51a. Adding a contradict to a D5 rank-1 reading whose prediction was largely démentie... I'd say yes, include. Actually hold on, rule 17: a critique pass is only needed for promotion to plausible; 7c1d79d4 stays draft. Fine.
+
+Hmm, do I risk weakening too much? Contradicting 7c1d79d4 with one claim while it has 4 supports keeps it net 3. Fine.
+
+Let me now also double check whether I should propose a new hypothesis h1 at all, given rule 11's requirement and the fact that it's the lever's reading. Yes, keep it: it's the mechanism the success of the action supports, and it's a genuine alternative to 2c85f3df.
+
+h1 details:
+statement: "La concentration des tâches repose moins sur une place à défendre que sur la reprise immédiate : quand l'utilisateur confie nommément un match à chacun et ne reprend pas la main malgré la friction (Hugo oublie, Léa râle), le groupe gère ses propres tâches au troisième match sans qu'il intervienne."
+depth D3, framework null, construct null, confidence "low" (1 épisode ancré + les épisodes antérieurs? The evidence: c1, c2, c3, c4 and maybe 8f53b482 (the fatigue statement = his cost). Anchored independent episodes: the new episode (one) — net < 2 → confidence low. status draft. rank 2. alternativeTo 2c85f3df.
+mechanism: 
+ optimizes: "obtenir que l'équipe s'organise sans porter le coût d'un conflit ni d'un bras de fer"
+ protects: "l'absence de conflit ouvert et la possibilité de continuer à jouer (ne pas quitter le club)"
+ defenses: "assigner un cadre nominatif plutôt que refuser une tâche ; s'abstenir de reprendre plutôt que réclamer"
+ beliefs: "que si les tâches ne sont pas explicitement attribuées, elles retombent sur lui"
+ triggers: "une échéance du club sans titulaire ; une demande qui arrive sans répartition"
+ soothes: "voir une tâche tenue par un autre après la phase de friction"
+ barrier: "reprendre la main était plus rapide et évitait la friction (Hugo oublie, Léa râle) ; ne pas intervenir demande de supporter l'inconfort"
+ prediction: "avec une attribution nominative et une date, les tâches sont tenues par d'autres après une à deux semaines de friction ; sans attribution, elles reviennent à l'utilisateur"
+subjects: [{"self": true}]
+evidence: supports c1, c2, c3, c4, claim 8f53b482 (user's fatigue & wish) — hmm, does 8f53b482 support h1? It supports the goal/wish. I'd include it as supports since h1 explains his wish. Also 0c3b440d? Skip.
+ contradicts: maybe claim 0710d456 ("L'acceptation du repas survient quatre jours après... la charge se renouvelle alors même qu'il vient de la nommer") — that's an inference claim showing his pattern of re-accepting, which contradicts h1's optimism about a durable change. Good: add 0710d456 as contradicts. Also fd54472e (inscriptions comme chaque saison) contradicts? It's about the repetition. Could add as contradicts. I'll add 0710d456 only.
+limits: "Un seul épisode de délégation, sans date ni comptage des matchs ; le paquet ne dit pas qui sont « chacun » ni ce qui s'est passé aux deux premiers matchs."
+revisionConditions: "S'affaiblirait si l'utilisateur reprenait lui-même les tâches aux matchs suivants, ou si les tâches sans nom retombaient sur lui ; se confirmerait si la répartition tenait sans qu'il vérifie."
+validFrom null? The episode date unknown → validFrom null.
+
+Note: rule 8 requires for a D3 self reading at least one support claim where the user expresses his own cost — 8f53b482 qualifies ("fatigué de tout porter... j'aimerais que l'équipe s'organise"). ✔
+
+Critique k1 on 2c85f3df — findings with claims referencing proposalKeys (c1..c4) — allowed ("claims: [RÉF_OU_CLÉ d'un claim]").
+
+Now the claims: careful about category/modality:
+c1: explicit_statement, actual (the user did it).
+c2: sourced_observation, actual (Hugo forgot — the user observed/reports).
+Hmm, "Hugo a oublié le sien" — the user reports it; did he observe? He must have noticed the task wasn't done. sourced_observation ✔.
+c3: sourced_observation, actual.
+c4: sourced_observation, actual. Hmm, "chacun a géré le sien sans que j'intervienne" — user's observation of others' behavior → sourced_observation ✔.
+c5: inference, actual.
+
+Event e1: category sourced_observation? The event includes the user's own act. Hmm. Rule 4: "Un fait accompli donne un propose_event ET un propose_claim qui porte sa provenance." Category for the event: I'll use "sourced_observation" since the outcome is an observation... but the user's own act is explicit_statement. Mixed — I'll use "sourced_observation" and the claims cover provenance separately. Alternatively set the event category to explicit_statement since the user reports the whole thing himself ("j'ai confié...", "Hugo a oublié..."). Hmm. The category definitions: explicit_statement = une personne l'a dit ou écrit (y compris l'utilisateur parlant de lui-même). The user wrote all of it. sourced_observation = l'utilisateur l'a vu ou entendu lui-même. The events of others' behavior in the club were seen by him. For the composite event, I'd use "sourced_observation". Hmm, but the leading act is his own. I'll go with explicit_statement? Let me pick "sourced_observation" for the observed outcome part... 
+
+Decision: category "explicit_statement" for the event since the source is the user's own account of what he did and saw. Hmm. Actually many of the packet's events (entities) have category "unclassified_note" — no help. The claims I create split provenance properly, so the event can be "sourced_observation". I'll go with "sourced_observation".
+
+Hmm, hmm. The event is "Résultat de l'action ... l'utilisateur confie un match à chacun ... chacun gère le sien au troisième match". The core: his delegation and its result. I'll say category "sourced_observation" and context "Club — résultat de la direction choisie « Une tâche, une personne, une date »".
+
+Roles: r1 self initiator (event e1) — the user confided the matches (initiator). r2 Hugo recipient. r3 Léa recipient. Should I add a role "helper" for Hugo/Léa at the third match? "chacun a géré le sien" — Hugo and Léa each managed their own → helper roles? The role vocabulary: helper = rend le service. Managing one's own task isn't exactly a service. I'll skip.
+
+Also maybe a role: self responder? no.
+
+Citations for roles: e32fa165 full source.
+
+Now let me write the question q1:
+question: "Après le troisième match, as-tu continué à confier un match à chacun, ou as-tu repris la main sur certaines tâches ?"
+targets: [{"proposalKey":"h1"}, {"kind":"hypothesis","id":"2c85f3df-e9fb-4dd4-99e4-f54817e50983"}]
+discriminatingInfo: "Si l'attribution nominative tient sans qu'il intervienne, la lecture d'un frein dans sa propre reprise immédiate (h1) se renforce ; s'il reprend des tâches, la lecture d'une place centrale à préserver (h1 du paquet, 2c85f3df) reste la meilleure."
+whyNow: "Le résultat du troisième match est le seul épisode où l'utilisateur s'est abstenu ; le paquet ne dit pas si l'abstention a tenu ensuite."
+
+Good.
+
+Now the summary: short synthesis.
+
+Also modelDeclaration: declaredModel — "je suis..."? I should put a model name. The prompt says "<ton nom de modèle>". I'll put "deepseek-chat"? The workspace is "evaluation-2026-09-25-deepseek-flash-r5-s02-P02". Hmm. I'll declare "deepseek-v3.2" or... Safer: "deepseek-flash"? Hmm. The workspace name suggests deepseek-flash. I'll write "deepseek-flash". Hmm, might be wrong; but the field is my declaration. I'll put "deepseek-flash".
+
+Now let's double check the revise op for hypotheses with needsReview "disagreement" — none here.
+
+Check 2c85f3df: needsReview true, reviewReason "context", reviewSinceRevision 27. Rule 19 only restricts "disagreement". OK.
+
+Now let me write rationales carefully and concisely.
+
+One more check on rule 13: "Une inférence n'est jamais un ancrage." So c5 (inference) should NOT be used as evidence. I don't use it as evidence. Fine. But is it useful? Yes as a claim; it's allowed to propose inferences.
+
+Hmm, careful: my evidence for h1 uses c1..c4 (facts) and 8f53b482 (explicit statement) and 0710d456 (inference!) as contradicts — an inference can't be an anchor. Since "ancrages" are what matter for confidence, and confidence is low anyway. To be safe, replace 0710d456 with a non-inference contradicting claim: 0c3b440d (he hesitated then accepted the repas — after naming fatigue) — that's an explicit_statement, actual. Use it as contradicts for h1: four days after saying he's tired, he accepts organizing the meal — showing the pattern persists. Good, that's a fact-claim. Use 0c3b440d.
+
+Now, evidence for v1 (2c85f3df) additions: c1 supports, c2 supports, c3 supports, c4 contradicts. All facts (c1-c4 are explicit/sourced observations). ✔
+
+Evidence for v2 (9076b52b): c3 supports, c4 contradicts. ✔
+Evidence for v3 (9241269d): c2 supports. ✔
+Evidence for v4 (39e05d91): c2 contradicts. ✔
+Evidence for v5 (7c1d79d4): c4 contradicts. ✔
+
+Let me make sure "expectedRowVersion" values: 
+- 2c85f3df: revision 2 ✔
+- 9076b52b: revision 1 ✔
+- 9241269d: revision 1 ✔
+- 39e05d91: revision 1 ✔
+- 7c1d79d4: revision 1 ✔
+
+Now write everything. Also, the note: "rationale se place au niveau de l'opération, jamais dans payload". ✔
+
+Summary: "Le résultat de l'action montre une friction (Hugo oublie, Léa râle) puis une répartition tenue au troisième match sans intervention : la prédiction de 2c85f3df est démentie sur ce point, la barrière est franchie... Révisions : 2c85f3df → plausible (rang 1) avec une nouvelle lecture alternative h1 sur self (rang 2), 9076b52b et 7c1d79d4 affaiblies, 9241269d renforcée, 39e05d91 affaiblie."
+
+Careful: summary must not contain affirmations absent from operations. Keep it aligned.
+
+Let's write the JSON now.
+
+For the event text: "L'utilisateur confie un match à chacun pour l'organisation ; Hugo oublie le sien et Léa râle que c'est compliqué ; au troisième match, chacun gère le sien sans intervention de l'utilisateur."
+
+temporalPrecision: "unknown", occurredStart null, occurredEnd null.
+
+Roles payload requires "outcome": null for initiator/recipient.
+
+Now the operational JSON.
+
+Let me write out each op.
+
+1. e1.
+2. c1: text "L'utilisateur a confié à chacun un match à organiser pour le club." category explicit_statement, modality actual, validFrom null, validTo null, citations [outcome citation].
+3. c2: "Hugo a oublié le match d'organisation qui lui avait été confié." sourced_observation, actual.
+4. c3: "Léa a râlé que l'organisation confiée à chacun était compliquée." sourced_observation, actual.
+5. c4: "Au troisième match, chacun a géré son match sans que l'utilisateur intervienne." sourced_observation, actual.
+6. c5: "La répartition a tenu dès que l'utilisateur s'est abstenu d'intervenir : le point de blocage est sa reprise immédiate plus qu'une incapacité du groupe." inference, actual.
+7-9. roles.
+10. k1 critique.
+11. h1.
+12-16. revisions.
+17. q1.
+
+Good. Write it.
+
+For the critique findings' claims: use proposalKeys c1, c4, c3, c2.
+
+k1 findings:
+- kind "simpler_explanation", detail: "Le résultat de l'action (chacun gère son match au troisième match sans que l'utilisateur intervienne) s'explique plus simplement par la reprise immédiate des tâches que par une place centrale à préserver : rien n'indique que la place ait été menacée pendant l'abstention.", claims: [c1, c4].
+- kind "ignored_evidence": "La prédiction de l'hypothèse (« la répartition ne change pas ») est démentie par ce même résultat, qui n'est pas encore intégré à la lecture.", claims: [c4].
+- kind "overgeneralization": "La lecture généralise à un motif durable (« la charge est le prix du lien ») une suite d'épisodes de janvier-février ; la friction observée (Hugo oublie, Léa râle) est traitée comme preuve de la barrière alors qu'elle précède une répartition qui a tenu.", claims: [c2, c3, c4].
+
+Fine.
+
+Rationale strings short.
+
+Let me now produce the final JSON. Must be a single JSON object. No code fences.
+
+One more consideration: does the output require "clarifications"? It's a required field; set [].
+
+Let me write it.
+
+Also, the alternativeTo for h1 = {"kind":"hypothesis","id":"2c85f3df-e9fb-4dd4-99e4-f54817e50983"}.
+
+Also for h1, "validFrom": null.
+
+Write the JSON.
+
+Final check on claim c2 evidence usage: used as supports for 2c85f3df, supports for 9241269d, contradicts for 39e05d91. Consistent? c2 = Hugo forgot. For 2c85f3df supports the barrier (delegation produces friction). For 9241269d supports "Hugo laisse tomber". For 39e05d91 contradicts "les manquements d'Hugo relèvent d'une désorganisation ponctuelle de janvier" — the forgotten match is outside January ✔.
+
+OK. Writing now.
+
+JSON sizes fine.
+
+One thing: the summary should be short.
+
+Let me finalize the modelDeclaration: {"declaredModel": "deepseek-flash", "role": "analyst", "technicalId": null}.

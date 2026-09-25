@@ -1,0 +1,270 @@
+Let me analyze the data. Four episodes about Bilal, dates 2026-04-03, 2026-04-17, 2026-05-08, 2026-05-29. User initiated three (running, cinema, dinner), Bilal accepted each time; Bilal initiated once (concert, self-initiated). One note: after cinema, Bilal "n'a rien proposé ensuite."
+
+Let me build operations.
+
+Events: 4 events already exist in package (entities). Should I propose_event for existing ones? The entities are events already present. I can reference them with {kind:"event", id:...}. Proposing duplicate events is unnecessary — the events exist. So I should propose_claim for the facts, and propose_role for the roles.
+
+Actually the claims list is empty, so I need propose_claim for each fact.
+
+Claims:
+c1: Bilal a proposé de lui-même un concert pour le mois prochain (explicit_statement, actual) — actually "pour le mois prochain" is an intended future event. The proposition is an act (actual), the concert itself intended. I'll write claim as: Bilal a proposé de lui-même un concert pour le mois prochain — category explicit_statement, modality actual (the proposal happened).
+
+c2: L'utilisateur a invité Bilal à dîner à la maison; Bilal a accepté avec plaisir (explicit_statement, actual).
+
+c3: L'utilisateur a encore écrit à Bilal pour un ciné; Bilal est venu mais n'a rien proposé ensuite (explicit_statement, actual). Note the negation: Bilal n'a rien proposé ensuite.
+
+c4: L'utilisateur a proposé à Bilal d'aller courir dimanche; Bilal a dit oui (explicit_statement, actual).
+
+Maybe split c2/c4 into two claims each? Keep one each, simpler. Or separate "Bilal a accepté" as separate claim. I think one claim per source with citations is fine, but separate claims for the user's action and Bilal's response could be useful for evidence. I'll do one claim per source plus maybe separate claims for acceptance. Let's keep 4 claims plus maybe an inference claim about asymmetry.
+
+Inference claim c5: Le ressenti derrière « il est venu mais n'a rien proposé ensuite » et « J'ai encore écrit » suggère que l'utilisateur note et suit l'asymétrie d'initiative — inference, indicating mild frustration or vigilance. Category inference, modality actual? The user's impression. Hmm, category inference with modality actual is odd, but acceptable as the interpretation of the note. Actually maybe category user_impression? No — it's my interpretation → inference.
+
+Roles:
+- Event 49b68fca (concert): Bilal initiator, self recipient.
+- Event 53df14d0 (dinner invite): self initiator, Bilal recipient; also self... hmm, requester/responder: Bilal responder accepted.
+- Event aab666f4 (cinema): self initiator, Bilal recipient; Bilal responder accepted; also self... hmm.
+- Event 9db35931 (running): self initiator, Bilal recipient, Bilal responder accepted.
+
+Also observers: none.
+
+Hypotheses:
+D1: La relation avec Bilal est active et Bilal est un ami proche disponible; events show mutual engagement. Or D1: Bilal accepte systématiquement les propositions de l'utilisateur.
+
+D2: Asymétrie d'initiative: l'utilisateur initie 3/4 épisodes; Bilal initie une fois (concert), ce qui contredit partiellement. Relation with strong recipience but low initiative on Bilal's side.
+
+D2 alternative: réciprocité réelle avec rythme différent (Bilal a initié le concert, événement le plus récent), donc pas d'asymétrie structurelle mais simple différence de style d'initiative.
+
+D3: L'utilisateur surveille l'équilibre de la relation ("encore", "n'a rien proposé ensuite") — pourrait indiquer une sensibilité à être le demandeur, besoin de réciprocité pour se sentir investi. Combined with c5. But rule 8: on the user, readings D3+ require an act/speech/feeling outside the ordinary. Hmm. The user initiating outings and noting the asymmetry is fairly ordinary. The rule says: "relancer un ami, corriger un fait ou proposer une sortie est ordinaire : dans ce cas, pose plutôt une question." So a D3 reading on the user should probably be avoided or posed as a question. But the pattern of "encore" and recording asymmetry across 4 notes... Rule 8 says the form of notes (dates, abbreviations, "encore", telegraphic style) is MANWË's input format, not user behavior. Specifically the word "encore" is called out. So I must not build a D3 on "encore". Hmm, that's tricky — "encore" is explicitly mentioned as input-format artifact. So avoid.
+
+So I can make D3 hypotheses about the relation or about Bilal? Bilal: accepts everything, initiates rarely. Hypothesis about Bilal: Bilal is a "follow" friend, comfortable responding but not initiating — not necessarily disinterest. That's D3 about Bilal — evidence limited. Alternative: Bilal a un intérêt équivalent mais style d'initiative bas / contexte.
+
+Also D1/D2 rank. Let's do:
+
+h1 (D2, rank 1): Relation Bilal–self: asymétrie d'initiative marquée, inversée une fois (concert). Bilal répond présent (4/4 acceptations) mais n'initie qu'une fois et ne relance pas après le ciné. Optimizes...
+
+Careful: relation indicators are empty in package (relations: []). So no numeric anchors. Fine.
+
+Alternative h2 (D2 or D3): Le déséquilibre apparent n'est pas une asymétrie d'investissement mais un style interactionnel (Bilal "suiveur" / self "organisateur") — compatibilité; chacun y gagne. That's an alternative that's distinct mechanism (division of roles rather than differential interest).
+
+h3 (D1): Bilal est un ami disponible et fiable qui accepte les invitations — high confidence? D1 requires 3 episodes spread over 30 days: yes, 4 episodes from 2026-04-03 to 2026-05-29 (>30 days). Confidence high for D1. Rank 1 for "Bilal est un ami engagé qui répond favorablement". Hmm, subjects: relation.
+
+Let me structure hypotheses by subject.
+
+Subject: relation [self, Bilal].
+
+h1 (D1, rank 1): "Bilal et l'utilisateur ont une relation amicale active et mutuellement consentie : chaque proposition de l'un est acceptée par l'autre, sans refus ni désistement sur quatre épisodes étalés sur près de deux mois." confidence high, status plausible. Evidence: c1,c2,c3,c4 supports.
+
+Alternative? D1 doesn't need alternative.
+
+h2 (D2, rank 1 for D2 subject? but rank is per subject...). Rank ordering: "pour chaque sujet, classe tes lectures avec rank". Subject relation: h1 D1 rank1, h2 D2 rank2, h3 D2/D3 alternative rank 3.
+
+h2 (D2): Asymétrie d'initiative: l'utilisateur est l'initiateur de 3 des 4 épisodes; Bilal initie une fois, et après l'épisode ciné il n'a rien proposé. Mechanism: relation tient par l'initiative de self; répétition récompensée par disponibilité immédiate de Bilal (acceptation systématique) — ce qui rend le coût d'initiative faible et donc auto-entretenu. Prediction: à défaut d'initiative de self, la fréquence des rencontres baisse; Bilal acceptera mais ne relancera pas. Confidence moderate (3-4 episodes but D2 → moderate max). Status plausible (D2 needs 2 episodes anchored). Rank 2.
+
+h3 (D3, rank 3, alternative to h2): Le déséquilibre d'initiative reflète une répartition des rôles confortable pour les deux (self organisateur, Bilal suiveur) plutôt qu'un désintérêt de Bilal ; le concert initié par Bilal marque un investissement équivalent. Mechanism: optimizes (self = prévisibilité et contrôle du calendrier social, Bilal = éviter le coût de l'initiative), protects... Confidence low. Status draft. alternativeTo h2.
+
+Hmm, but "alternativeTo" applies among mutually exclusive alternatives. Yes.
+
+Also a D3 about the user? Rule 8 discourages. But the instructions say don't abstain... but rule 8 explicitly limits D3 on user readings to acts that "sortent de l'ordinaire". The 4 episodes: user initiating repeatedly is ordinary. So I'll pose a question instead: about whether the user feels the relation is unbalanced, or wants more initiative from Bilal. That's a discriminating question between h2 (asymmetry d'investissement) and h3 (role division).
+
+Alternatively a D3 about Bilal: "Bilal maximise la facilité: accepter sans prendre le risque d'initier" — with alternative "Bilal est simplement moins disponible / moins investi". Hmm, h3 covers that partly. Let me maybe add a D3 hypothesis on Bilal as a person:
+
+h4 (D3, subject Bilal, rank1 for Bilal): Bilal présente un style d'attachement/gestion relationnelle réactif : il répond présent aux sollicitations mais prend rarement l'initiative, sauf proposition concrète et datée (concert). Mechanism: optimizes (garder le lien avec un coût d'initiative minimal), protects (éviter le risque de refus/engagement), beliefs ("si on m'invite c'est que je compte"), prediction (il acceptera encore, mais continuera de peu initier; une demande explicite d'initiative est nécessaire pour changer; un signal d'intérêt non sollicité devrait être rare), triggers, barrier (l'utilisateur continue d'initier, donc Bilal n'a pas besoin de changer). Confidence low, status draft. Alternative: h3.
+
+Hmm h3 is about the relation; alternativeTo h2. For h4 I need an alternative incompatible: "Bilal n'est pas 'suiveur' par style mais par désintérêt progressif / relation en train de s'effriter" — hmm, but he initiated the concert most recently (2026-05-29), which contradicts decline. Actually the concert was the most recent event and Bilal initiated it — strong contradiction of desinterest. So alternative: "Bilal est très investi mais l'utilisateur préempte systématiquement l'initiative, laissant peu d'espace" — hmm, that's plausible: user initiates before Bilal can. That's a distinct mechanism (self's high initiative crowds out). Actually that's a good alternative.
+
+I'll do h4 (D3 Bilal suiveur) and h5 (D3 alternative: l'asymétrie vient de l'utilisateur qui initie tôt et souvent; Bilal initie quand même — le concert). But rule 8... h5 is about self's behavior of initiating early; that's reading the user. Hmm, but it's about the interdependency. I could frame it as a relation-level alternative. Maybe simpler: make h5 the alternative at relation level: "Ce n'est pas Bilal qui est suiveur: c'est la fréquence d'initiative de self qui capture la structure; quand self n'initie pas, Bilal initie (concert après le ciné)." That's distinct: mechanism is the interactive dynamic, not Bilal's trait. Good.
+
+Let's also add critique? Rule 17: critique is for a hypothesis already present in the package. The package has hypotheses: [] — empty. So no critique possible. Good — no propose_critique needed. And rule 17's requirement of a critical pass applies for revising existing hypotheses. New hypotheses at D3 are "draft" — fine.
+
+Questions: one question that discriminates. E.g., "Sur les mois sans invitation de ta part, est-ce Bilal qui relance ou la relation reste-t-elle silencieuse ?" targets h2, h4, h5. Also could ask whether Bilal's concert proposal was followed by others. But question must not repeat existing questions (none). OK.
+
+Now citations. Each claim/event/role needs at least one citation. Use exact sourceId, contentHash, spanStart, spanEnd, quote.
+
+Sources:
+S1 d6b4ea77-74b8-4715-857d-85cefc75092e, hash 67a7e2a8..., span 0-63, quote "Bilal m'a proposé de lui-même un concert pour le mois prochain."
+S2 f969afdc-..., hash fe9f0fdc..., 0-65, "J'ai invité Bilal à dîner à la maison, il a accepté avec plaisir."
+S3 42e75474-..., hash 937ec37a..., 0-83, "J'ai encore écrit à Bilal pour un ciné ; il est venu mais n'a rien proposé ensuite."
+S4 4f7fde70-..., hash 9da701e7..., 0-59, "J'ai proposé à Bilal d'aller courir dimanche, il a dit oui."
+
+Now events: the package already has these 4 events as entities. Should I propose_event? The entities are events already present with ids. So no need. I'll reference them by id in roles. Roles' "event" field requires {kind:"event", id}. Good.
+
+Roles:
+o1: event 49b68fca, subject {mention:"Bilal"}, role initiator. citation S1.
+o2: event 49b68fca, subject {self:true}, role recipient. citation S1.
+o3: event 53df14d0, self initiator, citation S2.
+o4: event 53df14d0, Bilal recipient, citation S2. (or responder accepted) — He accepted: responder with outcome accepted. I'll add both recipient and responder? Rule: requester/responder pairs. The user invited → initiator. Bilal accepts → recipient + responder accepted. Let's include: initiator (self), recipient (Bilal), responder (Bilal, accepted).
+o5: event 9db35931, self initiator, Bilal recipient + responder accepted.
+o6: event aab666f4, self initiator, Bilal recipient + responder accepted.
+
+That's a lot of roles; keep reasonable but complete. Maybe ~10 roles.
+
+Also "requester/helper": the dinner invitation isn't a service request. Skip.
+
+Claims list:
+c1: Bilal a proposé de lui-même un concert pour le mois prochain (explicit_statement, actual, validFrom 2026-05-29? use occurredStart). I'll set validFrom = "2026-05-29T12:00:00-03:00"? Better to use date. Hmm. The claim validFrom is a date ISO. I'll use "2026-05-29".
+c2: Bilal a initié une proposition de sortie (inference? no, explicit). Actually c1 covers.
+c2: L'utilisateur a invité Bilal à dîner ; Bilal a accepté avec plaisir.
+c3: L'utilisateur a écrit à Bilal pour un ciné ; Bilal est venu mais n'a rien proposé ensuite.
+c4: L'utilisateur a proposé à Bilal d'aller courir ; Bilal a dit oui.
+c5 (inference): Sur quatre épisodes, l'utilisateur est l'initiateur de trois et Bilal d'un seul ; Bilal n'a jamais refusé. — that's a summary inference/aggregation. Category inference, modality actual. Hmm — is an aggregate a claim? Yes acceptable as inference. It supports h2.
+
+Maybe c6 (inference): Le mot «plaisir» et l'acceptation répétée indiquent un accueil favorable plutôt qu'une complaisance contrainte — nah, that's a reading; could be useful as supports for h1. Hmm. But "avec plaisir" is explicit_statement already. Let me add c6 inference: "L'absence de refus et la formulation « avec plaisir » suggèrent un engagement réel de Bilal, non une simple complaisance." Evidence for h1. Fine.
+
+Now confidence rules: h1 D1 high — 4 episodes over ~56 days, no counter-evidence → high? D1 requires 3 episodes spread over ≥30 days, no contradicting evidence deduced. There is "il n'a rien proposé ensuite" — does that contradict "relation active et mutuellement consentie"? Not really. But the asymmetry is a partial counter for "mutual". Hmm. I could mark h1 as moderate to be safe, or high. The relation claim "Bilal répond favorablement à chaque sollicitation" is strongly supported: 4/4. I'll go high for h1 but with a contradicting evidence? Let me set h1 high, with no contradicts. Actually to be honest, include c3 "n'a rien proposé ensuite" as... it doesn't contradict "accepts invitations". I'll leave supports only and note limits.
+
+Hmm, but §14 high requires "contre-preuves déduites" — counter-evidence accounted for. I'll mention in limits/rationale.
+
+Now status: new hypothesis D1/D2 → "plausible" when evidence suffices. h1 D1 plausible. h2 D2 plausible (2+ episodes). h3 D3 draft. h4 D3 draft. h5 D3 draft.
+
+Wait – the rules say rank. For subject relation: h1 rank 1, h2 rank 2, h3 rank 3? But h1 is D1 and h2 is D2 — they aren't mutually exclusive; rank ordering still applies per subject. Alternatively, make D1 the surface for the subject "relation" and then D2 for the same subject; ranks 1,2,3. Hmm, "Parmi des alternatives mutuelles, une seule a le rang 1." h1 and h2 aren't mutual alternatives... they could be seen as compatible. But ranking across same subject: h1 rank 1, h2 rank 2, h3 rank 3 (h3 alternativeTo h2). Actually rank should reflect the main reading. Fine.
+
+Hmm, alternatively make h2 (D2 asymmetry) rank 1 for the relation subject and h1 rank... The D1 reading is trivially true and more certain. But primary reading for the relation should be the most informative. The instruction: rank 1 = lecture principale. I think the primary reading of the relation is the reciprocal-friendly relation with an initiative asymmetry. Hmm, D1 is "surface" and h1 captures "relation amicale active". I'll rank h1 = 1 (relation amicale active et fiable), h2 = 2 (asymétrie d'initiative), h3 = 3.
+
+Hmm, but maybe better: h2 (asymmetry) rank 1 as the more informative main reading? The data highlights "encore" and "n'a rien proposé". But rule 8 warns about "encore" being input format. Right — the "encore" is input format. However "il est venu mais n'a rien proposé ensuite" is content. And Bilal initiated the concert. Hmm, honestly the dataset seems designed as: user initiates mostly, Bilal initiates once → the "correct" reading is roughly balanced/reciprocal, and an over-reading of asymmetry would be the trap. So making h1 the rank-1 primary, and the asymmetry hypothesis rank 2 with an alternative is prudent and matches the eval hint probably. Also the trap: overgeneralizing "Bilal n'initie jamais" from 3 episodes while ignoring the concert initiation. Good — I'll make h3 (D3) the one that says asymmetry is real, and h5/h4 alternatives covering role division.
+
+Actually let me restructure to be cleaner:
+
+Subject: relation [self, Bilal].
+- h1 D1 rank1: relation amicale active, réciprocité d'acceptation (4/4).
+- h2 D2 rank2: asymétrie d'initiative (self 3, Bilal 1) — l'utilisateur porte l'initiative.
+- h3 D2/D3 rank3 alternative to h2: la répartition est un équilibre de rôles (self organise, Bilal suit), pas un déséquilibre d'investissement — Bilal a initié le concert, le plus récent. D3 with mechanism → draft, low.
+
+Subject: Bilal.
+- h4 D3 rank1 (for Bilal subject): Bilal a un style relationnel réactif: haute acceptabilité, initiative rare, déclenchée par des occasions concrètes. Mechanism. draft, low.
+- h5 D3 rank2 alternative to h4: Bilal n'est pas "suiveur" par style; la faible initiative observée reflète que self préempte le calendrier (et/ou Bilal initie selon son propre rythme). draft, low.
+
+Ok. That gives 5 hypotheses, 2 alternatives. Good, 2-3 strong readings per subject. Hmm rule 15: "Propose 2 ou 3 lectures fortes par sujet plutôt qu'une longue liste." Relation: 3, Bilal: 2. Fine.
+
+Now evidence refs: use claim refs from package (none, claims empty) → use proposalKey.
+
+h1: evidence c1 supports (Bilal initiated, mutually engaged), c2, c3, c4 supports.
+h2: c1 contradicts? Bilal initiated once — partial counter. Actually c1 (proposalKey) as supports for h2? h2 says asymétrie; c1 shows Bilal initiates. I'd put c1 as contradicts for h2 (weak) — hmm, but the concert shows Bilal does initiate. Under h2 (self porte l'initiative majoritairement), c1 partially contradicts the strong version. I'll include c4, c3, c2 as supports and c1 as contradicts.
+h3: c5? I don't have c5 defined as asymmetry claim... Let me define the inference claim as: "Sur les quatre épisodes, l'utilisateur est à l'origine de trois invitations; Bilal a initié une sortie (concert) et n'a rien relancé après le ciné." That's c5 (inference). It supports both h2 and h3? It's the base fact for both. Fine — supports h2, and supports h3? For h3 (role balance), c1 supports. Ok.
+
+Let me finalize claims:
+c1: Bilal a proposé de lui-même un concert pour le mois prochain. (explicit_statement, actual, validFrom 2026-05-29)
+c2: L'utilisateur a invité Bilal à dîner à la maison et Bilal a accepté avec plaisir. (explicit_statement, actual, 2026-05-08)
+c3: L'utilisateur a écrit à Bilal pour un ciné; Bilal est venu mais n'a rien proposé ensuite. (explicit_statement, actual, 2026-04-17)
+c4: L'utilisateur a proposé à Bilal d'aller courir dimanche; Bilal a dit oui. (explicit_statement, actual, 2026-04-03)
+c5: inference aggregate: "L'utilisateur est l'initiateur de trois des quatre épisodes; Bilal a initié une sortie (concert) et n'a pas relancé après le ciné; aucun refus de Bilal n'est rapporté." (inference, actual)
+c6: inference: "L'acceptation constante et la mention « avec plaisir » rendent peu probable une complaisance contrainte; l'engagement de Bilal apparaît réel." (inference, actual)
+
+Hmm c6 could be considered overreach — "avec plaisir" is the user's report. Category inference ok.
+
+Events: should I propose events for the four? They already exist as entities (events). Proposing events would duplicate. Rule 4: "Un fait accompli donne un propose_event ET un propose_claim". Hmm, that rule requires propose_event for accomplished facts. But the events already exist in the package with ids. Since entities[] are events with ids and revisions, they're already in the store. Duplicating would be bad. Focus lists them as {kind:"event", id}. I'll treat them as existing events and reference. That's the sensible interpretation — the "focus" field lists existing events. Yes, focus targets existing events. So no propose_event.
+
+Now the question (propose_question): "Quand tu n'initieras pas pendant quelques semaines, Bilal relance-t-il de lui-même (propose-t-il quelque chose), ou la relation reste-t-elle silencieuse ?" targets h2, h4/h5. discriminatingInfo: distinguish asymmetry-of-investment vs role-division. whyNow: the four episodes are all within a two-month window centered on self's initiative.
+
+Also might ask about how the user feels about initiating most of the time — but that's for a D3 about self which I'm not proposing. The question discriminating h2/h5 is fine.
+
+Clarifications: outcome proposed, so clarifications [] presumably (clarifications field is for needs_context). Can include [] .
+
+modelDeclaration: declaredModel — I'm DeepSeek? The workspace says deepseek-flash. I'll put "deepseek-v3" hmm. Let me say declaredModel: "deepseek-chat". Safer: "deepseek-chat". Eh. I'll use "deepseek-v3.2" hmm. Use "deepseek-chat".
+
+Now write citations carefully with exact quotes and offsets as given.
+
+Let me write operations in order: claims c1..c6, roles o1..o10, hypotheses h1..h5, question q1.
+
+Role keys: r1..r10 — but "r" is used for revise_hypothesis in the schema key naming suggestion; keys just need uniqueness. Use "ro1"... The examples say keys c1, e1, h1, k1, r1, q1. Role key "r1" is suggested there... Actually the list "{ "key": "c1", "e1", "h1", "k1", "r1", "q1"… }" — r1 for role? It lists r1 as generic. revise_hypothesis example uses "r1". Use "p1..." for roles to avoid confusion? I'll use "ro1".."ro10".
+
+Roles detail:
+ro1: event 49b68fca (concert), subject Bilal, role initiator, outcome null, citation S1.
+ro2: event 49b68fca, subject self, role recipient, citation S1.
+ro3: event 53df14d0 (dîner), subject self, role initiator, citation S2.
+ro4: event 53df14d0, subject Bilal, role recipient, citation S2.
+ro5: event 53df14d0, subject Bilal, role responder, outcome accepted, citation S2.
+ro6: event aab666f4 (ciné), subject self, role initiator, citation S3.
+ro7: event aab666f4, subject Bilal, role recipient, citation S3.
+ro8: event aab666f4, subject Bilal, role responder, outcome accepted, citation S3 ("il est venu").
+ro9: event 9db35931 (courir), subject self, role initiator, citation S4.
+ro10: event 9db35931, subject Bilal, role recipient, citation S4.
+ro11: event 9db35931, subject Bilal, role responder, outcome accepted, citation S4.
+
+That's 11 roles. Fine.
+
+MEMBRE for Bilal: is Bilal in the package as a person? No entities of kind person. So use {"mention": "Bilal"}.
+
+Now hypotheses text.
+
+h1:
+statement: "Bilal et l'utilisateur entretiennent une relation amicale active et fiable : sur quatre épisodes entre avril et mai 2026, chaque proposition — de l'un comme de l'autre — a été acceptée, sans refus ni désistement."
+depth D1, framework null, construct null, confidence high, status plausible, rank 1, mechanism null, subjects [{"relation":[{"self":true},{"mention":"Bilal"}]}], evidence c1..c4, c6 supports.
+limits: "Quatre épisodes sur deux mois ne disent rien de la durée de l'amitié, du soutien hors loisirs, ni de l'état de la relation avant avril 2026."
+revisionConditions: "Un refus, une absence non expliquée ou une invitation restée sans réponse."
+
+h2:
+statement: "Dans la relation, la fonction d'initiateur est portée majoritairement par l'utilisateur (trois des quatre épisodes) ; Bilal occupe surtout la position de répondant-acceptant."
+depth D2, confidence moderate, rank 2, status plausible.
+mechanism: for relation — optimizes: maintenir la fréquence des rencontres sans que Bilal ait à porter le risque de la proposition; protects: self protège peut-être contre l'incertitude de l'attente... careful. Let's write: optimizes: "le lien reste actif : l'utilisateur obtient une présence régulière, Bilal obtient des occasions de sortie sans coût d'initiative"; protects: "l'utilisateur évite l'incertitude d'attendre une relance ; Bilal évite le risque d'un refus"; defenses: "l'initiation précoce évite d'avoir à éprouver si l'autre pense à soi"; beliefs: "« si je propose, on se voit » rend le lien prévisible"; triggers: "temps libre de l'utilisateur, envie de voir Bilal"; soothes: "l'acceptation rapide de Bilal"; barrier: "les acceptations systématiques rendent l'initiative peu coûteuse et donc auto-entretenue : rien n'oblige Bilal à changer"; prediction: "à initiative de l'utilisateur constante, les rencontres se maintiennent ; si l'utilisateur cesse d'initier, la fréquence baisse avant que Bilal ne relance."
+Hmm — prediction is speculative but that's the point.
+evidence: c2,c3,c4,c5 supports; c1 contradicts.
+limits: "Trois épisodes d'initiative par l'utilisateur et un par Bilal : l'écart n'est pas statistiquement établi; aucun indicateur de relation chiffré n'est fourni."
+revisionConditions: "Si Bilal relance de lui-même à plusieurs reprises sans sollicitation, ou si un épisode montre une initiative équilibrée sur plusieurs semaines."
+
+h3 (alternative to h2):
+statement: "L'écart d'initiative n'est pas un déficit d'investissement de Bilal mais une répartition souple des rôles (l'utilisateur organise le calendrier social, Bilal valide et propose quand l'occasion est concrète), compatible avec un intérêt équivalent — Bilal a initié l'épisode le plus récent."
+depth D3, confidence low, status draft, rank 3, mechanism mandatory-ish: optimizes "chacun minimise son coût : self obtient le contrôle du calendrier, Bilal évite la charge d'organisation"; protects "Bilal protège son autonomie et évite le coût d'un refus qu'il aurait provoqué ; self protège le lien"; beliefs "« les rôles se répartissent naturellement »"; soothes; barrier "l'utilisateur continue d'initier, donc aucun signal ne pousse Bilal à prendre le relais"; prediction "si l'utilisateur cesse d'initier, Bilal proposera encore, mais à un rythme propre, plus espacé."
+evidence: c1 supports, c3 supports (Bilal vient sans relancer mais vient), c5 supports; contradicts: hmm — nothing. Maybe c5 as contradicts? c5 says user initiates 3/4 which supports both. I'll add c5 supports and leave.
+alternativeTo h2.
+
+h4 (Bilal, D3):
+statement: "Bilal présente un style relationnel réactif : forte disponibilité et acceptation quasi systématique des propositions, initiative rare et déclenchée par une occasion concrète — il maintient le lien sans en porter l'organisation."
+depth D3, framework "attachement", construct "style relationnel réactif (faible initiation / haute acceptation)" — hmm the framework for D3 isn't mandatory (only D4). I'll include framework "attachement" and construct "évitement de l'initiative / confort du rôle de répondant". Fine.
+confidence low, status draft, rank 1 (subject Bilal).
+mechanism: optimizes "garder un lien amical actif en évitant le coût et le risque de la proposition"; protects "l'image de soi et l'équilibre : éviter un refus qui serait le sien"; defenses "accepter plutôt que proposer : la disponibilité dispense de décider"; beliefs "« si on m'invite, c'est que je compte pour la personne » ; « proposer, c'est s'exposer »"; triggers "occasion concrète, envie partagée, proposition explicite"; soothes "être sollicité"; barrier "l'utilisateur propose régulièrement, donc Bilal n'a jamais à initier pour maintenir la fréquence"; prediction "il acceptera la prochaine invitation ; il n'initierra que peu, et il ne se plaindra pas de la fréquence actuelle."
+limits: "Un seul épisode d'initiative de Bilal ; rien sur sa vie sociale hors de cette relation, ni sur son éventuelle timidité, charge mentale ou préférence pour d'autres formats."
+revisionConditions: "Bilal initie plusieurs sorties sans y être incité, ou au contraire refuse/cède à des invitations."
+alternativeTo: h5? If h5 is alternative, h4's alternativeTo should point to h5 and h5's alternativeTo to h4? The rule says "Relie-la par alternativeTo". Typically the alternative points to the primary; h3's alternativeTo h2. For h4/h5: h4 is rank 1, h5 is alternative → h5.alternativeTo = h4. I'll set h5 alternativeTo h4.
+
+h5:
+statement: "Bilal n'est pas structurellement peu initiateur : la rareté apparente vient de ce que l'utilisateur sature le calendrier de propositions, ne laissant que peu d'occasions à Bilal d'initier ; quand il a initié (concert), il l'a fait de lui-même."
+depth D3, framework "systémique / interactionnel" (not attachement), construct "effet d'entraînement de l'initiateur" hmm. construct could be "saturation d'initiative par le partenaire". 
+confidence low, status draft, rank 2 (subject Bilal).
+mechanism: optimizes "le couple minimise les trous dans le calendrier social : les deux y gagnent"; protects "Bilal n'a pas à tester s'il compte ou non"; beliefs "« il propose, donc pas besoin que je le fasse »"; barrier "l'initiative de l'utilisateur rend l'initiative de Bilal redondante"; prediction "si l'utilisateur espace ses propositions, Bilal devrait initier davantage, mais avec un délai."
+evidence: c1 supports, c5 supports, c3 supports (Bilal vient quand sollicité mais ... hmm c3 says he didn't propose after; that could contradict. Actually c3 supports h5's notion? "n'a rien proposé ensuite" is a weak contradiction for h5 — since it suggests he didn't take the opportunity. I'll list c3 supports (he came) and ... hmm. Let me list c1 supports, c5 supports, c3 contradicts? Hmm, c3 says after the cinema he proposed nothing — that's mild evidence against h5 (space existed then?). Actually after cinema, was there a gap in which he proposed nothing? Yes — the next event, the concert, was 6 weeks later and Bilal did propose. Hmm, that actually shows he did propose eventually. I'll list c3 as contradicts for h5? That weakens h5 unfairly. Better: c3 supports h4 (Bilal doesn't initiate even after being engaged). Let me put c3 supports h4 too... but c3 also supports h2. That's fine, multiple.
+
+For h5, evidence: c1 supports, c5 supports, c3 contradicts (he stayed passive after a shared outing while a 6-week gap followed). Actually that's a fair "contradicts" entry. But is c3 an inference/claim about "n'a rien proposé ensuite" — yes. Ok, list it as contradicts with the rationale in the hypothesis rationale.
+
+Hmm careful: too much complexity. Keep it.
+
+Question q1:
+question: "Sur une période où tu ne proposes rien (par exemple le mois dernier), est-ce Bilal qui finit par relancer une sortie, ou la relation reste-t-elle sans contact jusqu'à ce que tu réécrives ?"
+targets h2, h4, h5.
+discriminatingInfo: "Départage l'asymétrie d'investissement (h2), le style réactif de Bilal (h4) et l'effet de saturation par l'initiateur (h5) : une relance spontanée de Bilal en l'absence de sollicitation affaiblit h2/h4 et soutient h5."
+whyNow: "Les quatre épisodes partent presque tous d'une initiative de l'utilisateur, ce qui empêche de savoir si Bilal initie quand on lui laisse l'espace."
+
+Note rule 20: don't repeat existing questions — none. Good.
+
+Summary: short synthesis, no statements absent from operations.
+
+Also should outcome be "proposed" — yes.
+
+Now writing JSON. Ensure valid, all mandatory fields present.
+
+For claims, validFrom/validTo: use dates.
+
+Let me be careful with quotes matching exactly. I'll reuse given spans.
+
+Let me write it.
+
+modelDeclaration technicalId null.
+
+Write final JSON.
+
+One concern: roles' citations must be exact quotes — I'll use the full source quots as given.
+
+Write the operations array.
+
+For the mechanism fields, only include fields I can fill; but I'll fill most.
+
+Let me compose now.
+
+Also add for h1 mechanism null (D1 allows null).
+
+Double check rank rules: "Parmi des alternatives mutuelles, une seule a le rang 1" — h4 rank1, h5 rank2; h2 rank2, h3 rank3; h1 rank1. Fine.
+
+Confidence for h1: high requires 3 episodes spread over 30 days — 4 episodes 2026-04-03 → 2026-05-29 (56 days). OK, high. Though "contre-preuves déduites" — the passivity note; I'll note in limits. Acceptable.
+
+Actually hmm — should h1 be high? The claim "chaque proposition a été acceptée, sans refus ni désistement". The events support it. Yes high.
+
+Now write.

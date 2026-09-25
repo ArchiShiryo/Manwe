@@ -1,3 +1,4 @@
+// Historique : preuve assistée 2026-09-14. Utiliser evaluation-run.mjs pour les nouveaux lots.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { SqliteMemoryStore } from "../packages/storage/src/sqliteStore.ts";

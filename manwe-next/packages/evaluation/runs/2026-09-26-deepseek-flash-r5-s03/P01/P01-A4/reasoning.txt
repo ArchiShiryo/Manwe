@@ -1,0 +1,217 @@
+Let me analyze this. The task is "explore" with a confirmed goal already present. allowedOperations: propose_question, propose_direction, propose_goal.
+
+So I need to propose directions (at least two, plus one do_nothing), each based on a hypothesis present in the packet (lever.hypothesis must be a hypothesis ref, not superseded/contradicted). And possibly questions (must not repeat existing questions).
+
+Note: I cannot propose new claims/hypotheses — allowedOperations only allows propose_question, propose_direction, propose_goal. So lever.hypothesis must reference existing hypotheses in the packet.
+
+Also sources: [] and there's no text — so any citations I make must reference... hmm. Sources list is empty. The entities reference sourceIds but sources[] is empty. For propose_goal citations I'd need citations — but goal already exists and confirmed, so per G3 I shouldn't propose a goal. Actually goal confirmedByUser is true and equivalent, so no propose_goal.
+
+For propose_direction, no citations required. Good. For propose_question, no citations required. So I can avoid citation issues entirely. 
+
+Let me check the relations and hypotheses available for levers:
+
+Hypotheses (not superseded/contradicted):
+- 1d902b62 D3 draft, self, "place de celui qui gère", rank 2
+- 2e1c4e71 D2 plausible, Maya/self, rank 1
+- 4152599c D2 plausible, self, pourvoyeur, rank 1
+- 4d2ed28d D2 draft, self, conjoncturel, rank 3, alternativeTo 1d902b62
+- 70ac1ab1 D2 plausible, relation Maya-self, rank 2
+- 751d5125 D2 plausible, relation group(ec303296), rank 2
+- 83a8603a D2 plausible, group ec303296, rank 1
+- 96c14529 D2 plausible, relation Karim-self, rank 2
+- 9b87e09e D4 draft, self attachement
+- b4ed45a2 D1 plausible, Karim-self
+- d8480bf7 D3 draft, Jules-self
+- ed2a60b9 D2 draft, self contextuel
+- effa3a49 D2 draft, Jules-self contextuel
+
+Now directions for the goal: "Que la coloc tourne sans qu'il soit le seul à tout gérer, tout en continuant à vivre avec Maya et Jules."
+
+O5: "Avec peu de données (lectures D1, un seul épisode), limite-toi à une direction à faible effort... n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides." Here we have plenty of D2 evidence (multiple episodes). D3 hypotheses are draft with moderate confidence — 1d902b62 has anchSupports 4, d8480bf7 has 2 supports. Hmm, D3 hypotheses are draft. O2 says direction must actionner a hypothesis present in packet, not superseded/contradicted. It doesn't require plausible status. But O5 says don't base a lever on a D3+ reading without solid support. d8480bf7 has 2 anchored supports (vaisselle episode) — moderate confidence. I could use it but let's prefer D2 ones with solid evidence, and use D3 where support is decent.
+
+Let me design directions:
+
+1. d1: Renégocier explicitement la répartition — but who? The goal is his. Ah, but "n'oublie pas G2": goal is what the user wants. Directions serve the goal.
+
+Direction ideas:
+A. "Petite demande explicite à Maya" — lower_barrier: demander à Maya de prendre une tâche précise cette semaine (au lieu de tout porter). Levers hypothesis 70ac1ab1 (relation Maya-self: elle demande, il exécute; barrière: il n'oppose jamais de refus). mechanismKey: "barrier". Predictions: Maya immediate — surprise / accepte; transitional — peut-être qu'elle reprend la main; equilibrium.
+
+B. disconfirming_experience: tester un refus limité — "laisser une tâche non faite 48h" (celle qui incombe à Jules/Maya) pour observer si le lien en pâtit (démentir la croyance "refuser abîmera le lien"). Levers hypothesis 9b87e09e (beliefs) or d8480bf7 (Jules-self, beliefs). Actually d8480bf7 D3 — 2 supports. 9b87e09e D4 draft with 6 supports — solid evidence actually (6 anchored supports, 43 days). Hmm D4 status draft. O5: "n'appuie aucun levier sur une lecture D3 ou plus sans preuves solides" — 9b87e09e has 6 anchored supports over 43 days, that's solid. OK.
+
+But maybe safer to use D2 group hypothesis 83a8603a (coloc récompense le pourvoyeur, rank 1, 5 supports): change_reward — changer ce que la répétition récompense. Direction: cesser de compenser silencieusement et rendre visible la répartition (ex: dire en groupe ce qu'il a fait cette semaine et demander qui prend quoi). mechanismKey: "optimizes" (reconnaissance/statut). Hmm.
+
+C. change_game: réunion explicite / passer par une règle externe (tableau, répartition écrite) — but hypothesis 751d5125 says attempts get approved then emptied. Lever could still be change_game but the prediction should account for the transitional escalation.
+
+D. alternative_source: Karim as external mirror — nourrir le lien amical extérieur (accepter une sortie) pour obtenir l'appartenance ailleurs que par la charge. Levers hypothesis 96c14529 (Karim-self asymétrie) or b4ed45a2. Hmm this serves the goal? The goal is that the coloc runs without him being the only one managing, while keeping living with them. Accepting Karim's outing doesn't directly serve that... but it could: reduce the monopoly of the coloc on his belonging, lowering the cost of the coloc losing. Hmm, it's plausible but tangential. Actually it doesn't really serve his goal directly. Maybe better framed: it restores an external source of recognition, so that the coloc's approval stops being the only currency. That's alternative_source with mechanismKey "soothes". Directed at hypothesis 1d902b62 or 9b87e09e (protects appartenance). Reasonable but perhaps rank lower.
+
+E. do_nothing: predictions — la charge reste, lassitude monte, demandes continuent (per hypothesis 83a8603a/9b87e09e predictions), possibly he eventually leave or explode.
+
+O1 says propose toutes les directions utiles (au moins deux quand c'est possible) + ONE do_nothing.
+
+Let me settle on 4 directions: 3 actions + 1 do_nothing. Maybe 4 actions.
+
+Let me be careful about lever.hypothesis referencing existing hypotheses by id and kind "hypothesis".
+
+Direction 1 (low effort, information, classique first step): "Demander à chacun une tâche précise cette semaine" — actually let's make it a small-step negotiation: annoncer ce qu'il porte et demander explicitement à Maya et Jules de prendre une tâche chacun, en commençant par une seule tâche concrète. lever lower_barrier, hypothesis 70ac1ab1 (relation Maya-self) mechanismKey "barrier". Predictions: Maya immediate (accepte ou renvoie), Julia... Let's keep predictions 1-5 with actor members.
+
+Actors: { "person": {"kind":"person","id":"796e6918-..."} } or { "mention": "Maya" }. Use person refs.
+
+Direction 2: "Laisser une tâche non faite et observer" — disconfirming_experience, hypothesis 9b87e09e (beliefs: réclamer/refuser abîmera le lien). Effort low. Predictions: Maya transitional (relance / reproche), Jules immediate (laisse), self... Actors can be self too? "actor": <MEMBRE> which includes self. Yes self is a member. Predictions should be about response of actors; self is fine.
+
+Hmm, but disconfirming_experience for the belief "s'il réclame ou refuse, il abîmera le lien". Actually the direction is: cesser une fois de compenser et exprimer calmement que la tâche n'est pas la sienne. Good.
+
+Direction 3: "Change reward" — rendre visible et faire porter la conséquence: arrêter de couvrir un manquement sans le nommer, dire en groupe qui a fait quoi. Levers hypothesis 83a8603a (group rewards the provider) mechanismKey "optimizes" or "barrier". Use "optimizes"? The lever field mechanismKey names the mechanism field targeted. The mechanism of 83a8603a has "optimizes", "protects", "barrier", "prediction". change_reward → targets what repetition rewards → "optimizes". Good.
+
+Direction 4: "alternative_source" — remettre du lien amical hors du lieu (accepter une proposition de Karim) pour ne pas dépendre du seul statut d'indispensable de la coloc. Levers hypothesis 96c14529 (Karim-self, barrière: Karim ne sanctionne pas, relance) or b4ed45a2 (Karim miroir D1). Use 96c14529 with mechanismKey "soothes"? Its mechanism has optimizes/protects/barrier/prediction. Hmm; maybe mechanismKey "barrier"? Actually the lever alternative_source: offer another source of the same gain (belonging/recognition) → mechanismKey "optimizes" (for the user: preserve time/energy... no). Hmm. For 96c14529: optimizes "pour Karim, garder le lien et dire ce qu'il voit ; pour l'utilisateur, préserver le temps et l'énergie qu'il donne à la coloc". Eh. Alternatively use 1d902b62 with protects "le lien avec Maya et Jules et l'image" — mechanismKey "protects". alternative_source: obtenir de la reconnaissance/l'appartenance ailleurs (Karim, amis) pour que la place dans la coloc cesse d'être la seule source → targets "protects". That makes sense. Use hypothesis 1d902b62 with mechanismKey "protects". But 1d902b62 is D3 draft, 4 supports, 32 days — solid enough. Hmm, O5 concern. I'll use it; it's ranked 2 and has 4 anchored supports. Or use 9b87e09e. Let's be consistent: use 1d902b62 for the alternative_source direction, mechanismKey "protects".
+
+Actually, maybe better: direction 4 could be about Karim as ally for saying things out loud (change_game? or lower_barrier): Karim already names the overload; ask him to... no, that's using a third party to relay — manipulative-ish? G2 no goal about thirds. Asking Karim's perspective (information) is fine: "demander à Karim ce qu'il voit, puisqu'il est le seul à nommer la surcharge" — that's a low-effort information direction. Lever? O2 requires a lever hypothesis. Hmm, O2 says each action direction must activate a hypothesis with a lever type. It's required.
+
+I'll do 4 actions + do_nothing. Also maybe a question? Questions: existing 5 open questions; I must not repeat them. A new discriminating question... Maybe one about whether Maya/Jules know the lassitude (already asked 6c4ee50d). Hmm, that's covered. Maybe a question that discriminates 2e1c4e71 vs 70ac1ab1 vs 4d2ed28d? Or about whether the rush period is over (ed2a60b9 contextual vs 9b87e09e durable): "Depuis la visite de l'agent immobilier, est-ce que les imprévus se sont calmés, ou est-ce que les sollicitations continuent ?" That's not in the packet questions. It discriminates ed2a60b9 (contextual) vs 9b87e09e (durable). Actually the existing question 0183322a targets 4d2ed28d and 751d5125 and 1d902b62 about what he did after the tableau — different. 6c4ee50d is about whether he said it. So a question about whether the pace calmed since mid-February is new and discriminating. Good — targets ed2a60b9, 9b87e09e, 83a8603a maybe. Let's include one question, maybe two.
+
+Second question idea: discriminates 2e1c4e71 vs 70ac1ab1 (Maya demande mais surtout tâche vs responsabilité/reproche): ask whether Maya reproaches him when something is missing or whether she ever does a joint task herself. Hmm, that partially opens the limits. Could be fine but maybe redundant with 6c4ee50d? It's about Maya's behavior, not his feelings. I think one or two questions is fine. Let me do one well-targeted question on the context/durability, plus maybe one on Maya. Keep to 1-2.
+
+Now, outcome: "proposed". operations: 4 directions + 1 do_nothing + 1-2 questions. Maybe also no claim/event needed (allowed ops don't include them).
+
+Now, careful: direction payload requires fields: goal (ref to goal id), title, action, lever, conditions, effort, limits, signals, learnsIfFails, predictions. rationale at op level.
+
+Goal ref: { "kind": "goal", "id": "3222ab9b-403d-4316-90b7-bf5bac7f5b09" }.
+
+Now write predictions with actor as MEMBRE, phase, horizonDays.
+
+Let me now craft each.
+
+d1 — "Un pas : demander une tâche précise à chacun"
+action: "Cette semaine, dire à Maya et à Jules, une fois, ce qu'il porte (courses, factures, démarches) et demander à chacun de prendre une tâche concrète et datée (par ex. Maya les courses du samedi, Jules la sortie des poubelles et la vaisselle un soir)."
+lever: lower_barrier, hypothesis 70ac1ab1 (relation Maya-self), mechanismKey "barrier" — le fait qu'il n'oppose jamais de refus ni de compte en retour.
+conditions: "quand un moment calme se présente avec les deux, hors d'un manquement."
+effort: low.
+limits: "peut être validé puis vidé de contenu (l'idée approuvée et l'exécution renvoyée à lui) ; ne règle pas la répartition des démarches administratives."
+signals: ["Maya ou Jules nomme une tâche qu'il prend", "la demande est reformulée en 'tu t'en occupes ?'", "aucune réponse de Jules", "une tâche est faite sans lui"]
+learnsIfFails: "si la demande est acceptée puis non suivie, la barrière n'est pas son silence mais l'absence de conséquence ; cela teste 751d5125."
+predictions:
+- Maya: "répond favorablement puis réattribue l'exécution à l'utilisateur", immediate, 7
+- Jules: "ne se prononce pas dans l'immédiat", immediate, 7
+- Maya: "si rien n'est relancé, reprend ses demandes habituelles", equilibrium, 30 — hmm.
+- self: maybe skip self.
+
+d2 — disconfirming_experience — "Laisser un manquement visible 48h"
+action: "Quand une tâche commune incombe à Jules ou Maya, ne pas la faire à leur place pendant 48 h, et dire une seule fois, sans reproche, 'je ne peux pas m'en occuper cette fois'."
+lever: disconfirming_experience, hypothesis d8480bf7 (Jules-self, beliefs: réclamer sa part créerait un conflit) mechanismKey "beliefs". Or 9b87e09e beliefs. Hmm both. I'll use d8480bf7 (Jules) with mechanismKey "beliefs". But O5 — d8480bf7 is D3 draft with 2 anchors. Alternatively use 9b87e09e D4 draft with 6 anchors, mechanismKey "beliefs" ("s'il réclame ou refuse, il abîmera le lien"). Direction 2 is about testing that belief → disconfirming_experience on beliefs. Use 9b87e09e. Hmm, but is it "solid"? 6 anchored supports across 43 days; yes.
+
+Actually to distribute, let me use 9b87e09e for d2 (beliefs) and 1d902b62 for d4 (protects).
+
+d2:
+action: "Quand une tâche commune incombe à Jules ou à Maya, ne pas la faire à sa place pendant 48 h et le dire une fois, calmement : 'cette fois je ne peux pas m'en occuper'."
+conditions: "sur une tâche peu critique (vaisselle, ménage), pas sur une échéance qui engage l'appartement (bail, facture)."
+limits: "peut produire un conflit ou une remarque, et l'expérience ne dit rien des démarches (bail, factures) qu'il porte seul ; l'inconfort immédiat peut mener à reprendre la tâche."
+signals: ["la tâche est faite par un autre", "la tâche reste là après 48 h", "Maya fait une remarque", "personne ne remarque"]
+learnsIfFails: "apprend si le lien se dégrade vraiment quand il ne compense pas, ou si rien ne se passe."
+predictions:
+- Jules: "ne réagit pas et laisse la tâche en place", immediate, 3
+- Maya: "relève la tâche non faite, éventuellement en s'énervant", transitional, 7
+- self: "l'inconfort de voir la tâche non faite pousse à la reprendre avant 48 h", immediate, 2
+- Maya/Jules: "après quelques jours, la tâche finit par être faite ou reste en suspens et le sujet est nommé", equilibrium, 14.
+
+d3 — change_reward on group hypothesis 83a8603a (mechanismKey "optimizes"): "Rendre visible et nommer ce qu'il porte"
+action: "Nommer en groupe ce qu'il a fait dans la semaine (courses, factures, visite, cadeau) et demander qui prend quoi la semaine suivante — rendre visible l'échange au lieu de l'accomplir en silence."
+Hmm, careful: it's a bit like a "règle externe". Fine.
+lever: change_reward, hypothesis 83a8603a, mechanismKey "optimizes" — le groupe récompense le pourvoyeur par la reconnaissance et le confort.
+conditions: "quand le calme est revenu et que les deux sont présents (pas en pleine crise)."
+effort: moderate.
+limits: "peut se transformer en liste de reproches ou être validé sans suite (751d5125) ; le statut d'indispensable peut lui manquer si la charge baisse."
+signals: ["une tâche est prise sans qu'il la demande", "la répartition est discutée puis oubliée", "il reçoit des remerciements sans changement"]
+learnsIfFails: "apprend si la reconnaissance et le confort sont bien ce qui maintient la répartition, ou si c'est l'absence de toute règle."
+predictions:
+- Maya: "approuve et propose de l'aider puis renvoie l'exécution", immediate, 10
+- Jules: "reste en retrait ou dit qu'il n'aime pas les règles", transitional, 14
+- group: "sans relance, la répartition revient à l'état antérieur", equilibrium, 30.
+
+d4 — alternative_source, hypothesis 1d902b62, mechanismKey "protects": "Se donner une autre source d'appartenance"
+action: "Accepter une proposition de sortie de Karim (ou en proposer une) sans condition : une soirée hors de l'appart, pour que l'appartenance ne passe plus seulement par sa place d'indispensable."
+conditions: "quand une occasion amicale se présente une semaine sans échéance de coloc."
+effort: low.
+limits: "ne change pas la répartition ; si la charge reste, la sortie peut être annulée comme le 14 février ; risque de lire le geste comme un abandon des colocs."
+signals: ["il accepte et y va", "il décline encore une fois pour une tâche", "Karim constate qu'il est plus détendu"]
+learnsIfFails: "apprend si le lien amical extérieur peut tenir sans qu'il renonce à sa place dans la coloc."
+predictions:
+- Karim: "repropose ou accueille favorablement", immediate, 7
+- self: "hésite entre la sortie et les tâches de la coloc", immediate, 3
+- Maya/Jules: "ne réagissent pas ou demandent une tâche pendant ce temps", transitional, 10.
+
+d5 — do_nothing, lever {"kind":"do_nothing","hypothesis": null, "mechanismKey": null}.
+action: "Ne rien changer : continuer à absorber les tâches et les démarches, sans rien dire."
+conditions: "si l'utilisateur juge la période passagère et préfère attendre."
+effort: low. Hmm, do_nothing effort... "low".
+limits: "la lassitude exprimée le 23 février est le seul signal enregistré ; rien n'indique qu'elle redescende seule."
+signals: ["les demandes continuent (courses, cadeaux, démarches)", "il décline encore des sorties", "il en parle de plus en plus, ou plus du tout"]
+learnsIfFails: "apprend si la charge retombe d'elle-même quand les imprévus passent (test de la lecture conjoncturelle ed2a60b9)."
+predictions:
+- Maya: "continue de lui confier les tâches communes et de lui demander compte", equilibrium, 30
+- Jules: "continue de laisser ses tâches en place", equilibrium, 30
+- self: "la lassitude monte sans être dite, et les occasions extérieures passent après la coloc", equilibrium, 45.
+
+Questions:
+q1: "Depuis la visite de l'agent immobilier (21 février), est-ce que les imprévus se sont calmés, ou est-ce que les sollicitations continuent au même rythme ?" targets: ed2a60b9, 9b87e09e, 83a8603a. discriminatingInfo: départage la lassitude conjoncturelle... whyNow: "Le calme relatif permettrait de savoir si la charge est un rôle durable ou une saturation de période."
+Careful with rule 20: don't repeat existing questions. This is new.
+
+q2 maybe: "Quand Maya te demande quelque chose, est-ce qu'il t'arrive de dire non, ou est-ce que tu réponds toujours oui ?" Hmm — that's close to existing? Existing questions ask about feelings (10706729) and about what he did after the tableau, and whether he told them. A question about refusal is somewhat covered by 0183322a partially. I'll include just q1 plus maybe one more targeted at 2e1c4e71 (Maya initiative): "Y a-t-il des choses que Maya fait d'elle-même sans que tu le lui demandes ?" Hmm. That discriminates 2e1c4e71 vs 70ac1ab1? Both are similar. Eh. Maybe better a question for 96c14529 / 1d902b62: existing 63ceb8c6 asks exactly that (Karim outing). So skip.
+
+I'll include just q1 (one question). Or two: add one about Jules: "Qu'est-ce que tu as déjà dit à Jules quand il laisse ses affaires ?" That partially duplicates 6c4ee50d (did you tell Maya or Jules you have enough of carrying). Hmm, similar. Skip.
+
+So one question.
+
+Summary: short.
+
+Now check confidence/rank: directions don't have rank/confidence.
+
+Now check the JSON structure: top-level fields exactly as specified.
+
+Note: allowedOperations includes propose_goal; I'm not proposing one since goal confirmed exists (G3). Fine.
+
+Now the citations: I have no citations to write anywhere (directions and questions don't require citations). Good — since sources[] is empty, any citation would be impossible to get right. Clarifications: [] — outcome is "proposed".
+
+Double check lever hypothesis ranking: O2 requires hypothesis not superseded/contradicted. All good.
+
+One more consideration: directions "servent l'objectif tel que l'utilisateur l'a formulé" — keep living with them, coloc runs without him being the only one managing. d4 (outing with Karim) — does it serve the goal? Indirectly; it addresses the belief that appartenance depends on his role. I'll frame it in the rationale. It's a bit weak but acceptable; the spec wants "toutes les directions utiles". Alternatively a stronger 4th direction: a "change_game" — passer par une règle externe (planning écrit affiché, ou un tiers/application) - but 751d5125 already predicts approval-then-empty. Hmm, maybe make d4 = change_game with hypothesis 751d5125 (mechanismKey "barrier") — "L'idée est approuvée puis vidée, car aucun refus explicite n'est nécessaire". Action: rather than a tableau, use a small périmètre: assigner chaque tâche à une personne nommée à l'avance, avec la règle que la tâche non faite reste non faite jusqu'à sa date limite; ou négocier une règle de rotation avec une conséquence concrète (payer un service: passer par une société de ménage pour la part partagée? no).
+
+Hmm, but do I want both change_reward (d3) and change_game (d4) overlapping? They'd be similar. Maybe better: d3 = change_reward, d4 = change_game (external structure with consequence, e.g., externaliser une partie: payer quelqu'un pour le ménage, ou confier la gestion des factures à Maya), d5 = do_nothing, and keep alternative_source as d2? Let me restructure to 4 actions:
+
+d1 lower_barrier (Maya relation, 70ac1ab1)
+d2 disconfirming_experience (beliefs, 9b87e09e)
+d3 change_reward (group, 83a8603a)
+d4 change_game (751d5125, mechanismKey "barrier"): changer de cadre — externaliser une partie de la charge (ménage payé, factures avec prélèvement automatique, courses en drive partagé) pour que la charge cesse de dépendre de la bonne volonté de chacun. Hmm, that's plausible and targetable at 751d5125 ("barrière: aucune tentative n'a de suite"). Actually change_game = changer de cadre, de groupe ou de jeu. Externaliser le ménage = changer le jeu (le coût sort du lien). Good.
+
+And drop alternative_source? O1 wants "toutes les directions d'action que tu juges utiles (au moins deux)". 4 is fine. But maybe keep alternative_source too as d5 and do_nothing as d6? Five actions + do_nothing might be a lot but allowed (maxOperations 100). Rule 15 says 2-3 strong readings per subject — that's for hypotheses, not directions. I'll do 4 actions + do_nothing: d1, d2, d3, d4 as above. Hmm, but the Karim alternative_source is valuable given the goal "tout en continuant à vivre avec Maya et Jules" includes his wellbeing. I'll include 5 actions? Let me limit to 4 actions + do_nothing for crispness. Which to drop: the Karim one (weakest link to goal) or change_game? I keep change_game (directly serves redistribution) and drop Karim, but hmm, Karim is the only external mirror and the packet has hypothesis b4ed45a2 and 96c14529. The Karim direction is "information"/support: "Demander à Karim ce qu'il voit" — that would be lower_barrier/alternative_source on b4ed45a2? b4ed45a2 is D1 (Karim miroir). Using alternative_source with hypothesis 1d902b62 (protects).
+
+I'll include 5 directions + do_nothing = 6 ops, plus 1 question = 7 ops. That's fine and thorough. Actually the spec says "Propose toutes les directions d'action que tu juges utiles pour l'objectif (au moins deux quand c'est possible), et UNE direction do_nothing". So more is welcome. I'll do 5 actions.
+
+Let me finalize the 5 actions:
+1. Demander une tâche précise à chacun (lower_barrier, 70ac1ab1, barrier)
+2. Laisser un manquement 48h (disconfirming_experience, 9b87e09e, beliefs) — hmm, an issue: disconfirming_experience should target the belief that refuser would damage the link. Yes.
+3. Nommer en groupe ce qu'il porte / rendre l'échange visible (change_reward, 83a8603a, optimizes)
+4. Externaliser une part de la charge (change_game, 751d5125, barrier)
+5. Accepter/proposer une sortie avec Karim (alternative_source, 1d902b62, protects)
+6. do_nothing.
+
+Wait — also maybe a lower_barrier direction focused on capacity: e.g., renégocier par écrit (message) plutôt qu'en face, since speaking in person he avoids. That could be part of d1. Fine, I'll add to d1 conditions/limits: "par message si c'est plus facile".
+
+Now, mechanismKey values must be one of the listed keys: optimizes, protects, defenses, beliefs, triggers, soothes, barrier, prediction. Check each hypothesis's mechanism has that key:
+- 70ac1ab1: has optimizes, protects, barrier, prediction → "barrier" ✓
+- 9b87e09e: has optimizes, protects, defenses, beliefs, triggers, soothes, barrier, prediction → "beliefs" ✓
+- 83a8603a: has optimizes, protects, barrier, prediction → "optimizes" ✓
+- 751d5125: has optimizes, protects, barrier, prediction → "barrier" ✓
+- 1d902b62: has optimizes, protects, defenses, beliefs, triggers, soothes, barrier, prediction → "protects" ✓
+
+Now write the JSON.
+
+Predictions: actor MEMBRE: { "person": { "kind": "person", "id": "..." } } or { "self": true }.
+
+RÉF format: { "kind": "hypothesis", "id": "..." }.
+
+Let me write it out.
+
+Summary: "Cinq directions pour que la charge cesse de reposer sur lui seul, ancrées sur les lectures d'échange avec Maya, du groupe et de la relation à Jules ; une direction 'ne rien changer' et une question sur la suite des imprévus."
+
+Check rule 21: rationale/summary short-ish and no affirmation absent from operations. OK.
+
+Write JSON now. Careful with escaping and no trailing commas.

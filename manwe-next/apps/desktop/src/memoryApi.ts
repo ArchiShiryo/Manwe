@@ -1,5 +1,8 @@
 import type {
   AnnotationCommand,
+  AnswerQuestionCommand,
+  ChooseDirectionCommand,
+  RecordOutcomeCommand,
   CaptureCommand,
   CommandResult,
   GoalCommand,
@@ -17,6 +20,36 @@ import type {
   ContextPacket,
   PrepareAnalysisCommand,
 } from "../../../packages/cognition/src/contract.ts";
+import type {
+  FocusContext,
+  GraphProjection,
+} from "../../../packages/cognition/src/projection.ts";
+import type { Synthesis } from "../../../packages/cognition/src/synthesis.ts";
+
+export type MemoryStatus = {
+  revision: number;
+  analyses: {
+    awaitingResponse: number;
+    readyForReview: number;
+    needsContext: number;
+    modes: string[];
+  };
+};
+
+export type AutomaticJob = {
+  requestId: string;
+  status:
+    | "running"
+    | "ready_for_review"
+    | "needs_context"
+    | "failed"
+    | "cancelled";
+  startedAt: string;
+  finishedAt: string | null;
+  attempts: { status: string; errors: { code: string; message: string }[] }[];
+  preview: AnalysisPreview | null;
+  error: { code: string; message: string } | null;
+};
 
 const API_ORIGIN = "http://127.0.0.1:5181";
 
@@ -104,6 +137,17 @@ class MemoryApi {
     return this.request<WorkspaceSnapshot>("/api/workspace");
   }
 
+  status() {
+    return this.request<MemoryStatus>("/api/status");
+  }
+
+  graph(focus: FocusContext) {
+    const params = new URLSearchParams({ kind: focus.kind, id: focus.id });
+    return this.request<GraphProjection & { synthesis: Synthesis }>(
+      `/api/graph?${params}`,
+    );
+  }
+
   search(query: MemorySearchQuery) {
     const params = new URLSearchParams();
     const apiQuery = {
@@ -153,6 +197,43 @@ class MemoryApi {
     return this.snapshot();
   }
 
+  async answerQuestion(command: AnswerQuestionCommand) {
+    await this.request<CommandResult>(
+      `/api/questions/${encodeURIComponent(command.questionId)}/answer`,
+      { method: "POST", body: JSON.stringify(command) },
+    );
+    return this.snapshot();
+  }
+
+  async chooseDirection(command: ChooseDirectionCommand) {
+    await this.request<CommandResult>("/api/actions", {
+      method: "POST",
+      body: JSON.stringify(command),
+    });
+    return this.snapshot();
+  }
+
+  async recordOutcome(command: RecordOutcomeCommand) {
+    await this.request<CommandResult>(
+      `/api/actions/${encodeURIComponent(command.actionId)}/outcome`,
+      { method: "POST", body: JSON.stringify(command) },
+    );
+    return this.snapshot();
+  }
+
+  async dismissGoal(goalId: string) {
+    await this.request<CommandResult>(
+      `/api/goals/${encodeURIComponent(goalId)}/dismiss`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          idempotencyKey: `goal:dismiss:${crypto.randomUUID()}`,
+        }),
+      },
+    );
+    return this.snapshot();
+  }
+
   async updateGoal(command: GoalCommand) {
     await this.request<CommandResult>("/api/goals", {
       method: "POST",
@@ -182,6 +263,31 @@ class MemoryApi {
         method: "POST",
         body: JSON.stringify({ requestId, responseId, confirmed: true }),
       },
+    );
+  }
+
+  automaticProvider() {
+    return this.request<{
+      enabled: boolean;
+      providerId: string | null;
+      model: string | null;
+      budget: { dailyTokens: number | null; usedToday: number } | null;
+    }>("/api/analyses/automatic");
+  }
+
+  startAutomatic(
+    task: "extract" | "interpret" | "revise" | "explore",
+    focus?: { kind: string; id: string }[],
+  ) {
+    return this.request<AutomaticJob>("/api/analyses/automatic", {
+      method: "POST",
+      body: JSON.stringify(focus ? { task, focus } : { task }),
+    });
+  }
+
+  automaticJob(requestId: string) {
+    return this.request<AutomaticJob>(
+      `/api/analyses/automatic/${encodeURIComponent(requestId)}`,
     );
   }
 

@@ -7,6 +7,11 @@ import {
   MEMORY_SCHEMA_VERSION,
   DomainError,
   type AnnotationCommand,
+  type ChooseDirectionCommand,
+  type RelationMember,
+  type DirectionRecord,
+  type RecordOutcomeCommand,
+  type AnswerQuestionCommand,
   type CaptureCommand,
   type Claim,
   type CommandResult,
@@ -46,7 +51,10 @@ import {
   type ContextPacket,
   type PrepareAnalysisCommand,
   type SourceCitation,
+  COGNITIVE_OPERATION_KINDS,
+  DEFAULT_OPERATIONS,
 } from "../../cognition/src/contract.ts";
+import { HypothesisStore, type OperationContext } from "./hypothesisStore.ts";
 
 type SqlRow = Record<string, unknown>;
 
@@ -64,6 +72,15 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
+const ANALYST_PROMPT_VERSION = "analyst-v10";
+const ANALYST_PROMPT_HASH = sha256(
+  readFileSync(
+    fileURLToPath(
+      new URL("../../cognition/prompts/analyst-v10.md", import.meta.url),
+    ),
+    "utf8",
+  ),
+);
 
 function parseResult(value: unknown): CommandResult {
   return JSON.parse(String(value)) as CommandResult;
@@ -72,6 +89,7 @@ function parseResult(value: unknown): CommandResult {
 export class SqliteMemoryStore {
   private readonly database: DatabaseSync;
   private readonly workspaceId: string;
+  private readonly hypotheses: HypothesisStore;
 
   constructor(
     databasePath: string,
@@ -107,6 +125,88 @@ export class SqliteMemoryStore {
       );
       this.database.exec(readFileSync(importMigrationPath, "utf8"));
     }
+    const modalityMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 4")
+      .get();
+    if (!modalityMigration) {
+      const modalityMigrationPath = fileURLToPath(
+        new URL("./migrations/004_claim_modality.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(modalityMigrationPath, "utf8"));
+    }
+    const revisionMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 5")
+      .get();
+    if (!revisionMigration) {
+      const revisionMigrationPath = fileURLToPath(
+        new URL("./migrations/005_revision_engine.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(revisionMigrationPath, "utf8"));
+    }
+    const critiqueMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 6")
+      .get();
+    if (!critiqueMigration) {
+      const critiqueMigrationPath = fileURLToPath(
+        new URL("./migrations/006_critiques.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(critiqueMigrationPath, "utf8"));
+    }
+    const brief003Migration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 7")
+      .get();
+    if (!brief003Migration) {
+      const brief003MigrationPath = fileURLToPath(
+        new URL("./migrations/007_brief003.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(brief003MigrationPath, "utf8"));
+    }
+    const relationsMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 8")
+      .get();
+    if (!relationsMigration) {
+      const relationsMigrationPath = fileURLToPath(
+        new URL("./migrations/008_relations_roles.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(relationsMigrationPath, "utf8"));
+    }
+    const directionsMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 9")
+      .get();
+    if (!directionsMigration) {
+      const directionsMigrationPath = fileURLToPath(
+        new URL("./migrations/009_directions_actions.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(directionsMigrationPath, "utf8"));
+    }
+    const goalMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 10")
+      .get();
+    if (!goalMigration) {
+      const goalMigrationPath = fileURLToPath(
+        new URL("./migrations/010_goal_emergence.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(goalMigrationPath, "utf8"));
+    }
+    const partialMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 11")
+      .get();
+    if (!partialMigration) {
+      const partialMigrationPath = fileURLToPath(
+        new URL("./migrations/011_partial_application.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(partialMigrationPath, "utf8"));
+    }
+    const queriesMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 12")
+      .get();
+    if (!queriesMigration) {
+      const queriesMigrationPath = fileURLToPath(
+        new URL("./migrations/012_memory_queries.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(queriesMigrationPath, "utf8"));
+    }
+    this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
     this.database
       .prepare(
@@ -134,6 +234,31 @@ export class SqliteMemoryStore {
     return destination;
   }
 
+  /**
+   * État léger pour la resynchronisation (R4.7) : la révision canonique et
+   * les analyses encore ouvertes, sans charger l'instantané complet.
+   */
+  status(now = nowIso()) {
+    const rows = this.database
+      .prepare(
+        "SELECT status, mode, COUNT(*) AS count FROM analysis_requests WHERE workspace_id = ? AND status IN ('awaiting_response', 'ready_for_review', 'needs_context') AND expires_at > ? GROUP BY status, mode",
+      )
+      .all(this.workspaceId, now) as SqlRow[];
+    const count = (status: string) =>
+      rows
+        .filter((row) => row.status === status)
+        .reduce((sum, row) => sum + Number(row.count), 0);
+    return {
+      revision: this.revision,
+      analyses: {
+        awaitingResponse: count("awaiting_response"),
+        readyForReview: count("ready_for_review"),
+        needsContext: count("needs_context"),
+        modes: [...new Set(rows.map((row) => String(row.mode)))].sort(),
+      },
+    };
+  }
+
   get revision() {
     return Number(
       (
@@ -153,6 +278,16 @@ export class SqliteMemoryStore {
     } catch (error) {
       this.database.exec("ROLLBACK");
       throw error;
+    }
+  }
+
+  /** Exécute des écritures pour les valider, puis annule tout. */
+  private dryRun(operation: () => unknown) {
+    this.database.exec("BEGIN IMMEDIATE");
+    try {
+      operation();
+    } finally {
+      this.database.exec("ROLLBACK");
     }
   }
 
@@ -682,9 +817,64 @@ export class SqliteMemoryStore {
       const timestamp = command.createdAt ?? nowIso();
       const annotationId = randomUUID();
       const nextRevision = this.revision + 1;
+      // Une correction, un contexte ou un désaccord est une déclaration de
+      // l'utilisateur : il devient une source citable (RAPPORT-003 §4.2).
+      // L'accord n'en crée pas, car il n'est jamais une preuve (D-008).
+      const citable = command.annotationType !== "agreement";
+      // Une même annotation portée sur plusieurs objets partage sa source
+      // (RAPPORT-004 §4.3) : on réutilise la source d'un texte identique.
+      const shared = citable
+        ? (this.database
+            .prepare(
+              "SELECT source_id FROM annotations WHERE workspace_id = ? AND text = ? AND annotation_type = ? AND source_id IS NOT NULL LIMIT 1",
+            )
+            .get(this.workspaceId, command.text, command.annotationType) as
+            | SqlRow
+            | undefined)
+        : undefined;
+      const sourceId = shared
+        ? String(shared.source_id)
+        : citable
+          ? randomUUID()
+          : null;
+      const createdRefs: EntityRef[] = [];
+      if (sourceId && !shared) {
+        const eventId = randomUUID();
+        this.database
+          .prepare(
+            "INSERT INTO sources(id, workspace_id, kind, content, content_hash, recorded_at, narrated_at, sensitivity, created_at) VALUES (?, ?, 'user_entry', ?, ?, ?, ?, 'personal', ?)",
+          )
+          .run(
+            sourceId,
+            this.workspaceId,
+            command.text,
+            sha256(command.text),
+            timestamp,
+            timestamp,
+            timestamp,
+          );
+        this.database
+          .prepare(
+            "INSERT INTO events(id, workspace_id, title, text, category, source_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, 'unclassified_note', ?, NULL, NULL, 'unknown', ?, 1, ?, ?)",
+          )
+          .run(
+            eventId,
+            this.workspaceId,
+            `Annotation (${command.annotationType})`,
+            command.text,
+            sourceId,
+            "Annotation de l’utilisateur",
+            timestamp,
+            timestamp,
+          );
+        createdRefs.push(
+          { kind: "source", id: sourceId },
+          { kind: "event", id: eventId },
+        );
+      }
       this.database
         .prepare(
-          "INSERT INTO annotations(id, workspace_id, target_kind, target_id, text, annotation_type, revision, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO annotations(id, workspace_id, target_kind, target_id, text, annotation_type, revision, created_at, source_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .run(
           annotationId,
@@ -695,20 +885,384 @@ export class SqliteMemoryStore {
           command.annotationType,
           nextRevision,
           timestamp,
+          sourceId,
         );
       const changed: EntityRef[] = [
         command.target,
         { kind: "annotation", id: annotationId },
+        ...createdRefs,
+        ...this.hypotheses.onAnnotation(
+          command.target,
+          command.annotationType,
+          nextRevision,
+          timestamp,
+        ),
       ];
       const revision = this.advanceRevision("annotate", changed, timestamp);
       const result: CommandResult = {
         idempotencyKey: command.idempotencyKey,
         replayed: false,
         revision,
-        created: [{ kind: "annotation", id: annotationId }],
+        created: [{ kind: "annotation", id: annotationId }, ...createdRefs],
       };
       this.saveReceipt(
         "annotate",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        timestamp,
+      );
+      return result;
+    });
+  }
+
+  /**
+   * Choix d'une direction (D-016) : l'action copie les prédictions de la
+   * direction, datées maintenant, avant tout résultat. Aucune exécution :
+   * c'est l'utilisateur qui agit dans le monde.
+   */
+  chooseDirection(command: ChooseDirectionCommand): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "action.choose",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    return this.transaction(() => {
+      const replay = this.receipt(
+        "action.choose",
+        command.idempotencyKey,
+        commandHash,
+      );
+      if (replay) return replay;
+      const direction = this.hypotheses
+        .directions()
+        .find((item) => item.id === command.directionId);
+      if (!direction)
+        throw new DomainError(
+          "direction_not_found",
+          "Direction inconnue.",
+          404,
+        );
+      if (direction.status !== "proposed")
+        throw new DomainError(
+          "direction_not_available",
+          `Cette direction est ${direction.status}.`,
+          409,
+        );
+      const timestamp = nowIso();
+      const id = randomUUID();
+      const nextRevision = this.revision + 1;
+      this.database
+        .prepare(
+          `INSERT INTO actions(id, workspace_id, direction_id, status, expectation_json, expectation_recorded_at,
+             chosen_revision, created_at, updated_at) VALUES (?, ?, ?, 'planned', ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          id,
+          this.workspaceId,
+          direction.id,
+          JSON.stringify({
+            predictions: direction.predictions,
+            userExpectation: command.userExpectation ?? null,
+          }),
+          timestamp,
+          nextRevision,
+          timestamp,
+          timestamp,
+        );
+      this.database
+        .prepare("UPDATE directions SET status = 'chosen' WHERE id = ?")
+        .run(direction.id);
+      const revision = this.advanceRevision(
+        "action.choose",
+        [
+          { kind: "direction", id: direction.id },
+          { kind: "action", id },
+        ],
+        timestamp,
+      );
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created: [{ kind: "action", id }],
+      };
+      this.saveReceipt(
+        "action.choose",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        timestamp,
+      );
+      return result;
+    });
+  }
+
+  /**
+   * Résultat d'une action (D-016) : il devient une annotation citable sur la
+   * lecture actionnée, qui passe à réexaminer ; la réanalyse compare ensuite
+   * les prédictions figées au résultat.
+   */
+  recordOutcome(command: RecordOutcomeCommand): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "action.outcome",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    const action = this.hypotheses
+      .actions()
+      .find((item) => item.id === command.actionId);
+    if (!action)
+      throw new DomainError("action_not_found", "Action inconnue.", 404);
+    if (action.outcome)
+      throw new DomainError(
+        "outcome_already_recorded",
+        "Le résultat de cette action est déjà enregistré.",
+        409,
+      );
+    const direction = this.hypotheses
+      .directions()
+      .find((item) => item.id === action.directionId);
+    if (!direction)
+      throw new DomainError("direction_not_found", "Direction inconnue.", 404);
+    if (
+      command.verdicts &&
+      command.verdicts.length !== action.expectation.predictions.length
+    )
+      throw new DomainError(
+        "invalid_verdicts",
+        "Un verdict par prédiction, ou aucun.",
+      );
+    const recordedAt = command.recordedAt ?? nowIso();
+    if (recordedAt < action.expectationRecordedAt)
+      throw new DomainError(
+        "outcome_before_expectation",
+        "Le résultat ne peut pas précéder l’attente enregistrée.",
+      );
+    // L'annotation porte sur la lecture actionnée, ou sur l'objectif pour
+    // « ne rien entreprendre ».
+    const target = direction.lever.hypothesisId
+      ? { kind: "hypothesis" as const, id: direction.lever.hypothesisId }
+      : direction.goalId
+        ? { kind: "goal" as const, id: direction.goalId }
+        : null;
+    if (!target)
+      throw new DomainError(
+        "outcome_without_target",
+        "Cette direction ne vise ni lecture ni objectif.",
+      );
+    const annotated = this.annotate({
+      idempotencyKey: `${command.idempotencyKey}:annotation`,
+      target,
+      text: `Résultat de l’action « ${direction.title} » : ${command.text}`,
+      annotationType: "context",
+      createdAt: recordedAt,
+    });
+    const annotationId = annotated.created.find(
+      (ref) => ref.kind === "annotation",
+    )?.id;
+    return this.transaction(() => {
+      const replay = this.receipt(
+        "action.outcome",
+        command.idempotencyKey,
+        commandHash,
+      );
+      if (replay) return replay;
+      this.database
+        .prepare(
+          `UPDATE actions SET status = 'done', outcome_text = ?, outcome_annotation_id = ?, outcome_recorded_at = ?,
+             verdicts_json = ?, updated_at = ? WHERE id = ?`,
+        )
+        .run(
+          command.text,
+          annotationId ?? null,
+          recordedAt,
+          command.verdicts ? JSON.stringify(command.verdicts) : null,
+          recordedAt,
+          action.id,
+        );
+      const revision = this.advanceRevision(
+        "action.outcome",
+        [{ kind: "action", id: action.id }],
+        recordedAt,
+      );
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created: annotated.created,
+      };
+      this.saveReceipt(
+        "action.outcome",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        recordedAt,
+      );
+      return result;
+    });
+  }
+
+  /**
+   * Réponse de l'utilisateur à une question ouverte (T5). Une réponse libre
+   * devient une source capturée et remet les hypothèses ciblées à réexaminer ;
+   * « je ne sais pas » et « ne plus poser » ne changent que la question.
+   */
+  answerQuestion(command: AnswerQuestionCommand): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "question.answer",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    return this.transaction(() => {
+      const replay = this.receipt(
+        "question.answer",
+        command.idempotencyKey,
+        commandHash,
+      );
+      if (replay) return replay;
+      const question = this.hypotheses.question(command.questionId);
+      if (question.status !== "open")
+        throw new DomainError(
+          "question_closed",
+          `Cette question est déjà ${question.status}.`,
+          409,
+        );
+      const createdAt = nowIso();
+      const nextRevision = this.revision + 1;
+      const created: EntityRef[] = [];
+      const changed: EntityRef[] = [{ kind: "question", id: question.id }];
+      let answerSourceId: string | null = null;
+      if (command.choice === "text") {
+        const text = command.text ?? "";
+        answerSourceId = randomUUID();
+        const eventId = randomUUID();
+        this.database
+          .prepare(
+            "INSERT INTO sources(id, workspace_id, kind, content, content_hash, recorded_at, narrated_at, sensitivity, created_at) VALUES (?, ?, 'user_entry', ?, ?, ?, ?, 'personal', ?)",
+          )
+          .run(
+            answerSourceId,
+            this.workspaceId,
+            text,
+            sha256(text),
+            command.recordedAt ?? createdAt,
+            command.recordedAt ?? createdAt,
+            createdAt,
+          );
+        this.database
+          .prepare(
+            "INSERT INTO events(id, workspace_id, title, text, category, source_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, 'unclassified_note', ?, NULL, NULL, 'unknown', ?, 1, ?, ?)",
+          )
+          .run(
+            eventId,
+            this.workspaceId,
+            `Réponse : ${question.question}`.slice(0, 160),
+            text,
+            answerSourceId,
+            "Réponse à une question",
+            createdAt,
+            createdAt,
+          );
+        created.push(
+          { kind: "source", id: answerSourceId },
+          { kind: "event", id: eventId },
+        );
+        changed.push(
+          ...this.hypotheses.markForReview(
+            question.targets
+              .filter((target) => target.kind === "hypothesis")
+              .map((target) => target.id),
+            "answer",
+            nextRevision,
+            createdAt,
+          ),
+        );
+      }
+      this.hypotheses.closeQuestion(
+        question.id,
+        command.choice === "text"
+          ? "answered"
+          : command.choice === "unknown"
+            ? "unknown"
+            : "dismissed",
+        answerSourceId,
+        createdAt,
+      );
+      const revision = this.advanceRevision(
+        "question.answer",
+        [...created, ...changed],
+        createdAt,
+      );
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created,
+      };
+      this.saveReceipt(
+        "question.answer",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        createdAt,
+      );
+      return result;
+    });
+  }
+
+  /** R5.4 : écarter un objectif proposé par l'analyse (jamais un objectif confirmé). */
+  dismissGoal(command: {
+    idempotencyKey: string;
+    goalId: string;
+  }): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "goal.update",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    return this.transaction(() => {
+      const row = this.database
+        .prepare(
+          "SELECT confirmed_by_user, origin FROM goals WHERE workspace_id = ? AND id = ?",
+        )
+        .get(this.workspaceId, command.goalId) as SqlRow | undefined;
+      if (!row)
+        throw new DomainError(
+          "goal_not_found",
+          "Cette intention n’existe pas.",
+          404,
+        );
+      if (row.confirmed_by_user)
+        throw new DomainError(
+          "goal_confirmed",
+          "Une intention confirmée se reformule, elle ne s’écarte pas.",
+          409,
+        );
+      const timestamp = nowIso();
+      this.database
+        .prepare(
+          "UPDATE goals SET dismissed_at = ?, row_version = row_version + 1, updated_at = ? WHERE id = ?",
+        )
+        .run(timestamp, timestamp, command.goalId);
+      const ref: EntityRef = { kind: "goal", id: command.goalId };
+      const revision = this.advanceRevision("goal.update", [ref], timestamp);
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created: [],
+      };
+      this.saveReceipt(
+        "goal.update",
         command.idempotencyKey,
         commandHash,
         result,
@@ -866,11 +1420,25 @@ export class SqliteMemoryStore {
       sources: sources.map(this.mapSource),
       events: events.map(this.mapEvent),
       annotations: annotations.map(this.mapAnnotation),
+      roles: this.hypotheses.roles(),
+      relations: this.hypotheses.relations(),
+      directions: this.hypotheses.directions(),
+      actions: this.hypotheses.actions(),
       goals: goals.map((row) => ({
         id: String(row.id),
         workspaceId: String(row.workspace_id),
         text: String(row.text),
         confirmedByUser: Boolean(row.confirmed_by_user),
+        problem:
+          row.problem === null || row.problem === undefined
+            ? null
+            : String(row.problem),
+        origin: (row.origin ?? "user") as "user" | "analysis",
+        citations:
+          row.citations_json === null || row.citations_json === undefined
+            ? []
+            : JSON.parse(String(row.citations_json)),
+        dismissed: row.dismissed_at !== null && row.dismissed_at !== undefined,
         revision: Number(row.row_version),
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
@@ -880,11 +1448,28 @@ export class SqliteMemoryStore {
         workspaceId: String(row.workspace_id),
         text: String(row.text),
         category: String(row.category) as Claim["category"],
+        modality: String(row.modality) as Claim["modality"],
         knowledgeStatus: String(
           row.knowledge_status,
         ) as Claim["knowledgeStatus"],
         validFrom: row.valid_from === null ? null : String(row.valid_from),
         validTo: row.valid_to === null ? null : String(row.valid_to),
+        contestedRevision:
+          row.contested_revision == null
+            ? null
+            : Number(row.contested_revision),
+        citations: (
+          this.database
+            .prepare(
+              "SELECT source_id, span_start, span_end, quote FROM claim_sources WHERE claim_id = ? ORDER BY source_id, span_start",
+            )
+            .all(String(row.id)) as SqlRow[]
+        ).map((citation) => ({
+          sourceId: String(citation.source_id),
+          spanStart: Number(citation.span_start),
+          spanEnd: Number(citation.span_end),
+          quote: String(citation.quote),
+        })),
         revision: Number(row.row_version),
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
@@ -916,24 +1501,8 @@ export class SqliteMemoryStore {
         createdAt: String(row.created_at),
         updatedAt: String(row.updated_at),
       })),
-      hypotheses: hypotheses.map((row) => ({
-        id: String(row.id),
-        workspaceId: String(row.workspace_id),
-        statement: String(row.statement),
-        status: String(row.status) as Hypothesis["status"],
-        revision: Number(row.row_version),
-        createdAt: String(row.created_at),
-        updatedAt: String(row.updated_at),
-      })),
-      questions: questions.map((row) => ({
-        id: String(row.id),
-        workspaceId: String(row.workspace_id),
-        question: String(row.question),
-        status: String(row.status) as OpenQuestion["status"],
-        revision: Number(row.row_version),
-        createdAt: String(row.created_at),
-        updatedAt: String(row.updated_at),
-      })),
+      hypotheses: hypotheses.map((row) => this.hypotheses.mapHypothesis(row)),
+      questions: questions.map((row) => this.hypotheses.mapQuestion(row)),
       identityAmbiguities: identityAmbiguities.map((row) => ({
         id: String(row.id),
         workspaceId: String(row.workspace_id),
@@ -1033,17 +1602,11 @@ export class SqliteMemoryStore {
         "invalid_analysis_task",
         "Tâche d’analyse inconnue.",
       );
-    const allowed = command.allowedOperations ?? [
-      "propose_event",
-      "propose_claim",
-    ];
-    const knownOperations: CognitiveOperationKind[] = [
-      "propose_event",
-      "propose_claim",
-    ];
+    const allowed =
+      command.allowedOperations ?? DEFAULT_OPERATIONS[command.task];
     if (
       allowed.length === 0 ||
-      allowed.some((kind) => !knownOperations.includes(kind))
+      allowed.some((kind) => !COGNITIVE_OPERATION_KINDS.includes(kind))
     )
       throw new DomainError(
         "invalid_allowed_operations",
@@ -1088,6 +1651,18 @@ export class SqliteMemoryStore {
         );
 
     const sourceIds = new Set<string>();
+    const focusHypothesisIds = new Set(
+      focus.filter((ref) => ref.kind === "hypothesis").map((ref) => ref.id),
+    );
+    const hypothesisContext = this.hypotheses.contextFor(
+      new Set(),
+      focusHypothesisIds,
+    );
+    for (const claimId of hypothesisContext.evidenceClaimIds)
+      for (const row of this.database
+        .prepare("SELECT source_id FROM claim_sources WHERE claim_id = ?")
+        .all(claimId) as SqlRow[])
+        sourceIds.add(String(row.source_id));
     for (const ref of focus) {
       if (ref.kind === "source") sourceIds.add(ref.id);
       if (ref.kind === "event") {
@@ -1169,15 +1744,43 @@ export class SqliteMemoryStore {
         .all(event.id) as SqlRow[];
       for (const row of rows) selectedPersonIds.add(String(row.person_id));
     }
-    const selectedClaimIds = new Set(
-      focus.filter((ref) => ref.kind === "claim").map((ref) => ref.id),
-    );
+    const selectedClaimIds = new Set([
+      ...focus.filter((ref) => ref.kind === "claim").map((ref) => ref.id),
+      ...hypothesisContext.evidenceClaimIds,
+    ]);
     for (const sourceId of sourceIds) {
       const rows = this.database
         .prepare("SELECT claim_id FROM claim_sources WHERE source_id = ?")
         .all(sourceId) as SqlRow[];
       for (const row of rows) selectedClaimIds.add(String(row.claim_id));
     }
+    const packetHypotheses = this.hypotheses.contextFor(
+      selectedClaimIds,
+      focusHypothesisIds,
+    );
+    for (const claimId of packetHypotheses.evidenceClaimIds) {
+      if (selectedClaimIds.has(claimId)) continue;
+      selectedClaimIds.add(claimId);
+      for (const row of this.database
+        .prepare("SELECT source_id FROM claim_sources WHERE claim_id = ?")
+        .all(claimId) as SqlRow[])
+        if (!sourceIds.has(String(row.source_id))) {
+          sourceIds.add(String(row.source_id));
+          const source = snapshot.sources.find(
+            (item) => item.id === String(row.source_id),
+          );
+          if (source) selectedSources.push(source);
+        }
+    }
+    for (const hypothesis of packetHypotheses.hypotheses)
+      for (const subject of hypothesis.subjects) {
+        if (subject.kind === "person") selectedPersonIds.add(subject.personId);
+        // Les membres d'une relation sujet sont aussi nommables (RAPPORT-010).
+        if (subject.kind === "relation")
+          for (const member of subject.members)
+            if (member.kind === "person")
+              selectedPersonIds.add(member.personId);
+      }
     const createdAt = nowIso();
     const expiresAt =
       command.expiresAt ??
@@ -1185,11 +1788,11 @@ export class SqliteMemoryStore {
     if (
       !Number.isFinite(Date.parse(expiresAt)) ||
       Date.parse(expiresAt) <= Date.parse(createdAt) ||
-      Date.parse(expiresAt) > Date.parse(createdAt) + 24 * 60 * 60 * 1000
+      Date.parse(expiresAt) > Date.parse(createdAt) + 7 * 24 * 60 * 60 * 1000
     )
       throw new DomainError(
         "invalid_expiration",
-        "L’expiration doit être future et limitée à 24 heures.",
+        "L’expiration doit être future et limitée à 7 jours.",
       );
     const requestId = randomUUID();
     const focused = new Set(focus.map((ref) => `${ref.kind}:${ref.id}`));
@@ -1200,7 +1803,23 @@ export class SqliteMemoryStore {
       ...[...selectedPersonIds].map((id) => `person:${id}`),
       ...[...selectedEpisodeIds].map((id) => `episode:${id}`),
       ...[...selectedClaimIds].map((id) => `claim:${id}`),
+      ...packetHypotheses.hypotheses.map((item) => `hypothesis:${item.id}`),
+      ...packetHypotheses.questions.map((item) => `question:${item.id}`),
     ]);
+    const packetAnnotations = snapshot.annotations.filter((annotation) =>
+      relevant.has(`${annotation.target.kind}:${annotation.target.id}`),
+    );
+    // Les annotations citables apportent leur source au paquet.
+    for (const annotation of packetAnnotations)
+      if (annotation.sourceId && !sourceIds.has(annotation.sourceId)) {
+        const source = snapshot.sources.find(
+          (item) => item.id === annotation.sourceId,
+        );
+        if (source) {
+          sourceIds.add(source.id);
+          selectedSources.push(source);
+        }
+      }
     const packetWithoutHash: Omit<ContextPacket, "contextHash"> = {
       schemaVersion: COGNITION_SCHEMA_VERSION,
       requestId,
@@ -1211,7 +1830,7 @@ export class SqliteMemoryStore {
       mode,
       providerId,
       task: command.task,
-      promptVersion: "sol-assisted-v1",
+      promptVersion: ANALYST_PROMPT_VERSION,
       focus,
       sources: selectedSources.map((source) => ({
         sourceId: source.id,
@@ -1232,21 +1851,27 @@ export class SqliteMemoryStore {
         selectedEpisodeIds.has(episode.id),
       ),
       claims: snapshot.claims.filter((claim) => selectedClaimIds.has(claim.id)),
-      hypotheses: snapshot.hypotheses.filter((hypothesis) =>
-        focused.has(`hypothesis:${hypothesis.id}`),
+      hypotheses: packetHypotheses.hypotheses,
+      annotations: packetAnnotations,
+      questions: packetHypotheses.questions,
+      // Rôles des épisodes du paquet et relations des personnes présentes (BRIEF-004).
+      roles: snapshot.roles.filter((role) =>
+        selectedEvents.some((event) => event.id === role.eventId),
       ),
-      annotations: snapshot.annotations.filter((annotation) =>
-        relevant.has(`${annotation.target.kind}:${annotation.target.id}`),
-      ),
-      questions: snapshot.questions.filter((question) =>
-        focused.has(`question:${question.id}`),
+      relations: snapshot.relations.filter((relation) =>
+        relation.members.some(
+          (member) =>
+            member.kind === "person" && selectedPersonIds.has(member.personId),
+        ),
       ),
       goals: snapshot.goals.filter((goal) => focused.has(`goal:${goal.id}`)),
+      // BRIEF-005 : directions des objectifs visés, et actions dont la lecture
+      // actionnée ou l'objectif est dans le paquet, avec prédictions figées et
+      // résultat, pour comparer la prédiction à la réalité.
+      ...this.packetDirections(snapshot, focused, packetHypotheses.hypotheses),
       coverage: {
         included: [...sourceIds],
-        omissions: snapshot.hypotheses.length
-          ? ["Les arêtes hypothèse-preuve seront ajoutées au schéma R3."]
-          : [],
+        omissions: [],
         truncated: false,
       },
       allowedOperations: [...new Set(allowed)],
@@ -1255,13 +1880,22 @@ export class SqliteMemoryStore {
         maxOperations: COGNITION_MAX_OPERATIONS,
       },
     };
+    const compact =
+      (command.context ?? "working") === "working"
+        ? this.workingMemory(packetWithoutHash, snapshot)
+        : { ...packetWithoutHash, memory: "full" as const };
     const packet: ContextPacket = {
-      ...packetWithoutHash,
-      contextHash: cognitionHash(packetWithoutHash),
+      ...compact,
+      contextHash: cognitionHash(compact),
+    };
+    // Mesure de la mémoire de travail sur un même état (RAPPORT-012).
+    this.lastPacketSizes = {
+      working: JSON.stringify(compact).length,
+      full: JSON.stringify({ ...packetWithoutHash, memory: "full" }).length,
     };
     this.database
       .prepare(
-        "INSERT INTO analysis_requests(id, workspace_id, base_revision, created_at, expires_at, mode, provider_id, task, prompt_version, context_hash, context_json, allowed_operations_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_response')",
+        "INSERT INTO analysis_requests(id, workspace_id, base_revision, created_at, expires_at, mode, provider_id, task, prompt_version, prompt_hash, context_hash, context_json, allowed_operations_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_response')",
       )
       .run(
         requestId,
@@ -1273,12 +1907,16 @@ export class SqliteMemoryStore {
         providerId,
         command.task,
         packet.promptVersion,
+        ANALYST_PROMPT_HASH,
         packet.contextHash,
         JSON.stringify(packet),
         JSON.stringify(packet.allowedOperations),
       );
     return packet;
   }
+
+  /** Tailles (caractères JSON) du dernier paquet préparé, complet et de travail. */
+  lastPacketSizes: { working: number; full: number } | null = null;
 
   receiveAnalysis(value: unknown): AnalysisPreview {
     const rawJson = JSON.stringify(value);
@@ -1355,14 +1993,15 @@ export class SqliteMemoryStore {
           "La proposition contient une opération non autorisée.",
         );
       const packet = JSON.parse(String(request.context_json)) as ContextPacket;
-      this.validateCitations(proposal.operations, packet);
+      const { kept, dropped } = this.withoutMiscited(proposal, packet);
+      this.dryRun(() => this.applyOperations(kept, packet, receivedAt));
       const status =
         proposal.outcome === "needs_context"
           ? "needs_context"
           : "ready_for_review";
       this.database
         .prepare(
-          "INSERT INTO analysis_responses(id, workspace_id, request_id, response_hash, raw_json, normalized_json, outcome, declared_model, verified_model, received_at, status, provider_usage_json, provider_cost_json, inference_duration_ms, manual_wait_duration_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, ?)",
+          "INSERT INTO analysis_responses(id, workspace_id, request_id, response_hash, raw_json, normalized_json, outcome, declared_model, verified_model, received_at, status, provider_usage_json, provider_cost_json, inference_duration_ms, manual_wait_duration_ms, dropped_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, NULL, NULL, NULL, ?, ?)",
         )
         .run(
           responseId,
@@ -1370,12 +2009,13 @@ export class SqliteMemoryStore {
           proposal.requestId,
           responseHash,
           rawJson,
-          JSON.stringify(proposal),
+          JSON.stringify(kept),
           proposal.outcome,
           proposal.modelDeclaration.declaredModel,
           receivedAt,
           status,
           manualWaitDurationMs,
+          dropped.length ? JSON.stringify(dropped) : null,
         );
       this.database
         .prepare(
@@ -1473,67 +2113,19 @@ export class SqliteMemoryStore {
           409,
         );
       const timestamp = nowIso();
-      const created: EntityRef[] = [];
-      if (proposal.outcome === "proposed") {
-        for (const operation of proposal.operations) {
-          if (operation.kind === "propose_claim") {
-            const id = randomUUID();
-            this.database
-              .prepare(
-                "INSERT INTO claims(id, workspace_id, text, category, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
-              )
-              .run(
-                id,
-                this.workspaceId,
-                operation.payload.text,
-                operation.payload.category,
-                operation.payload.validFrom,
-                operation.payload.validTo,
-                timestamp,
-                timestamp,
-              );
-            for (const source of operation.payload.citations)
-              this.database
-                .prepare(
-                  "INSERT INTO claim_sources(claim_id, source_id, span_start, span_end, quote) VALUES (?, ?, ?, ?, ?)",
-                )
-                .run(
-                  id,
-                  source.sourceId,
-                  source.spanStart,
-                  source.spanEnd,
-                  source.quote,
-                );
-            created.push({ kind: "claim", id });
-          }
-          if (operation.kind === "propose_event") {
-            const id = randomUUID();
-            this.database
-              .prepare(
-                "INSERT INTO events(id, workspace_id, title, text, category, source_id, episode_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 1, ?, ?)",
-              )
-              .run(
-                id,
-                this.workspaceId,
-                operation.payload.title,
-                operation.payload.text,
-                operation.payload.category,
-                operation.payload.citations[0].sourceId,
-                operation.payload.occurredStart,
-                operation.payload.occurredEnd,
-                operation.payload.temporalPrecision,
-                operation.payload.context,
-                timestamp,
-                timestamp,
-              );
-            created.push({ kind: "event", id });
-          }
-        }
-      }
-      const resultRevision = created.length
-        ? this.advanceRevision("analysis.apply", created, timestamp)
+      const packet = JSON.parse(
+        String(lockedRequest.context_json),
+      ) as ContextPacket;
+      const { created, changed, warnings } = this.applyOperations(
+        proposal,
+        packet,
+        timestamp,
+      );
+      const touched = [...created, ...changed];
+      const resultRevision = touched.length
+        ? this.advanceRevision("analysis.apply", touched, timestamp)
         : this.revision;
-      const status = created.length ? "applied" : "no_change";
+      const status = touched.length ? "applied" : "no_change";
       const result: ApplicationResult = {
         requestId: proposal.requestId,
         responseId,
@@ -1541,8 +2133,22 @@ export class SqliteMemoryStore {
         baseRevision: proposal.baseRevision,
         resultRevision,
         createdIds: created,
-        changedIds: created,
-        warnings: [],
+        changedIds: touched,
+        warnings: [
+          ...(response.dropped_json
+            ? (
+                JSON.parse(String(response.dropped_json)) as Array<{
+                  key: string;
+                  code: string;
+                  message: string;
+                }>
+              ).map((item) => ({
+                code: "operation_dropped",
+                message: `Opération « ${item.key} » écartée (${item.code}) : ${item.message}`,
+              }))
+            : []),
+          ...warnings,
+        ],
         errors: [],
         replayed: false,
       };
@@ -1558,6 +2164,688 @@ export class SqliteMemoryStore {
         .run(status, responseId, proposal.requestId);
       return result;
     });
+  }
+
+  /**
+   * Applique les opérations d'une proposition dans la transaction courante.
+   * Ordre fixe : faits (événements, claims), hypothèses, révisions, questions ;
+   * puis contrôles différés (alternatives, statuts, confiance). Utilisé aussi
+   * à blanc à la réception pour que l'aperçu reflète les refus du moteur.
+   */
+  private applyOperations(
+    proposal: CognitiveProposal,
+    packet: ContextPacket,
+    timestamp: string,
+  ) {
+    const created: EntityRef[] = [];
+    const changed: EntityRef[] = [];
+    if (proposal.outcome !== "proposed")
+      return { created, changed, warnings: [] };
+    const context: OperationContext = {
+      packet,
+      revision: this.revision + 1,
+      timestamp,
+      keys: new Map(),
+      links: [],
+      deferred: [],
+      warnings: [],
+    };
+    const order: CognitiveOperationKind[] = [
+      "propose_event",
+      "propose_claim",
+      "propose_role",
+      "propose_hypothesis",
+      "propose_critique",
+      "revise_hypothesis",
+      "propose_question",
+      "propose_goal",
+      "propose_direction",
+    ];
+    const operations = [...proposal.operations].sort(
+      (left, right) => order.indexOf(left.kind) - order.indexOf(right.kind),
+    );
+    for (const operation of operations) {
+      if (operation.kind === "propose_claim") {
+        const id = randomUUID();
+        this.database
+          .prepare(
+            "INSERT INTO claims(id, workspace_id, text, category, modality, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
+          )
+          .run(
+            id,
+            this.workspaceId,
+            operation.payload.text,
+            operation.payload.category,
+            operation.payload.modality,
+            operation.payload.validFrom,
+            operation.payload.validTo,
+            timestamp,
+            timestamp,
+          );
+        for (const source of operation.payload.citations)
+          this.database
+            .prepare(
+              "INSERT INTO claim_sources(claim_id, source_id, span_start, span_end, quote) VALUES (?, ?, ?, ?, ?)",
+            )
+            .run(
+              id,
+              source.sourceId,
+              source.spanStart,
+              source.spanEnd,
+              source.quote,
+            );
+        created.push({ kind: "claim", id });
+        context.keys.set(operation.key, { kind: "claim", id });
+      }
+      if (operation.kind === "propose_event") {
+        const id = randomUUID();
+        this.database
+          .prepare(
+            "INSERT INTO events(id, workspace_id, title, text, category, source_id, episode_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 1, ?, ?)",
+          )
+          .run(
+            id,
+            this.workspaceId,
+            operation.payload.title,
+            operation.payload.text,
+            operation.payload.category,
+            operation.payload.citations[0].sourceId,
+            operation.payload.occurredStart,
+            operation.payload.occurredEnd,
+            operation.payload.temporalPrecision,
+            operation.payload.context,
+            timestamp,
+            timestamp,
+          );
+        created.push({ kind: "event", id });
+        context.keys.set(operation.key, { kind: "event", id });
+      }
+      if (
+        operation.kind === "propose_hypothesis" ||
+        operation.kind === "revise_hypothesis" ||
+        operation.kind === "propose_question" ||
+        operation.kind === "propose_critique" ||
+        operation.kind === "propose_role" ||
+        operation.kind === "propose_direction" ||
+        operation.kind === "propose_goal"
+      ) {
+        const result = this.hypotheses.applyOperation(operation, context);
+        created.push(...result.created);
+        changed.push(...result.changed);
+      }
+    }
+    for (const link of context.links) link();
+    for (const check of context.deferred) check();
+    return { created, changed, warnings: context.warnings };
+  }
+
+  private packetDirections(
+    snapshot: WorkspaceSnapshot,
+    focused: Set<string>,
+    hypotheses: unknown[],
+  ) {
+    const hypothesisIds = new Set(
+      hypotheses.map((item) => String((item as { id: string }).id)),
+    );
+    const concerned = (direction: DirectionRecord) =>
+      (direction.goalId !== null && focused.has(`goal:${direction.goalId}`)) ||
+      (direction.lever.hypothesisId !== null &&
+        hypothesisIds.has(direction.lever.hypothesisId));
+    const directions = snapshot.directions.filter(
+      (direction) =>
+        direction.status !== "superseded" &&
+        direction.status !== "dismissed" &&
+        concerned(direction),
+    );
+    const directionIds = new Set(directions.map((item) => item.id));
+    return {
+      directions,
+      actions: snapshot.actions.filter((action) =>
+        directionIds.has(action.directionId),
+      ),
+    };
+  }
+
+  /**
+   * D-026 : mémoire de travail. Le paquet garde tout l'état du modèle du
+   * monde, mais sous forme compacte : les faits et rôles déjà extraits ne
+   * recopient plus leurs citations, les épisodes ne recopient plus leur
+   * texte, et seules les notes non encore analysées (ou apportées par une
+   * annotation) gardent leur texte intégral, citable. Le reste se cite par
+   * identifiant ou se consulte par requête (D-023).
+   */
+  private workingMemory(
+    packet: Omit<ContextPacket, "contextHash">,
+    snapshot: WorkspaceSnapshot,
+  ): Omit<ContextPacket, "contextHash"> {
+    const analysed = new Set<string>();
+    for (const claim of snapshot.claims)
+      for (const citation of claim.citations) analysed.add(citation.sourceId);
+    for (const role of snapshot.roles)
+      for (const citation of role.citations) analysed.add(citation.sourceId);
+    const annotationSources = new Set(
+      snapshot.annotations
+        .map((annotation) => annotation.sourceId)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const keepText = (sourceId: string) =>
+      !analysed.has(sourceId) || annotationSources.has(sourceId);
+    const omit = <T extends Record<string, unknown>>(item: T, keys: string[]) =>
+      Object.fromEntries(
+        Object.entries(item).filter(([key]) => !keys.includes(key)),
+      );
+    const technical = [
+      "workspaceId",
+      "createdAt",
+      "updatedAt",
+      "createdRevision",
+      "rowVersion",
+    ];
+    const sources = packet.sources.filter((source) =>
+      keepText(source.sourceId),
+    );
+    const omitted = packet.sources.length - sources.length;
+    // Un champ absent vaut null ou vide (le prompt le dit) : on ne transmet
+    // ni les valeurs nulles ni les listes vides.
+    const prune = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(prune);
+      if (value && typeof value === "object")
+        return Object.fromEntries(
+          Object.entries(value as Record<string, unknown>)
+            .filter(
+              ([, item]) =>
+                item !== null &&
+                item !== undefined &&
+                !(Array.isArray(item) && item.length === 0),
+            )
+            .map(([key, item]) => [key, prune(item)]),
+        );
+      return value;
+    };
+    const pruneItems = (items: unknown[]) => items.map(prune);
+    const compact = {
+      ...packet,
+      memory: "working" as const,
+      sources,
+      entities: packet.entities.map((entity) => {
+        const item = entity as Record<string, unknown>;
+        if (item.title === undefined) return omit(item, technical);
+        // Épisode : son texte est celui de la source ; on le garde seulement
+        // si la source n'a pas encore été analysée.
+        return omit(
+          item,
+          keepText(String(item.sourceId)) ? technical : [...technical, "text"],
+        );
+      }),
+      claims: packet.claims.map((claim) => {
+        const item = claim as Record<string, unknown> & {
+          citations?: Array<{ sourceId: string }>;
+        };
+        return {
+          ...omit(item, [...technical, "citations"]),
+          sourceIds: [
+            ...new Set(
+              (item.citations ?? []).map((citation) => citation.sourceId),
+            ),
+          ],
+        };
+      }),
+      roles: packet.roles.map((role) =>
+        omit(role as Record<string, unknown>, ["citations", "createdRevision"]),
+      ),
+      hypotheses: packet.hypotheses.map((hypothesis) => {
+        const item = hypothesis as Record<string, unknown> & {
+          evidence?: Array<{
+            claimId: string;
+            stance: string;
+            supersededRevision: number | null;
+          }>;
+          critiques?: Array<{ findings?: Array<{ kind: string }> }>;
+        };
+        return {
+          ...omit(item, [
+            ...technical,
+            "reviewSinceRevision",
+            "evidence",
+            "critiques",
+            "mechanism",
+            "limits",
+            "revisionConditions",
+          ]),
+          evidence: (item.evidence ?? [])
+            .filter((entry) => entry.supersededRevision === null)
+            .map((entry) => ({ claimId: entry.claimId, stance: entry.stance })),
+          critiques: (item.critiques ?? []).map((critique) =>
+            (critique.findings ?? []).map((finding) => finding.kind),
+          ),
+          // Le mécanisme, les limites et les conditions de révision se lisent
+          // par get_hypothesis ; seule la prédiction reste, pour comparer au
+          // résultat d'une action (RAPPORT-012).
+          prediction:
+            (item.mechanism as { prediction?: string } | null | undefined)
+              ?.prediction ?? null,
+        };
+      }),
+      // Une direction non choisie se résume à ce qui évite de la reproposer ;
+      // la direction choisie garde ses prédictions et son détail.
+      directions: packet.directions.map((direction) => {
+        const item = direction as Record<string, unknown>;
+        const chosen =
+          item.status === "chosen" ||
+          packet.actions.some(
+            (action) =>
+              (action as { directionId?: string }).directionId === item.id,
+          );
+        return chosen
+          ? omit(item, technical)
+          : Object.fromEntries(
+              ["id", "goalId", "title", "action", "lever", "status"]
+                .filter((key) => key in item)
+                .map((key) => [key, item[key]]),
+            );
+      }),
+      // Une question close ne sert qu'à ne pas être reposée.
+      questions: packet.questions.map((question) => {
+        const item = question as Record<string, unknown>;
+        return item.status === "open"
+          ? omit(item, [...technical, "normalizedText"])
+          : omit(item, [
+              ...technical,
+              "normalizedText",
+              "discriminatingInfo",
+              "whyNow",
+              "answer",
+            ]);
+      }),
+      coverage: {
+        ...packet.coverage,
+        included: packet.coverage.included.filter(keepText),
+        omissions: [
+          ...packet.coverage.omissions,
+          ...(omitted
+            ? [
+                `${omitted} note(s) déjà analysée(s) : leurs faits sont dans claims et roles ; texte intégral sur requête (get_note).`,
+              ]
+            : []),
+          ...(packet.hypotheses.length
+            ? [
+                "Lectures résumées : mécanisme, limites et conditions de révision sur requête (get_hypothesis).",
+              ]
+            : []),
+          ...(packet.directions.length
+            ? [
+                "Directions non choisies résumées (titre, action, levier) ; la direction choisie reste entière.",
+              ]
+            : []),
+        ],
+      },
+    };
+    // Les listes de premier niveau restent présentes, même vides ; seuls
+    // leurs éléments sont allégés.
+    return {
+      ...compact,
+      entities: pruneItems(compact.entities),
+      claims: pruneItems(compact.claims),
+      roles: pruneItems(compact.roles),
+      hypotheses: pruneItems(compact.hypotheses),
+      questions: pruneItems(compact.questions),
+      relations: pruneItems(compact.relations),
+      directions: pruneItems(compact.directions),
+      actions: pruneItems(compact.actions),
+      annotations: pruneItems(compact.annotations),
+      episodes: pruneItems(compact.episodes),
+    };
+  }
+
+  /**
+   * D-023 : requête du modèle dans la mémoire, en lecture seule. Le résultat
+   * est journalisé avec l'analyse ; les objets servis deviennent citables et
+   * référençables dans sa proposition. Une requête invalide renvoie une
+   * erreur lisible au modèle au lieu d'interrompre l'analyse.
+   */
+  queryMemory(requestId: string, name: string, args: Record<string, unknown>) {
+    const request = this.database
+      .prepare(
+        "SELECT id FROM analysis_requests WHERE workspace_id = ? AND id = ?",
+      )
+      .get(this.workspaceId, requestId);
+    if (!request)
+      throw new DomainError(
+        "analysis_request_not_found",
+        "Demande d’analyse inconnue.",
+        404,
+      );
+    const snapshot = this.snapshot();
+    const served: Record<string, Set<string>> = {
+      source: new Set(),
+      event: new Set(),
+      person: new Set(),
+      claim: new Set(),
+      hypothesis: new Set(),
+      relation: new Set(),
+    };
+    const str = (value: unknown) =>
+      typeof value === "string" && value.trim() ? value.trim() : undefined;
+    const person = (id: string) =>
+      snapshot.persons.find((item) => item.id === id)?.displayName ?? null;
+    const memberName = (member: RelationMember) =>
+      member.kind === "self" ? "utilisateur" : person(member.personId);
+    const note = (sourceId: string) => {
+      const source = snapshot.sources.find((item) => item.id === sourceId);
+      if (!source) return null;
+      served.source.add(source.id);
+      const events = snapshot.events.filter(
+        (event) => event.sourceId === source.id,
+      );
+      for (const event of events) served.event.add(event.id);
+      const claims = snapshot.claims.filter((claim) =>
+        claim.citations.some((citation) => citation.sourceId === source.id),
+      );
+      for (const claim of claims) served.claim.add(claim.id);
+      return {
+        sourceId: source.id,
+        contentHash: source.contentHash,
+        text: source.content,
+        events: events.map((event) => ({
+          eventId: event.id,
+          title: event.title,
+          occurredStart: event.occurredStart,
+        })),
+        claims: claims.map((claim) => ({
+          claimId: claim.id,
+          text: claim.text,
+          category: claim.category,
+          contested: claim.contestedRevision !== null,
+        })),
+        roles: snapshot.roles
+          .filter((role) => events.some((event) => event.id === role.eventId))
+          .map((role) => ({
+            eventId: role.eventId,
+            member: memberName(role.subject),
+            role: role.role,
+            outcome: role.outcome,
+          })),
+      };
+    };
+    const readingSummary = (id: string) => {
+      const hypothesis = snapshot.hypotheses.find((item) => item.id === id);
+      if (!hypothesis) return null;
+      served.hypothesis.add(hypothesis.id);
+      return {
+        hypothesisId: hypothesis.id,
+        statement: hypothesis.statement,
+        depth: hypothesis.depth,
+        status: hypothesis.status,
+        confidence: hypothesis.confidence,
+        rank: hypothesis.rank,
+      };
+    };
+    const relationView = (relationId: string) => {
+      const relation = snapshot.relations.find(
+        (item) => item.id === relationId,
+      );
+      if (!relation) return null;
+      served.relation.add(relation.id);
+      const keys = new Set(
+        relation.members.map((member) =>
+          member.kind === "self" ? "self" : `person:${member.personId}`,
+        ),
+      );
+      return {
+        relationId: relation.id,
+        members: relation.members.map(memberName),
+        indicators: relation.indicators,
+        roles: snapshot.roles
+          .filter((role) =>
+            keys.has(
+              role.subject.kind === "self"
+                ? "self"
+                : `person:${role.subject.personId}`,
+            ),
+          )
+          .map((role) => {
+            served.event.add(role.eventId);
+            return {
+              eventId: role.eventId,
+              member: memberName(role.subject),
+              role: role.role,
+              outcome: role.outcome,
+            };
+          }),
+        readings: snapshot.hypotheses
+          .filter((item) =>
+            item.subjects.some(
+              (subject) =>
+                subject.kind === "relation" &&
+                subject.relationId === relation.id,
+            ),
+          )
+          .map((item) => readingSummary(item.id)),
+      };
+    };
+    let result: unknown;
+    try {
+      if (name === "search_notes") {
+        const limit = Math.min(20, Math.max(1, Number(args.limit ?? 10) || 10));
+        const who = str(args.person);
+        const personId = who
+          ? snapshot.persons.find(
+              (item) => item.displayName.toLowerCase() === who.toLowerCase(),
+            )?.id
+          : undefined;
+        const text = str(args.query);
+        const from = str(args.from);
+        const to = str(args.to);
+        const matches = snapshot.sources
+          .filter((source) => {
+            const event = snapshot.events.find(
+              (item) => item.sourceId === source.id,
+            );
+            const when = event?.occurredStart ?? source.recordedAt;
+            if (
+              text &&
+              !source.content.toLowerCase().includes(text.toLowerCase())
+            )
+              return false;
+            if (
+              who &&
+              !personId &&
+              !source.content.toLowerCase().includes(who.toLowerCase())
+            )
+              return false;
+            if (
+              personId &&
+              !source.content
+                .toLowerCase()
+                .includes(String(person(personId)).toLowerCase())
+            )
+              return false;
+            if (from && when && when < from) return false;
+            if (to && when && when > to) return false;
+            return true;
+          })
+          .slice(0, limit);
+        result = { notes: matches.map((source) => note(source.id)) };
+      } else if (name === "get_note") {
+        const sourceId =
+          str(args.sourceId) ??
+          snapshot.events.find((event) => event.id === str(args.eventId))
+            ?.sourceId;
+        const found = sourceId ? note(sourceId) : null;
+        result = found ?? { error: "Note introuvable." };
+      } else if (name === "get_person") {
+        const target =
+          snapshot.persons.find((item) => item.id === str(args.personId)) ??
+          snapshot.persons.find(
+            (item) =>
+              item.displayName.toLowerCase() ===
+              String(str(args.name) ?? "").toLowerCase(),
+          );
+        if (!target) result = { error: "Personne introuvable." };
+        else {
+          served.person.add(target.id);
+          const key = `person:${target.id}`;
+          const roles = snapshot.roles.filter(
+            (role) =>
+              role.subject.kind === "person" &&
+              role.subject.personId === target.id,
+          );
+          for (const role of roles) served.event.add(role.eventId);
+          result = {
+            personId: target.id,
+            name: target.displayName,
+            episodes: roles.map((role) => {
+              const event = snapshot.events.find(
+                (item) => item.id === role.eventId,
+              );
+              return {
+                eventId: role.eventId,
+                title: event?.title ?? null,
+                occurredStart: event?.occurredStart ?? null,
+                role: role.role,
+                outcome: role.outcome,
+              };
+            }),
+            relations: snapshot.relations
+              .filter((relation) =>
+                relation.members.some(
+                  (member) =>
+                    member.kind === "person" && member.personId === target.id,
+                ),
+              )
+              .map((relation) => relationView(relation.id)),
+            readings: snapshot.hypotheses
+              .filter((item) =>
+                item.subjects.some((subject) =>
+                  subject.kind === "relation"
+                    ? subject.members.some(
+                        (member) =>
+                          member.kind === "person" &&
+                          `person:${member.personId}` === key,
+                      )
+                    : subject.kind === "person" &&
+                      subject.personId === target.id,
+                ),
+              )
+              .map((item) => readingSummary(item.id)),
+          };
+        }
+      } else if (name === "get_relation") {
+        result = relationView(String(str(args.relationId))) ?? {
+          error: "Relation introuvable.",
+        };
+      } else if (name === "get_hypothesis") {
+        const hypothesis = snapshot.hypotheses.find(
+          (item) => item.id === str(args.hypothesisId),
+        );
+        if (!hypothesis) result = { error: "Lecture introuvable." };
+        else {
+          served.hypothesis.add(hypothesis.id);
+          result = {
+            ...hypothesis,
+            evidence: hypothesis.evidence.map((item) => {
+              const claim = snapshot.claims.find(
+                (entry) => entry.id === item.claimId,
+              );
+              if (claim) served.claim.add(claim.id);
+              for (const citation of claim?.citations ?? [])
+                served.source.add(citation.sourceId);
+              return {
+                claimId: item.claimId,
+                stance: item.stance,
+                active: item.supersededRevision === null,
+                text: claim?.text ?? null,
+                citations: claim?.citations ?? [],
+              };
+            }),
+            history: snapshot.revisions
+              .filter((revision) =>
+                revision.changedRefs.some(
+                  (ref) =>
+                    ref.kind === "hypothesis" && ref.id === hypothesis.id,
+                ),
+              )
+              .map((revision) => ({
+                revision: revision.revision,
+                commandType: revision.commandType,
+                createdAt: revision.createdAt,
+              })),
+          };
+        }
+      } else result = { error: `Requête inconnue : ${name}.` };
+    } catch (error) {
+      result = {
+        error: error instanceof Error ? error.message : "Requête impossible.",
+      };
+    }
+    this.database
+      .prepare(
+        "INSERT INTO analysis_queries(id, workspace_id, request_id, name, args_json, served_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        randomUUID(),
+        this.workspaceId,
+        requestId,
+        name,
+        JSON.stringify(args),
+        JSON.stringify(
+          Object.fromEntries(
+            Object.entries(served).map(([kind, ids]) => [kind, [...ids]]),
+          ),
+        ),
+        nowIso(),
+      );
+    return result;
+  }
+
+  /** Requêtes journalisées d'une analyse (D-023). */
+  analysisQueries(requestId: string) {
+    return (
+      this.database
+        .prepare(
+          "SELECT name, args_json, served_json, created_at FROM analysis_queries WHERE workspace_id = ? AND request_id = ? ORDER BY created_at, id",
+        )
+        .all(this.workspaceId, requestId) as SqlRow[]
+    ).map((row) => ({
+      name: String(row.name),
+      args: JSON.parse(String(row.args_json)),
+      served: JSON.parse(String(row.served_json)) as Record<string, string[]>,
+      createdAt: String(row.created_at),
+    }));
+  }
+
+  /** IA-A.4 : usage, modèle servi et durée d'inférence d'une réponse automatique. */
+  recordProviderUsage(
+    responseId: string,
+    input: {
+      servedModel: string | null;
+      usage: unknown;
+      inferenceDurationMs: number | null;
+    },
+  ) {
+    this.database
+      .prepare(
+        "UPDATE analysis_responses SET verified_model = ?, provider_usage_json = ?, inference_duration_ms = ? WHERE workspace_id = ? AND id = ?",
+      )
+      .run(
+        input.servedModel,
+        input.usage === null || input.usage === undefined
+          ? null
+          : JSON.stringify(input.usage),
+        input.inferenceDurationMs,
+        this.workspaceId,
+        responseId,
+      );
+  }
+
+  /** IA-A.4 : jetons consommés par le fournisseur depuis une date (ISO). */
+  providerTokensSince(sinceIso: string) {
+    const row = this.database
+      .prepare(
+        "SELECT COALESCE(SUM(json_extract(provider_usage_json, '$.total_tokens')), 0) AS total FROM analysis_responses WHERE workspace_id = ? AND received_at >= ? AND provider_usage_json IS NOT NULL",
+      )
+      .get(this.workspaceId, sinceIso) as SqlRow;
+    return Number(row.total);
   }
 
   cancelAnalysis(requestId: string) {
@@ -1595,10 +2883,92 @@ export class SqliteMemoryStore {
     return {
       requestId,
       status: String(request.status),
+      promptVersion: String(request.prompt_version),
+      promptHash:
+        request.prompt_hash === null ? null : String(request.prompt_hash),
       packet: JSON.parse(String(request.context_json)) as ContextPacket,
       validatorVersion: COGNITION_VALIDATOR_VERSION,
       responses: responses.map((row) => this.mapAnalysisPreview(row, false)),
     };
+  }
+
+  /**
+   * D-025 : écarte les opérations dont une citation est fausse, et celles qui
+   * en dépendent (proposalKey), au lieu de rejeter toute la réponse ; au-delà
+   * de 20 % d'opérations écartées, la réponse est rejetée en entier.
+   */
+  private withoutMiscited(proposal: CognitiveProposal, packet: ContextPacket) {
+    const dropped: Array<{
+      key: string;
+      kind: string;
+      code: string;
+      message: string;
+    }> = [];
+    const bad = new Set<string>();
+    let first: DomainError | null = null;
+    for (const operation of proposal.operations)
+      try {
+        this.validateCitations([operation], packet);
+      } catch (error) {
+        if (!(error instanceof DomainError)) throw error;
+        first ??= error;
+        bad.add(operation.key);
+        dropped.push({
+          key: operation.key,
+          kind: operation.kind,
+          code: error.code,
+          message: error.message,
+        });
+      }
+    if (!bad.size) return { kept: proposal, dropped };
+    // Dépendances transitives : une opération qui cite la clé d'une opération écartée.
+    for (let changed = true; changed; ) {
+      changed = false;
+      for (const operation of proposal.operations) {
+        if (bad.has(operation.key)) continue;
+        const text = JSON.stringify(operation.payload);
+        const on = [...bad].find((key) =>
+          text.includes(`"proposalKey":"${key}"`),
+        );
+        if (on) {
+          bad.add(operation.key);
+          dropped.push({
+            key: operation.key,
+            kind: operation.kind,
+            code: "dependent_dropped",
+            message: `Dépend de l’opération écartée « ${on} ».`,
+          });
+          changed = true;
+        }
+      }
+    }
+    if (
+      bad.size > proposal.operations.length * 0.2 ||
+      bad.size === proposal.operations.length
+    )
+      throw first as DomainError;
+    return {
+      kept: {
+        ...proposal,
+        operations: proposal.operations.filter((item) => !bad.has(item.key)),
+      },
+      dropped,
+    };
+  }
+
+  private workspaceSourceText(sourceId: string) {
+    const row = this.database
+      .prepare(
+        "SELECT content, content_hash FROM sources WHERE workspace_id = ? AND id = ?",
+      )
+      .get(this.workspaceId, sourceId) as SqlRow | undefined;
+    return row
+      ? {
+          sourceId,
+          contentHash: String(row.content_hash),
+          text: String(row.content),
+        }
+      : undefined;
   }
 
   private validateCitations(
@@ -1609,6 +2979,7 @@ export class SqliteMemoryStore {
       packet.sources.map((source) => [source.sourceId, source]),
     );
     for (const operation of operations) {
+      if (!("citations" in operation.payload)) continue;
       const seen = new Set<string>();
       for (const citation of operation.payload.citations) {
         const key = `${citation.sourceId}:${citation.spanStart}:${citation.spanEnd}`;
@@ -1618,7 +2989,11 @@ export class SqliteMemoryStore {
             "Une citation est répétée dans la même opération.",
           );
         seen.add(key);
-        const source = sources.get(citation.sourceId);
+        // D-023, D-026 : une note de l'espace reste citable même si son texte
+        // n'est pas dans le paquet (mémoire de travail, requête du modèle).
+        const source =
+          sources.get(citation.sourceId) ??
+          this.workspaceSourceText(citation.sourceId);
         if (!source)
           throw new DomainError(
             "source_not_in_context",
@@ -1636,7 +3011,10 @@ export class SqliteMemoryStore {
         )
           throw new DomainError(
             "citation_mismatch",
-            "La citation n’est pas une tranche exacte de la source.",
+            // RAPPORT-011 : le message nomme l'opération et le texte exact de
+            // la source, pour que la seconde tentative informée (D-021) puisse
+            // corriger une citation mal recopiée.
+            `La citation de l’opération « ${operation.key} » n’est pas une tranche exacte de la source : « ${citation.quote.slice(0, 120)} ». Texte exact de la source à ces positions : « ${source.text.slice(citation.spanStart, Math.min(citation.spanEnd, citation.spanStart + 120))} ». Recopie le texte de la source caractère pour caractère, ou cite la source entière.`,
           );
       }
     }
@@ -1660,6 +3038,9 @@ export class SqliteMemoryStore {
               message: String(row.rejection_message),
             },
           ]
+        : [],
+      droppedOperations: row.dropped_json
+        ? JSON.parse(String(row.dropped_json))
         : [],
       applicationResult: row.application_result_json
         ? (JSON.parse(String(row.application_result_json)) as ApplicationResult)
@@ -1697,6 +3078,8 @@ export class SqliteMemoryStore {
       question: "open_questions",
       goal: "goals",
       annotation: "annotations",
+      direction: "directions",
+      action: "actions",
     };
     return Boolean(
       this.database
@@ -1755,6 +3138,7 @@ export class SqliteMemoryStore {
       annotationType: String(
         row.annotation_type,
       ) as HumanAnnotation["annotationType"],
+      sourceId: row.source_id ? String(row.source_id) : null,
       revision: Number(row.revision),
       createdAt: String(row.created_at),
     };
