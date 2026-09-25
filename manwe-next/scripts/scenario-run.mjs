@@ -41,7 +41,7 @@ import {
 } from "./lib/deepseek.mjs";
 
 const PROMPT_TEXT = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v3.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v4.md", import.meta.url),
   "utf8",
 );
 const QA_ROOT = resolve(process.cwd(), ".qa");

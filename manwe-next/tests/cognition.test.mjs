@@ -102,11 +102,11 @@ test("un ContextPacket est figé, sourcé et son empreinte exclut uniquement con
     store.close();
   }));
 
-test("chaque demande enregistre l’empreinte du prompt analyst-v3 versionné", () =>
+test("chaque demande enregistre l’empreinte du prompt analyst-v4 versionné", () =>
   withStore((store) => {
     capturedStore(store, "prompt-hash");
     const prompt = readFileSync(
-      new URL("../packages/cognition/prompts/analyst-v3.md", import.meta.url),
+      new URL("../packages/cognition/prompts/analyst-v4.md", import.meta.url),
       "utf8",
     );
     const expectedHash = createHash("sha256")
@@ -118,16 +118,16 @@ test("chaque demande enregistre l’empreinte du prompt analyst-v3 versionné", 
     ];
     for (const packet of requests) {
       const journal = store.getAnalysis(packet.requestId);
-      assert.equal(packet.promptVersion, "analyst-v3");
-      assert.equal(journal.promptVersion, "analyst-v3");
+      assert.equal(packet.promptVersion, "analyst-v4");
+      assert.equal(journal.promptVersion, "analyst-v4");
       assert.equal(journal.promptHash, expectedHash);
     }
     store.close();
   }));
 
-test("le prompt analyst-v3 documente chaque champ exigé par le parseur strict", () => {
+test("le prompt analyst-v4 documente chaque champ exigé par le parseur strict", () => {
   const prompt = readFileSync(
-    new URL("../packages/cognition/prompts/analyst-v3.md", import.meta.url),
+    new URL("../packages/cognition/prompts/analyst-v4.md", import.meta.url),
     "utf8",
   );
   const required = [
@@ -184,6 +184,16 @@ test("le prompt analyst-v3 documente chaque champ exigé par le parseur strict",
     "limits",
     "revisionConditions",
     "alternativeTo",
+    "rank",
+    "mechanism",
+    "optimizes",
+    "protects",
+    "defenses",
+    "beliefs",
+    "triggers",
+    "soothes",
+    "barrier",
+    "prediction",
     "mention",
     "person",
     "self",

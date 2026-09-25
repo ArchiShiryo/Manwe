@@ -29,7 +29,7 @@ import type {
   ContextPacket,
 } from "../../../packages/cognition/src/contract.ts";
 import { MemoryApiError, memoryApi } from "./memoryApi.ts";
-import analystPrompt from "../../../packages/cognition/prompts/analyst-v3.md?raw";
+import analystPrompt from "../../../packages/cognition/prompts/analyst-v4.md?raw";
 import {
   claimModalityLabels,
   confidenceLabels,
@@ -626,217 +626,264 @@ function PersonalHypothesisInspector({
         </article>
       ))}
       <div className="personal-claim-list">
-        {snapshot.hypotheses.map((hypothesis) => {
-          const alternative = snapshot.hypotheses.find(
-            (item) =>
-              item.id !== hypothesis.id &&
-              (item.id === hypothesis.alternativeTo ||
-                item.alternativeTo === hypothesis.id),
-          );
-          const supports = hypothesis.evidence.filter(
-            (item) => item.stance === "supports",
-          );
-          const contradicts = hypothesis.evidence.filter(
-            (item) => item.stance === "contradicts",
-          );
-          const exploratory =
-            hypothesis.status === "draft" &&
-            (hypothesis.depth === "D4" || hypothesis.depth === "D5");
-          const evidenceList = (items: typeof supports) =>
-            items.map((item) => {
-              const found = claim(item.claimId);
-              if (!found) return null;
-              return (
-                <li key={item.claimId}>
-                  <span className="personal-evidence-meta">
-                    {informationCategoryLabels[found.category]} ·{" "}
-                    {claimModalityLabels[found.modality]}
-                    {found.contestedRevision !== null && " · contesté par toi"}
+        {[...snapshot.hypotheses]
+          // Lectures classées d'abord (1 = principale), puis les autres (D-015).
+          .sort(
+            (left, right) =>
+              (left.rank ?? Number.MAX_SAFE_INTEGER) -
+              (right.rank ?? Number.MAX_SAFE_INTEGER),
+          )
+          .map((hypothesis) => {
+            const alternative = snapshot.hypotheses.find(
+              (item) =>
+                item.id !== hypothesis.id &&
+                (item.id === hypothesis.alternativeTo ||
+                  item.alternativeTo === hypothesis.id),
+            );
+            const supports = hypothesis.evidence.filter(
+              (item) => item.stance === "supports",
+            );
+            const contradicts = hypothesis.evidence.filter(
+              (item) => item.stance === "contradicts",
+            );
+            const exploratory =
+              hypothesis.status === "draft" &&
+              (hypothesis.depth === "D4" || hypothesis.depth === "D5");
+            const evidenceList = (items: typeof supports) =>
+              items.map((item) => {
+                const found = claim(item.claimId);
+                if (!found) return null;
+                return (
+                  <li key={item.claimId}>
+                    <span className="personal-evidence-meta">
+                      {informationCategoryLabels[found.category]} ·{" "}
+                      {claimModalityLabels[found.modality]}
+                      {found.contestedRevision !== null &&
+                        " · contesté par toi"}
+                    </span>
+                    <details>
+                      <summary>{found.text}</summary>
+                      {found.citations.map((citation) => (
+                        <blockquote
+                          key={`${citation.sourceId}:${citation.spanStart}`}
+                        >
+                          « {citation.quote} »
+                          <small>
+                            {" "}
+                            — source du{" "}
+                            {dateLabel(
+                              source(citation.sourceId)?.recordedAt ??
+                                found.createdAt,
+                              true,
+                            )}
+                          </small>
+                        </blockquote>
+                      ))}
+                    </details>
+                  </li>
+                );
+              });
+            return (
+              <article
+                className="personal-claim personal-hypothesis"
+                key={hypothesis.id}
+              >
+                <div className="personal-event-meta">
+                  <span>
+                    {hypothesis.depth} {depthLabels[hypothesis.depth]} ·{" "}
+                    {hypothesisStatusLabels[hypothesis.status]} ·{" "}
+                    {confidenceLabels[hypothesis.confidence]}
                   </span>
-                  <details>
-                    <summary>{found.text}</summary>
-                    {found.citations.map((citation) => (
-                      <blockquote
-                        key={`${citation.sourceId}:${citation.spanStart}`}
-                      >
-                        « {citation.quote} »
-                        <small>
-                          {" "}
-                          — source du{" "}
-                          {dateLabel(
-                            source(citation.sourceId)?.recordedAt ??
-                              found.createdAt,
-                            true,
-                          )}
-                        </small>
-                      </blockquote>
-                    ))}
-                  </details>
-                </li>
-              );
-            });
-          return (
-            <article
-              className="personal-claim personal-hypothesis"
-              key={hypothesis.id}
-            >
-              <div className="personal-event-meta">
-                <span>
-                  {hypothesis.depth} {depthLabels[hypothesis.depth]} ·{" "}
-                  {hypothesisStatusLabels[hypothesis.status]} ·{" "}
-                  {confidenceLabels[hypothesis.confidence]}
-                </span>
-                <span>Sujet : {subjectLabel(snapshot, hypothesis)}</span>
-              </div>
-              <div className="personal-hypothesis-badges">
-                {exploratory && <span className="badge">Exploratoire</span>}
-                {hypothesis.needsReview && (
-                  <span className="badge badge-review">
-                    À réexaminer
-                    {hypothesis.reviewReason &&
-                      ` · ${reviewReasonLabels[hypothesis.reviewReason]}`}
-                  </span>
-                )}
-              </div>
-              <p className="personal-hypothesis-statement">
-                {hypothesis.statement}
-              </p>
-              {(hypothesis.framework || hypothesis.construct) && (
-                <small>
-                  {[hypothesis.construct, hypothesis.framework]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </small>
-              )}
-              <p className="personal-hypothesis-counts">
-                {hypothesis.counts.anchoredSupports} épisode
-                {hypothesis.counts.anchoredSupports > 1 ? "s" : ""} indépendant
-                {hypothesis.counts.anchoredSupports > 1 ? "s" : ""} ancré
-                {hypothesis.counts.anchoredSupports > 1 ? "s" : ""} pour ·{" "}
-                {hypothesis.counts.anchoredContradicts} contre · étendue{" "}
-                {hypothesis.counts.supportSpanDays} jour
-                {hypothesis.counts.supportSpanDays > 1 ? "s" : ""}
-              </p>
-              <div className="personal-evidence">
-                <strong>Pour</strong>
-                <ul>{evidenceList(supports)}</ul>
-                {contradicts.length > 0 && (
-                  <>
-                    <strong>Contre</strong>
-                    <ul>{evidenceList(contradicts)}</ul>
-                  </>
-                )}
-              </div>
-              {alternative && (
-                <p className="personal-hypothesis-alternative">
-                  Alternative : {alternative.statement}
+                  <span>Sujet : {subjectLabel(snapshot, hypothesis)}</span>
+                </div>
+                <div className="personal-hypothesis-badges">
+                  {hypothesis.rank === 1 && (
+                    <span className="badge badge-primary">
+                      Lecture principale
+                    </span>
+                  )}
+                  {hypothesis.rank !== null && hypothesis.rank > 1 && (
+                    <span className="badge">Lecture n° {hypothesis.rank}</span>
+                  )}
+                  {exploratory && <span className="badge">Exploratoire</span>}
+                  {hypothesis.needsReview && (
+                    <span className="badge badge-review">
+                      À réexaminer
+                      {hypothesis.reviewReason &&
+                        ` · ${reviewReasonLabels[hypothesis.reviewReason]}`}
+                    </span>
+                  )}
+                </div>
+                <p className="personal-hypothesis-statement">
+                  {hypothesis.statement}
                 </p>
-              )}
-              {hypothesis.critiques.length > 0 && (
-                <div className="personal-evidence">
-                  <strong>Passe critique</strong>
-                  <ul>
-                    {hypothesis.critiques.flatMap((critique) =>
-                      (critique.findings.length
-                        ? critique.findings
-                        : [
-                            {
-                              kind: "none",
-                              detail: "Aucun constat",
-                              claimIds: [],
-                            },
-                          ]
-                      ).map((finding, index) => (
-                        <li key={`${critique.id}:${index}`}>
-                          {finding.detail}
-                          {critique.resolvedRevision === null
-                            ? " · à traiter"
-                            : ` · traitée (révision ${critique.resolvedRevision})`}
-                        </li>
-                      )),
-                    )}
-                  </ul>
-                </div>
-              )}
-              {hypothesis.limits && (
-                <small>Limites : {hypothesis.limits}</small>
-              )}
-              {hypothesis.revisionConditions && (
-                <small>Ferait réviser : {hypothesis.revisionConditions}</small>
-              )}
-              <details className="personal-hypothesis-history">
-                <summary>Historique</summary>
-                <ul>
-                  {history(hypothesis.id).map((revision) => (
-                    <li key={revision.revision}>
-                      Révision {revision.revision} ·{" "}
-                      {commandTypeLabels[revision.commandType] ??
-                        revision.commandType}{" "}
-                      · {dateLabel(revision.createdAt, true)}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-              <div className="personal-question-actions">
-                {hypothesis.needsReview && (
-                  <button
-                    className="primary-button"
-                    disabled={busy}
-                    onClick={() => onReview(hypothesis)}
-                  >
-                    Préparer la réanalyse
-                  </button>
+                {(hypothesis.framework || hypothesis.construct) && (
+                  <small>
+                    {[hypothesis.construct, hypothesis.framework]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </small>
                 )}
-                <button
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() =>
-                    setAnnotating(
-                      annotating === hypothesis.id ? null : hypothesis.id,
-                    )
-                  }
-                >
-                  <MessageSquarePlus size={13} /> Réagir
-                </button>
-              </div>
-              {annotating === hypothesis.id && (
-                <div className="personal-hypothesis-annotation">
-                  <select
-                    value={annotationType}
-                    onChange={(event) =>
-                      setAnnotationType(event.target.value as AnnotationType)
-                    }
-                    aria-label="Type de réaction"
-                  >
-                    <option value="disagreement">
-                      Je ne suis pas d’accord
-                    </option>
-                    <option value="context">J’ajoute du contexte</option>
-                    <option value="agreement">
-                      Je suis d’accord (sans valeur de preuve)
-                    </option>
-                    <option value="factual_correction">
-                      Correction factuelle
-                    </option>
-                  </select>
-                  <textarea
-                    rows={2}
-                    value={annotationText}
-                    onChange={(event) => setAnnotationText(event.target.value)}
-                    aria-label="Texte de la réaction"
-                  />
+                {hypothesis.mechanism && (
+                  <details className="personal-mechanism">
+                    <summary>Mécanisme et prédiction</summary>
+                    <dl>
+                      {(
+                        [
+                          ["optimizes", "Ce qui est obtenu ou évité"],
+                          ["protects", "Ce qui est protégé"],
+                          ["defenses", "Défenses"],
+                          ["beliefs", "Croyances"],
+                          ["triggers", "Déclencheurs"],
+                          ["soothes", "Ce qui apaise"],
+                          ["barrier", "Ce qui maintient l’équilibre"],
+                          ["prediction", "Prédiction"],
+                        ] as const
+                      )
+                        .filter(([key]) => hypothesis.mechanism?.[key])
+                        .map(([key, label]) => (
+                          <div key={key}>
+                            <dt>{label}</dt>
+                            <dd>{hypothesis.mechanism?.[key]}</dd>
+                          </div>
+                        ))}
+                    </dl>
+                  </details>
+                )}
+                <p className="personal-hypothesis-counts">
+                  {hypothesis.counts.anchoredSupports} épisode
+                  {hypothesis.counts.anchoredSupports > 1 ? "s" : ""}{" "}
+                  indépendant
+                  {hypothesis.counts.anchoredSupports > 1 ? "s" : ""} ancré
+                  {hypothesis.counts.anchoredSupports > 1 ? "s" : ""} pour ·{" "}
+                  {hypothesis.counts.anchoredContradicts} contre · étendue{" "}
+                  {hypothesis.counts.supportSpanDays} jour
+                  {hypothesis.counts.supportSpanDays > 1 ? "s" : ""}
+                </p>
+                <div className="personal-evidence">
+                  <strong>Pour</strong>
+                  <ul>{evidenceList(supports)}</ul>
+                  {contradicts.length > 0 && (
+                    <>
+                      <strong>Contre</strong>
+                      <ul>{evidenceList(contradicts)}</ul>
+                    </>
+                  )}
+                </div>
+                {alternative && (
+                  <p className="personal-hypothesis-alternative">
+                    Alternative : {alternative.statement}
+                  </p>
+                )}
+                {hypothesis.critiques.length > 0 && (
+                  <div className="personal-evidence">
+                    <strong>Passe critique</strong>
+                    <ul>
+                      {hypothesis.critiques.flatMap((critique) =>
+                        (critique.findings.length
+                          ? critique.findings
+                          : [
+                              {
+                                kind: "none",
+                                detail: "Aucun constat",
+                                claimIds: [],
+                              },
+                            ]
+                        ).map((finding, index) => (
+                          <li key={`${critique.id}:${index}`}>
+                            {finding.detail}
+                            {critique.resolvedRevision === null
+                              ? " · à traiter"
+                              : ` · traitée (révision ${critique.resolvedRevision})`}
+                          </li>
+                        )),
+                      )}
+                    </ul>
+                  </div>
+                )}
+                {hypothesis.limits && (
+                  <small>Limites : {hypothesis.limits}</small>
+                )}
+                {hypothesis.revisionConditions && (
+                  <small>
+                    Ferait réviser : {hypothesis.revisionConditions}
+                  </small>
+                )}
+                <details className="personal-hypothesis-history">
+                  <summary>Historique</summary>
+                  <ul>
+                    {history(hypothesis.id).map((revision) => (
+                      <li key={revision.revision}>
+                        Révision {revision.revision} ·{" "}
+                        {commandTypeLabels[revision.commandType] ??
+                          revision.commandType}{" "}
+                        · {dateLabel(revision.createdAt, true)}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+                <div className="personal-question-actions">
+                  {hypothesis.needsReview && (
+                    <button
+                      className="primary-button"
+                      disabled={busy}
+                      onClick={() => onReview(hypothesis)}
+                    >
+                      Préparer la réanalyse
+                    </button>
+                  )}
                   <button
-                    className="primary-button"
-                    disabled={busy || !annotationText.trim()}
-                    onClick={() => void annotate(hypothesis)}
+                    className="text-button"
+                    disabled={busy}
+                    onClick={() =>
+                      setAnnotating(
+                        annotating === hypothesis.id ? null : hypothesis.id,
+                      )
+                    }
                   >
-                    Enregistrer
+                    <MessageSquarePlus size={13} /> Réagir
                   </button>
                 </div>
-              )}
-            </article>
-          );
-        })}
+                {annotating === hypothesis.id && (
+                  <div className="personal-hypothesis-annotation">
+                    <select
+                      value={annotationType}
+                      onChange={(event) =>
+                        setAnnotationType(event.target.value as AnnotationType)
+                      }
+                      aria-label="Type de réaction"
+                    >
+                      <option value="disagreement">
+                        Je ne suis pas d’accord
+                      </option>
+                      <option value="context">J’ajoute du contexte</option>
+                      <option value="agreement">
+                        Je suis d’accord (sans valeur de preuve)
+                      </option>
+                      <option value="factual_correction">
+                        Correction factuelle
+                      </option>
+                    </select>
+                    <textarea
+                      rows={2}
+                      value={annotationText}
+                      onChange={(event) =>
+                        setAnnotationText(event.target.value)
+                      }
+                      aria-label="Texte de la réaction"
+                    />
+                    <button
+                      className="primary-button"
+                      disabled={busy || !annotationText.trim()}
+                      onClick={() => void annotate(hypothesis)}
+                    >
+                      Enregistrer
+                    </button>
+                  </div>
+                )}
+              </article>
+            );
+          })}
       </div>
     </section>
   );
