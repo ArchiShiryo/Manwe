@@ -26,17 +26,14 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | R0, R1                  | Faits : mémoire locale SQLite, journal, recherche                                                                                                                       |
 | R2                      | Validé en mode assisté ([RAPPORT-001](./rapports/RAPPORT-001.md))                                                                                                       |
+| R4.0a-c, relations      | Livré, non validé : [RAPPORT-005](./rapports/RAPPORT-005.md)                                                                                                            |
 | R3, moteur de révision  | **Validé en mode automatique** (DeepSeek V4.1-Flash, prompt v4, contrat 1.3) : [RAPPORT-004](./rapports/RAPPORT-004.md), après [RAPPORT-003](./rapports/RAPPORT-003.md) |
 | IA-A, raccordement auto | En cours : évaluations automatiques DeepSeek opérationnelles (D-020) ; intégration dans l'application à faire                                                           |
 | R4 et suivants          | À faire                                                                                                                                                                 |
 
-**Prochaine étape : le BRIEF-004** (à rédiger), qui porte sur la relation comme objet, les rôles et les indicateurs (D-012, D-013, R4.0a à R4.0c), puis sur la lecture stratégique de la relation (R4.0e) et sur le registre ontologique (R4.0d).
+**BRIEF-004 livré** (relation comme objet, rôles d'épisode cités, indicateurs relationnels, contrat 1.4, prompt v5) mais **pas encore validé** : sur le lot R4-S01, R01 et R03 sont justes, mais R02 a été perdu à cause d'erreurs de format du modèle ([RAPPORT-005](./rapports/RAPPORT-005.md)). La correction est faite (D-021 : seconde tentative informée de l'erreur).
 
-Les petites corrections relevées par le [RAPPORT-004](./rapports/RAPPORT-004.md) §4 entrent dans le même lot :
-
-1. le prompt v5 exige, pour une lecture sur l'utilisateur, un acte ou un ressenti qui sort de l'ordinaire ;
-2. une source d'annotation n'est créée qu'une fois quand un désaccord vise plusieurs hypothèses ;
-3. la frontière D3/D4 est précisée dans le prompt.
+**Prochaine étape** : sceller un lot de contrôle R4-S02 (nouveaux prénoms, mêmes fonctions : rôles, relation avec et sans l'utilisateur, contexte ajouté), le jouer avec `auto`, noter, puis cocher R4.0a à R4.0c. Viendront ensuite l'affichage des relations et de leurs indicateurs dans l'interface, puis le registre ontologique (R4.0d) et le graphe R4.
 
 **Méthode à conserver pour chaque lot** :
 
@@ -71,7 +68,7 @@ Les petites corrections relevées par le [RAPPORT-004](./rapports/RAPPORT-004.md
 ```sh
 cd manwe-next
 npm ci
-npm test            # 74 tests au 25 septembre 2026
+npm test            # 75 tests au 25 septembre 2026
 npm run typecheck
 npm run dev         # interface http://127.0.0.1:5180, service :5181
 

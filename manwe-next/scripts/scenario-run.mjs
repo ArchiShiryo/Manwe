@@ -363,8 +363,18 @@ async function driveScenario(runDir, scenario, options, log) {
     log(
       `${state.pending} : appel ${options.model}${suffix ? " (seconde tentative)" : ""}`,
     );
+    // D-021 : la seconde tentative connaît le motif exact du premier rejet.
+    let prompt = readFileSync(join(stepDir, "PROMPT.txt"), "utf8");
+    if (file === RETRY_PROPOSAL) {
+      const errors = readJson(join(stepDir, "receipt.json"))
+        .attempts.flatMap((attempt) => attempt.errors)
+        .map((error) => `- ${error.code} : ${error.message}`)
+        .join("\n");
+      prompt = `${prompt.trimEnd()}\n\nTa réponse précédente à ce paquet a été rejetée par le validateur :\n${errors}\nRenvoie un objet CognitiveProposal complet et corrigé, qui respecte exactement le format.\n`;
+      writeFileSync(join(stepDir, "PROMPT.retry.txt"), prompt, "utf8");
+    }
     const call = await callAnalyst({
-      prompt: readFileSync(join(stepDir, "PROMPT.txt"), "utf8"),
+      prompt,
       model: options.model,
       effort: options.effort,
     });

@@ -369,12 +369,19 @@ test("le mode auto interroge le fournisseur, enregistre la réponse brute et ses
     request.on("end", () => {
       const payload = JSON.parse(body);
       requests.push(payload);
+      const prompt = payload.messages[0].content.split(
+        "\n\nTa réponse précédente",
+      )[0];
       const packet = JSON.parse(
-        payload.messages[0].content.slice(
-          payload.messages[0].content.lastIndexOf('\n{\n  "schemaVersion"') + 1,
+        prompt.slice(
+          prompt.lastIndexOf('\n{\n  "schemaVersion"') + 1,
+          prompt.lastIndexOf("}") + 1,
         ),
       );
       response.setHeader("content-type", "application/json");
+      // Première réponse invalide : la seconde tentative doit connaître l'erreur (D-021).
+      const content =
+        requests.length === 1 ? "{ pas du JSON" : answer(packet, []);
       response.end(
         JSON.stringify({
           model: "deepseek-flash",
@@ -382,7 +389,7 @@ test("le mode auto interroge le fournisseur, enregistre la réponse brute et ses
             {
               finish_reason: "stop",
               message: {
-                content: answer(packet, []),
+                content,
                 reasoning_content: "Raisonnement simulé.",
               },
             },
@@ -413,7 +420,11 @@ test("le mode auto interroge le fournisseur, enregistre la réponse brute et ses
     child.stderr.on("data", (chunk) => (output += chunk));
     const code = await new Promise((done) => child.on("close", done));
     assert.equal(code, 0, output);
-    assert.equal(requests.length, 1);
+    assert.equal(requests.length, 2);
+    assert.match(
+      requests[1].messages[0].content,
+      /rejetée par le validateur :\n- invalid_json/,
+    );
     assert.equal(requests[0].model, "deepseek-flash");
     assert.equal(requests[0].response_format.type, "json_object");
     const stepDir = join(runDir, "T3", "T3-A1");

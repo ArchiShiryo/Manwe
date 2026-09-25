@@ -13,6 +13,9 @@ export const DEFAULT_MODEL = "deepseek-flash"; // DeepSeek-V4.1-Flash
 export const DEFAULT_EFFORT = "high";
 const MAX_TOKENS = 64000;
 const TRANSPORT_RETRIES = 4;
+const CALL_TIMEOUT_MS = Number(
+  process.env.DEEPSEEK_TIMEOUT_MS ?? 10 * 60 * 1000,
+);
 
 /**
  * Relance le script courant avec NODE_USE_ENV_PROXY=1 lorsqu'un proxy est
@@ -60,6 +63,8 @@ export async function callAnalyst({
         method: "POST",
         headers,
         body,
+        // Un appel ne doit jamais bloquer le lot indéfiniment.
+        signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
       });
       const text = await response.text();
       if (response.status === 429 || response.status >= 500) {
