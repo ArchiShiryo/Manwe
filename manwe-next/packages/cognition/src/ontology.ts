@@ -22,6 +22,10 @@ import {
   CONFIDENCES,
   CREATION_STATUSES,
   DEPTHS,
+  EFFORTS,
+  LEVER_KINDS,
+  PREDICTION_PHASES,
+  PREDICTION_VERDICTS,
   EVIDENCE_STANCES,
   HYPOTHESIS_STATUSES,
   TEMPORAL_PRECISIONS,
@@ -39,6 +43,10 @@ export const OBJECT_TYPES = {
   question: "Question qui départage des hypothèses.",
   annotation: "Correction, contexte, désaccord ou accord de l'utilisateur.",
   goal: "Objectif de l'utilisateur.",
+  direction:
+    "Direction proposée pour un objectif : levier, lecture actionnée, prédictions (BRIEF-005).",
+  action:
+    "Direction choisie par l'utilisateur : attente figée avant l'essai, résultat, verdicts (D-016).",
 } as const;
 
 export const LINK_TYPES = {
@@ -54,6 +62,9 @@ export const LINK_TYPES = {
   targets: ["question", "hypothesis"],
   annotates: ["annotation", "claim|event|hypothesis|person"],
   member_of: ["person|self", "relation"],
+  serves: ["direction", "goal"],
+  actuates: ["direction", "hypothesis"],
+  enacts: ["action", "direction"],
 } as const;
 
 /** Actions du modèle, par tâche : la source de vérité est DEFAULT_OPERATIONS. */
@@ -73,6 +84,10 @@ export const VOCABULARIES = {
   creationStatuses: CREATION_STATUSES,
   temporalPrecisions: TEMPORAL_PRECISIONS,
   critiqueKinds: CRITIQUE_KINDS,
+  leverKinds: LEVER_KINDS,
+  efforts: EFFORTS,
+  predictionPhases: PREDICTION_PHASES,
+  verdicts: PREDICTION_VERDICTS,
 } as const;
 
 // Contrôle à la compilation : les types du domaine et les vocabulaires

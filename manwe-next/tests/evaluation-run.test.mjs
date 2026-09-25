@@ -81,7 +81,7 @@ test("le harnais prépare, applique, rejoue et résume mécaniquement un lot", (
   try {
     execute("prepare", fixturePath, runDir);
     const promptText = readFileSync(
-      join(process.cwd(), "packages", "cognition", "prompts", "analyst-v6.md"),
+      join(process.cwd(), "packages", "cognition", "prompts", "analyst-v7.md"),
       "utf8",
     ).trimEnd();
     const packet = JSON.parse(

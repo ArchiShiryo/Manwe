@@ -1,6 +1,8 @@
 import type {
   AnnotationCommand,
   AnswerQuestionCommand,
+  ChooseDirectionCommand,
+  RecordOutcomeCommand,
   CaptureCommand,
   CommandResult,
   GoalCommand,
@@ -198,6 +200,22 @@ class MemoryApi {
   async answerQuestion(command: AnswerQuestionCommand) {
     await this.request<CommandResult>(
       `/api/questions/${encodeURIComponent(command.questionId)}/answer`,
+      { method: "POST", body: JSON.stringify(command) },
+    );
+    return this.snapshot();
+  }
+
+  async chooseDirection(command: ChooseDirectionCommand) {
+    await this.request<CommandResult>("/api/actions", {
+      method: "POST",
+      body: JSON.stringify(command),
+    });
+    return this.snapshot();
+  }
+
+  async recordOutcome(command: RecordOutcomeCommand) {
+    await this.request<CommandResult>(
+      `/api/actions/${encodeURIComponent(command.actionId)}/outcome`,
       { method: "POST", body: JSON.stringify(command) },
     );
     return this.snapshot();

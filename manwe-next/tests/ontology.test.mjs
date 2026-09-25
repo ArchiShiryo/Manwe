@@ -16,10 +16,10 @@ import { SqliteMemoryStore } from "../packages/storage/src/sqliteStore.ts";
 import { COGNITIVE_OPERATION_KINDS } from "../packages/cognition/src/contract.ts";
 
 const prompt = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v6.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v7.md", import.meta.url),
   "utf8",
 );
-const migrations = [1, 2, 3, 4, 5, 6, 7, 8]
+const migrations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
   .map((n) => String(n).padStart(3, "0"))
   .map((prefix) => {
     const dir = new URL("../packages/storage/src/migrations/", import.meta.url);
@@ -32,6 +32,7 @@ const migrations = [1, 2, 3, 4, 5, 6, 7, 8]
       "critiques",
       "brief003",
       "relations_roles",
+      "directions_actions",
     ];
     return readFileSync(
       new URL(`${prefix}_${files[Number(prefix) - 1]}.sql`, dir),
@@ -67,6 +68,8 @@ test("R4.0d · le registre, le contrat, le prompt et le stockage restent aligné
     question: "open_questions",
     annotation: "annotations",
     goal: "goals",
+    direction: "directions",
+    action: "actions",
   };
   assert.deepEqual(
     Object.keys(tables).sort(),
@@ -178,7 +181,7 @@ test("R4.0d · le prompt versionné est exactement le rendu du gabarit depuis le
   assert.equal(
     renderPrompt(template),
     prompt,
-    "analyst-v6.md = rendu du gabarit",
+    "analyst-v7.md = rendu du gabarit",
   );
   assert.throws(() => renderPrompt("{{enum:inconnu}}"), /inconnu/);
 });

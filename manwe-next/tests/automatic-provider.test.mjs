@@ -13,7 +13,7 @@ import {
 } from "../apps/server/src/analystProvider.ts";
 
 const PROMPT_V6 = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v6.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v7.md", import.meta.url),
   "utf8",
 );
 
@@ -382,7 +382,7 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
     ).json();
     assert.equal(analysis.packet.providerId, "deepseek:test");
     assert.equal(analysis.packet.mode, "automatic");
-    assert.equal(analysis.promptVersion, "analyst-v6");
+    assert.equal(analysis.promptVersion, "analyst-v7");
     const applied = await on.call(`/api/analyses/${job.requestId}/apply`, {
       method: "POST",
       body: JSON.stringify({

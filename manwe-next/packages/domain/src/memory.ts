@@ -35,7 +35,7 @@ export type TargetKind =
   | "question"
   | "goal";
 
-export type EntityKind = TargetKind | "annotation";
+export type EntityKind = TargetKind | "annotation" | "direction" | "action";
 export type EntityRef = { kind: EntityKind; id: string };
 
 export type Source = {
@@ -142,6 +142,62 @@ export type EpisodeRoleRecord = {
     quote: string;
   }>;
   createdRevision: number;
+};
+
+/** Direction proposée pour un objectif (BRIEF-005, D-017) : levier et prédictions. */
+export type DirectionRecord = {
+  id: string;
+  goalId: string | null;
+  title: string;
+  action: string;
+  lever: {
+    kind:
+      | "change_reward"
+      | "lower_barrier"
+      | "alternative_source"
+      | "disconfirming_experience"
+      | "change_game"
+      | "do_nothing";
+    hypothesisId: string | null;
+    mechanismKey: string | null;
+  };
+  conditions: string;
+  effort: "low" | "moderate" | "high";
+  limits: string;
+  signals: string[];
+  learnsIfFails: string;
+  predictions: Array<{
+    actor: RelationMember;
+    response: string;
+    phase: "immediate" | "transitional" | "equilibrium";
+    horizonDays: number | null;
+  }>;
+  status: "proposed" | "chosen" | "dismissed" | "superseded";
+  createdRevision: number;
+  createdAt: string;
+};
+
+/** Action choisie par l'utilisateur (D-016) : attente figée avant l'essai, puis résultat. */
+export type ActionRecord = {
+  id: string;
+  directionId: string;
+  status: "planned" | "done" | "abandoned";
+  expectation: {
+    predictions: DirectionRecord["predictions"];
+    userExpectation: string | null;
+  };
+  expectationRecordedAt: string;
+  chosenRevision: number;
+  outcome: {
+    text: string;
+    annotationId: string;
+    sourceId: string | null;
+    recordedAt: string;
+  } | null;
+  /** Verdict facultatif de l'utilisateur, un par prédiction. */
+  verdicts: Array<"confirmed" | "refuted" | "unclear" | null> | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 /** Relation (dyade) et ses indicateurs calculés, jamais des preuves à eux seuls. */
@@ -274,7 +330,9 @@ export type RevisionEntry = {
     | "annotate"
     | "goal.update"
     | "analysis.apply"
-    | "question.answer";
+    | "question.answer"
+    | "action.choose"
+    | "action.outcome";
   changedRefs: EntityRef[];
   createdAt: string;
 };
@@ -304,6 +362,8 @@ export type WorkspaceSnapshot = {
   questions: OpenQuestion[];
   roles: EpisodeRoleRecord[];
   relations: RelationRecord[];
+  directions: DirectionRecord[];
+  actions: ActionRecord[];
   identityAmbiguities: IdentityAmbiguity[];
   revisions: RevisionEntry[];
 };
@@ -823,6 +883,70 @@ export function parseResolveIdentityCommand(
     ambiguityId: input.ambiguityId,
     personId: input.personId,
     resolvedAt: optionalDate(input.resolvedAt, "resolvedAt") ?? undefined,
+  };
+}
+
+/** Choix d'une direction par l'utilisateur (D-016) : l'attente est figée ici. */
+export type ChooseDirectionCommand = {
+  idempotencyKey: string;
+  directionId: string;
+  userExpectation?: string | null;
+};
+
+/** Résultat observé d'une action ; verdicts facultatifs, un par prédiction. */
+export type RecordOutcomeCommand = {
+  idempotencyKey: string;
+  actionId: string;
+  text: string;
+  verdicts?: Array<"confirmed" | "refuted" | "unclear" | null> | null;
+  recordedAt?: string;
+};
+
+export function parseChooseDirectionCommand(
+  value: unknown,
+): ChooseDirectionCommand {
+  const input = requireObject(value);
+  if (typeof input.directionId !== "string" || !input.directionId)
+    throw new DomainError("invalid_direction", "Direction inconnue.");
+  return {
+    idempotencyKey: requireIdempotencyKey(input.idempotencyKey),
+    directionId: input.directionId,
+    userExpectation:
+      input.userExpectation === undefined || input.userExpectation === null
+        ? null
+        : requireText(input.userExpectation, "userExpectation", 2_000),
+  };
+}
+
+export function parseRecordOutcomeCommand(
+  value: unknown,
+): RecordOutcomeCommand {
+  const input = requireObject(value);
+  if (typeof input.actionId !== "string" || !input.actionId)
+    throw new DomainError("invalid_action", "Action inconnue.");
+  const verdicts =
+    input.verdicts === undefined || input.verdicts === null
+      ? null
+      : input.verdicts;
+  if (
+    verdicts !== null &&
+    (!Array.isArray(verdicts) ||
+      verdicts.length > 5 ||
+      verdicts.some(
+        (item) =>
+          item !== null && !["confirmed", "refuted", "unclear"].includes(item),
+      ))
+  )
+    throw new DomainError(
+      "invalid_verdicts",
+      "Les verdicts valent confirmed, refuted, unclear ou null.",
+    );
+  return {
+    idempotencyKey: requireIdempotencyKey(input.idempotencyKey),
+    actionId: input.actionId,
+    text: requireText(input.text, "text", 4_000),
+    verdicts: verdicts as RecordOutcomeCommand["verdicts"],
+    recordedAt: optionalDate(input.recordedAt, "recordedAt") ?? undefined,
   };
 }
 

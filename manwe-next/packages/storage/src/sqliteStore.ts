@@ -7,6 +7,9 @@ import {
   MEMORY_SCHEMA_VERSION,
   DomainError,
   type AnnotationCommand,
+  type ChooseDirectionCommand,
+  type DirectionRecord,
+  type RecordOutcomeCommand,
   type AnswerQuestionCommand,
   type CaptureCommand,
   type Claim,
@@ -68,11 +71,11 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
-const ANALYST_PROMPT_VERSION = "analyst-v6";
+const ANALYST_PROMPT_VERSION = "analyst-v7";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
     fileURLToPath(
-      new URL("../../cognition/prompts/analyst-v6.md", import.meta.url),
+      new URL("../../cognition/prompts/analyst-v7.md", import.meta.url),
     ),
     "utf8",
   ),
@@ -165,6 +168,15 @@ export class SqliteMemoryStore {
         new URL("./migrations/008_relations_roles.sql", import.meta.url),
       );
       this.database.exec(readFileSync(relationsMigrationPath, "utf8"));
+    }
+    const directionsMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 9")
+      .get();
+    if (!directionsMigration) {
+      const directionsMigrationPath = fileURLToPath(
+        new URL("./migrations/009_directions_actions.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(directionsMigrationPath, "utf8"));
     }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
@@ -877,6 +889,197 @@ export class SqliteMemoryStore {
   }
 
   /**
+   * Choix d'une direction (D-016) : l'action copie les prédictions de la
+   * direction, datées maintenant, avant tout résultat. Aucune exécution :
+   * c'est l'utilisateur qui agit dans le monde.
+   */
+  chooseDirection(command: ChooseDirectionCommand): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "action.choose",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    return this.transaction(() => {
+      const replay = this.receipt(
+        "action.choose",
+        command.idempotencyKey,
+        commandHash,
+      );
+      if (replay) return replay;
+      const direction = this.hypotheses
+        .directions()
+        .find((item) => item.id === command.directionId);
+      if (!direction)
+        throw new DomainError(
+          "direction_not_found",
+          "Direction inconnue.",
+          404,
+        );
+      if (direction.status !== "proposed")
+        throw new DomainError(
+          "direction_not_available",
+          `Cette direction est ${direction.status}.`,
+          409,
+        );
+      const timestamp = nowIso();
+      const id = randomUUID();
+      const nextRevision = this.revision + 1;
+      this.database
+        .prepare(
+          `INSERT INTO actions(id, workspace_id, direction_id, status, expectation_json, expectation_recorded_at,
+             chosen_revision, created_at, updated_at) VALUES (?, ?, ?, 'planned', ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          id,
+          this.workspaceId,
+          direction.id,
+          JSON.stringify({
+            predictions: direction.predictions,
+            userExpectation: command.userExpectation ?? null,
+          }),
+          timestamp,
+          nextRevision,
+          timestamp,
+          timestamp,
+        );
+      this.database
+        .prepare("UPDATE directions SET status = 'chosen' WHERE id = ?")
+        .run(direction.id);
+      const revision = this.advanceRevision(
+        "action.choose",
+        [
+          { kind: "direction", id: direction.id },
+          { kind: "action", id },
+        ],
+        timestamp,
+      );
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created: [{ kind: "action", id }],
+      };
+      this.saveReceipt(
+        "action.choose",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        timestamp,
+      );
+      return result;
+    });
+  }
+
+  /**
+   * Résultat d'une action (D-016) : il devient une annotation citable sur la
+   * lecture actionnée, qui passe à réexaminer ; la réanalyse compare ensuite
+   * les prédictions figées au résultat.
+   */
+  recordOutcome(command: RecordOutcomeCommand): CommandResult {
+    const commandHash = sha256(canonicalJson(command));
+    const previous = this.receipt(
+      "action.outcome",
+      command.idempotencyKey,
+      commandHash,
+    );
+    if (previous) return previous;
+    const action = this.hypotheses
+      .actions()
+      .find((item) => item.id === command.actionId);
+    if (!action)
+      throw new DomainError("action_not_found", "Action inconnue.", 404);
+    if (action.outcome)
+      throw new DomainError(
+        "outcome_already_recorded",
+        "Le résultat de cette action est déjà enregistré.",
+        409,
+      );
+    const direction = this.hypotheses
+      .directions()
+      .find((item) => item.id === action.directionId);
+    if (!direction)
+      throw new DomainError("direction_not_found", "Direction inconnue.", 404);
+    if (
+      command.verdicts &&
+      command.verdicts.length !== action.expectation.predictions.length
+    )
+      throw new DomainError(
+        "invalid_verdicts",
+        "Un verdict par prédiction, ou aucun.",
+      );
+    const recordedAt = command.recordedAt ?? nowIso();
+    if (recordedAt < action.expectationRecordedAt)
+      throw new DomainError(
+        "outcome_before_expectation",
+        "Le résultat ne peut pas précéder l’attente enregistrée.",
+      );
+    // L'annotation porte sur la lecture actionnée, ou sur l'objectif pour
+    // « ne rien entreprendre ».
+    const target = direction.lever.hypothesisId
+      ? { kind: "hypothesis" as const, id: direction.lever.hypothesisId }
+      : direction.goalId
+        ? { kind: "goal" as const, id: direction.goalId }
+        : null;
+    if (!target)
+      throw new DomainError(
+        "outcome_without_target",
+        "Cette direction ne vise ni lecture ni objectif.",
+      );
+    const annotated = this.annotate({
+      idempotencyKey: `${command.idempotencyKey}:annotation`,
+      target,
+      text: `Résultat de l’action « ${direction.title} » : ${command.text}`,
+      annotationType: "context",
+      createdAt: recordedAt,
+    });
+    const annotationId = annotated.created.find(
+      (ref) => ref.kind === "annotation",
+    )?.id;
+    return this.transaction(() => {
+      const replay = this.receipt(
+        "action.outcome",
+        command.idempotencyKey,
+        commandHash,
+      );
+      if (replay) return replay;
+      this.database
+        .prepare(
+          `UPDATE actions SET status = 'done', outcome_text = ?, outcome_annotation_id = ?, outcome_recorded_at = ?,
+             verdicts_json = ?, updated_at = ? WHERE id = ?`,
+        )
+        .run(
+          command.text,
+          annotationId ?? null,
+          recordedAt,
+          command.verdicts ? JSON.stringify(command.verdicts) : null,
+          recordedAt,
+          action.id,
+        );
+      const revision = this.advanceRevision(
+        "action.outcome",
+        [{ kind: "action", id: action.id }],
+        recordedAt,
+      );
+      const result: CommandResult = {
+        idempotencyKey: command.idempotencyKey,
+        replayed: false,
+        revision,
+        created: annotated.created,
+      };
+      this.saveReceipt(
+        "action.outcome",
+        command.idempotencyKey,
+        commandHash,
+        result,
+        recordedAt,
+      );
+      return result;
+    });
+  }
+
+  /**
    * Réponse de l'utilisateur à une question ouverte (T5). Une réponse libre
    * devient une source capturée et remet les hypothèses ciblées à réexaminer ;
    * « je ne sais pas » et « ne plus poser » ne changent que la question.
@@ -1136,6 +1339,8 @@ export class SqliteMemoryStore {
       annotations: annotations.map(this.mapAnnotation),
       roles: this.hypotheses.roles(),
       relations: this.hypotheses.relations(),
+      directions: this.hypotheses.directions(),
+      actions: this.hypotheses.actions(),
       goals: goals.map((row) => ({
         id: String(row.id),
         workspaceId: String(row.workspace_id),
@@ -1561,6 +1766,10 @@ export class SqliteMemoryStore {
         ),
       ),
       goals: snapshot.goals.filter((goal) => focused.has(`goal:${goal.id}`)),
+      // BRIEF-005 : directions des objectifs visés, et actions dont la lecture
+      // actionnée ou l'objectif est dans le paquet, avec prédictions figées et
+      // résultat, pour comparer la prédiction à la réalité.
+      ...this.packetDirections(snapshot, focused, packetHypotheses.hypotheses),
       coverage: {
         included: [...sourceIds],
         omissions: [],
@@ -1863,6 +2072,7 @@ export class SqliteMemoryStore {
       "propose_critique",
       "revise_hypothesis",
       "propose_question",
+      "propose_direction",
     ];
     const operations = [...proposal.operations].sort(
       (left, right) => order.indexOf(left.kind) - order.indexOf(right.kind),
@@ -1928,7 +2138,8 @@ export class SqliteMemoryStore {
         operation.kind === "revise_hypothesis" ||
         operation.kind === "propose_question" ||
         operation.kind === "propose_critique" ||
-        operation.kind === "propose_role"
+        operation.kind === "propose_role" ||
+        operation.kind === "propose_direction"
       ) {
         const result = this.hypotheses.applyOperation(operation, context);
         created.push(...result.created);
@@ -1938,6 +2149,33 @@ export class SqliteMemoryStore {
     for (const link of context.links) link();
     for (const check of context.deferred) check();
     return { created, changed, warnings: context.warnings };
+  }
+
+  private packetDirections(
+    snapshot: WorkspaceSnapshot,
+    focused: Set<string>,
+    hypotheses: unknown[],
+  ) {
+    const hypothesisIds = new Set(
+      hypotheses.map((item) => String((item as { id: string }).id)),
+    );
+    const concerned = (direction: DirectionRecord) =>
+      (direction.goalId !== null && focused.has(`goal:${direction.goalId}`)) ||
+      (direction.lever.hypothesisId !== null &&
+        hypothesisIds.has(direction.lever.hypothesisId));
+    const directions = snapshot.directions.filter(
+      (direction) =>
+        direction.status !== "superseded" &&
+        direction.status !== "dismissed" &&
+        concerned(direction),
+    );
+    const directionIds = new Set(directions.map((item) => item.id));
+    return {
+      directions,
+      actions: snapshot.actions.filter((action) =>
+        directionIds.has(action.directionId),
+      ),
+    };
   }
 
   /** IA-A.4 : usage, modèle servi et durée d'inférence d'une réponse automatique. */
@@ -2115,6 +2353,8 @@ export class SqliteMemoryStore {
       question: "open_questions",
       goal: "goals",
       annotation: "annotations",
+      direction: "directions",
+      action: "actions",
     };
     return Boolean(
       this.database

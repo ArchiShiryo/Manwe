@@ -9,6 +9,8 @@ import {
 import {
   DomainError,
   type AnnotationType,
+  type ActionRecord,
+  type DirectionRecord,
   type EpisodeRoleRecord,
   type RelationMember,
   type RelationRecord,
@@ -55,6 +57,8 @@ export type OperationContext = {
   deferred: Array<() => void>;
   /** Ajustements du moteur signalés sans rejeter la réponse (D-015). */
   warnings: Array<{ code: string; message: string }>;
+  /** Directions déjà reçues par objectif dans cette réponse (BRIEF-005). */
+  directions?: Map<string, { actions: number; doNothing: boolean }>;
 };
 
 const plain = (value: string) =>
@@ -301,6 +305,71 @@ export class HypothesisStore {
       outcome: (row.outcome ?? null) as EpisodeRoleRecord["outcome"],
       citations: JSON.parse(String(row.citations_json)),
       createdRevision: Number(row.created_revision),
+    }));
+  }
+
+  // ---- Directions et actions (BRIEF-005) --------------------------------
+
+  directions(): DirectionRecord[] {
+    return (
+      this.database
+        .prepare(
+          "SELECT * FROM directions WHERE workspace_id = ? ORDER BY created_at, id",
+        )
+        .all(this.workspaceId) as SqlRow[]
+    ).map((row) => ({
+      id: String(row.id),
+      goalId: nullableString(row.goal_id),
+      title: String(row.title),
+      action: String(row.action_text),
+      lever: {
+        kind: String(row.lever_kind) as DirectionRecord["lever"]["kind"],
+        hypothesisId: nullableString(row.lever_hypothesis_id),
+        mechanismKey: nullableString(row.mechanism_key),
+      },
+      conditions: String(row.conditions),
+      effort: String(row.effort) as DirectionRecord["effort"],
+      limits: String(row.limits),
+      signals: JSON.parse(String(row.signals_json)),
+      learnsIfFails: String(row.learns_if_fails),
+      predictions: JSON.parse(String(row.predictions_json)),
+      status: String(row.status) as DirectionRecord["status"],
+      createdRevision: Number(row.created_revision),
+      createdAt: String(row.created_at),
+    }));
+  }
+
+  actions(): ActionRecord[] {
+    return (
+      this.database
+        .prepare(
+          `SELECT a.*, n.source_id AS outcome_source_id FROM actions a
+             LEFT JOIN annotations n ON n.id = a.outcome_annotation_id
+           WHERE a.workspace_id = ? ORDER BY a.created_at, a.id`,
+        )
+        .all(this.workspaceId) as SqlRow[]
+    ).map((row) => ({
+      id: String(row.id),
+      directionId: String(row.direction_id),
+      status: String(row.status) as ActionRecord["status"],
+      expectation: JSON.parse(String(row.expectation_json)),
+      expectationRecordedAt: String(row.expectation_recorded_at),
+      chosenRevision: Number(row.chosen_revision),
+      outcome:
+        row.outcome_text === null || row.outcome_text === undefined
+          ? null
+          : {
+              text: String(row.outcome_text),
+              annotationId: String(row.outcome_annotation_id),
+              sourceId: nullableString(row.outcome_source_id),
+              recordedAt: String(row.outcome_recorded_at),
+            },
+      verdicts:
+        row.verdicts_json === null || row.verdicts_json === undefined
+          ? null
+          : JSON.parse(String(row.verdicts_json)),
+      createdAt: String(row.created_at),
+      updatedAt: String(row.updated_at),
     }));
   }
 
@@ -1096,6 +1165,121 @@ export class HypothesisStore {
         );
       context.keys.set(operation.key, { kind: "question", id });
       return { created: [{ kind: "question", id }], changed: [] };
+    }
+    if (operation.kind === "propose_direction") {
+      const payload = operation.payload;
+      // Objectif existant dans l'espace.
+      if (payload.goal) {
+        const goal = this.database
+          .prepare("SELECT id FROM goals WHERE workspace_id = ? AND id = ?")
+          .get(this.workspaceId, payload.goal.id);
+        if (!goal)
+          throw new DomainError(
+            "reference_not_in_context",
+            `goal:${payload.goal.id} n’existe pas.`,
+          );
+      }
+      // La lecture actionnée existe et n'est ni remplacée ni contredite (H4).
+      let hypothesisId: string | null = null;
+      if (payload.lever.hypothesis) {
+        hypothesisId = this.resolve(
+          payload.lever.hypothesis,
+          "hypothesis",
+          context,
+        );
+        const row = this.database
+          .prepare("SELECT status FROM hypotheses WHERE id = ?")
+          .get(hypothesisId) as SqlRow | undefined;
+        if (
+          row &&
+          (row.status === "superseded" || row.status === "contradicted")
+        )
+          throw new DomainError(
+            "lever_not_active",
+            `La direction s’appuie sur hypothesis:${hypothesisId}, ${String(row.status)}.`,
+          );
+      }
+      const goalKey = payload.goal?.id ?? "none";
+      context.directions ??= new Map();
+      const counts = context.directions.get(goalKey) ?? {
+        actions: 0,
+        doNothing: false,
+      };
+      if (!context.directions.has(goalKey)) {
+        context.directions.set(goalKey, counts);
+        // Nouvelle série pour cet objectif : les directions non choisies
+        // des séries précédentes sont remplacées.
+        this.database
+          .prepare(
+            `UPDATE directions SET status = 'superseded' WHERE workspace_id = ? AND status = 'proposed'
+               AND ${payload.goal ? "goal_id = ?" : "goal_id IS NULL"}`,
+          )
+          .run(
+            ...(payload.goal
+              ? [this.workspaceId, payload.goal.id]
+              : [this.workspaceId]),
+          );
+        context.deferred.push(() => {
+          if (!counts.doNothing)
+            context.warnings.push({
+              code: "do_nothing_missing",
+              message: `Aucune direction « ne rien entreprendre » pour ${goalKey === "none" ? "cette série" : `goal:${goalKey}`} ; l’interface l’affiche sans prédiction.`,
+            });
+        });
+      }
+      if (payload.lever.kind === "do_nothing") {
+        if (counts.doNothing) {
+          context.warnings.push({
+            code: "too_many_directions",
+            message:
+              "Une seule direction « ne rien entreprendre » par objectif ; la suivante est écartée.",
+          });
+          return { created: [], changed: [] };
+        }
+        counts.doNothing = true;
+      } else {
+        if (counts.actions >= 2) {
+          context.warnings.push({
+            code: "too_many_directions",
+            message: `Au plus deux directions d’action par objectif ; « ${payload.title} » est écartée.`,
+          });
+          return { created: [], changed: [] };
+        }
+        counts.actions += 1;
+      }
+      const predictions = payload.predictions.map((prediction) => ({
+        actor: this.resolveSubject(prediction.actor, context),
+        response: prediction.response,
+        phase: prediction.phase,
+        horizonDays: prediction.horizonDays,
+      }));
+      const id = randomUUID();
+      this.database
+        .prepare(
+          `INSERT INTO directions(id, workspace_id, goal_id, title, action_text, lever_kind, lever_hypothesis_id,
+             mechanism_key, conditions, effort, limits, signals_json, learns_if_fails, predictions_json,
+             status, response_id, created_revision, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'proposed', NULL, ?, ?)`,
+        )
+        .run(
+          id,
+          this.workspaceId,
+          payload.goal?.id ?? null,
+          payload.title,
+          payload.action,
+          payload.lever.kind,
+          hypothesisId,
+          payload.lever.mechanismKey,
+          payload.conditions,
+          payload.effort,
+          payload.limits,
+          JSON.stringify(payload.signals),
+          payload.learnsIfFails,
+          JSON.stringify(predictions),
+          context.revision,
+          context.timestamp,
+        );
+      return { created: [{ kind: "direction", id }], changed: [] };
     }
     throw new DomainError(
       "operation_not_allowed",

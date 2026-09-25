@@ -7,7 +7,9 @@ import {
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.4" as const;
+export const COGNITION_SCHEMA_VERSION = "1.5" as const;
+/** Versions acceptées : 1.4 reste valide (prompt v6), 1.5 ajoute les directions. */
+export const SUPPORTED_SCHEMA_VERSIONS = ["1.4", "1.5"] as const;
 export const COGNITION_VALIDATOR_VERSION = "1.2.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;
@@ -32,7 +34,8 @@ export type CognitiveOperationKind =
   | "revise_hypothesis"
   | "propose_question"
   | "propose_critique"
-  | "propose_role";
+  | "propose_role"
+  | "propose_direction";
 
 export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_event",
@@ -42,6 +45,7 @@ export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_question",
   "propose_critique",
   "propose_role",
+  "propose_direction",
 ];
 
 /** Opérations proposées par défaut selon la tâche (contrat 1.2). */
@@ -67,7 +71,8 @@ export const DEFAULT_OPERATIONS: Record<
     "propose_question",
     "propose_critique",
   ],
-  explore: ["propose_question"],
+  // BRIEF-005 : explorer, c'est aussi proposer des directions pour un objectif.
+  explore: ["propose_question", "propose_direction"],
 };
 
 import {
@@ -75,6 +80,11 @@ import {
   CLAIM_MODALITIES,
   CONFIDENCES,
   CREATION_STATUSES,
+  EFFORTS,
+  LEVER_KINDS,
+  PREDICTION_PHASES,
+  type LeverKind,
+  type PredictionPhase,
   DEPTHS,
   EVIDENCE_STANCES,
   HYPOTHESIS_STATUSES,
@@ -220,6 +230,32 @@ type EventPayload = {
   citations: SourceCitation[];
 };
 
+/** Réponse prédite d'un acteur à une direction (D-017). */
+export type DirectionPrediction = {
+  actor: MemberInput;
+  response: string;
+  phase: PredictionPhase;
+  horizonDays: number | null;
+};
+
+export type DirectionPayload = {
+  goal: EntityRef | null;
+  title: string;
+  action: string;
+  lever: {
+    kind: LeverKind;
+    /** Lecture actionnée ; null seulement pour « ne rien entreprendre ». */
+    hypothesis: TargetRef | null;
+    mechanismKey: (typeof MECHANISM_KEYS)[number] | null;
+  };
+  conditions: string;
+  effort: (typeof EFFORTS)[number];
+  limits: string;
+  signals: string[];
+  learnsIfFails: string;
+  predictions: DirectionPrediction[];
+};
+
 export type CognitiveOperation =
   | {
       key: string;
@@ -262,10 +298,16 @@ export type CognitiveOperation =
       kind: "propose_role";
       payload: RolePayload;
       rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_direction";
+      payload: DirectionPayload;
+      rationale: string;
     };
 
 export type CognitiveProposal = {
-  schemaVersion: typeof COGNITION_SCHEMA_VERSION;
+  schemaVersion: (typeof SUPPORTED_SCHEMA_VERSIONS)[number];
   requestId: string;
   workspaceId: string;
   baseRevision: number;
@@ -306,6 +348,9 @@ export type ContextPacket = {
   roles: unknown[];
   /** Relations pertinentes et leurs indicateurs calculés (D-012). */
   relations: unknown[];
+  /** Directions en cours et actions avec prédictions figées et résultat (BRIEF-005). */
+  directions: unknown[];
+  actions: unknown[];
   coverage: { included: string[]; omissions: string[]; truncated: boolean };
   allowedOperations: CognitiveOperationKind[];
   limits: { maxBytes: number; maxOperations: number };
@@ -826,12 +871,149 @@ function critiqueOperation(
   };
 }
 
+function stringList(
+  value: unknown,
+  name: string,
+  minimum: number,
+  maximum: number,
+  length: number,
+) {
+  if (!Array.isArray(value) || value.length < minimum || value.length > maximum)
+    throw new DomainError(
+      "invalid_direction",
+      `${name} doit contenir entre ${minimum} et ${maximum} éléments.`,
+    );
+  return value.map((item, index) => text(item, `${name}[${index}]`, length));
+}
+
+/** BRIEF-005 : une direction nomme son levier et prédit la réponse des acteurs. */
+function directionPayload(payload: Record<string, unknown>): DirectionPayload {
+  exactKeys(
+    payload,
+    [
+      "goal",
+      "title",
+      "action",
+      "lever",
+      "conditions",
+      "effort",
+      "limits",
+      "signals",
+      "learnsIfFails",
+      "predictions",
+    ],
+    "propose_direction.payload",
+  );
+  const lever = object(payload.lever, "direction.lever");
+  exactKeys(lever, ["kind", "hypothesis", "mechanismKey"], "direction.lever");
+  const kind = oneOf(
+    lever.kind,
+    LEVER_KINDS,
+    "invalid_direction",
+    `lever.kind doit valoir ${LEVER_KINDS.join(", ")}.`,
+  );
+  const hypothesis =
+    lever.hypothesis === null || lever.hypothesis === undefined
+      ? null
+      : targetRef(lever.hypothesis, "direction.lever.hypothesis");
+  if (kind !== "do_nothing" && !hypothesis)
+    throw new DomainError(
+      "direction_without_lever",
+      "Une direction d’action doit nommer la lecture qu’elle actionne (lever.hypothesis).",
+    );
+  const goal =
+    payload.goal === null || payload.goal === undefined
+      ? null
+      : reference(payload.goal);
+  if (goal && goal.kind !== "goal")
+    throw new DomainError(
+      "invalid_direction",
+      "direction.goal doit viser un objectif { kind: goal }.",
+    );
+  if (
+    !Array.isArray(payload.predictions) ||
+    payload.predictions.length < 1 ||
+    payload.predictions.length > 5
+  )
+    throw new DomainError(
+      "direction_without_prediction",
+      "Une direction porte entre 1 et 5 prédictions.",
+    );
+  return {
+    goal,
+    title: text(payload.title, "direction.title", 160),
+    action: text(payload.action, "direction.action", 800),
+    lever: {
+      kind,
+      hypothesis,
+      mechanismKey:
+        lever.mechanismKey === null || lever.mechanismKey === undefined
+          ? null
+          : oneOf(
+              lever.mechanismKey,
+              MECHANISM_KEYS,
+              "invalid_direction",
+              `lever.mechanismKey doit valoir ${MECHANISM_KEYS.join(", ")} ou null.`,
+            ),
+    },
+    conditions: text(payload.conditions, "direction.conditions", 800),
+    effort: oneOf(
+      payload.effort,
+      EFFORTS,
+      "invalid_direction",
+      "effort doit valoir low, moderate ou high.",
+    ),
+    limits: text(payload.limits, "direction.limits", 800),
+    signals: stringList(payload.signals, "direction.signals", 1, 5, 300),
+    learnsIfFails: text(payload.learnsIfFails, "direction.learnsIfFails", 600),
+    predictions: payload.predictions.map((item, index) => {
+      const prediction = object(item, `direction.predictions[${index}]`);
+      exactKeys(
+        prediction,
+        ["actor", "response", "phase", "horizonDays"],
+        "direction.prediction",
+      );
+      const horizon = prediction.horizonDays;
+      if (
+        horizon !== undefined &&
+        horizon !== null &&
+        (!Number.isInteger(horizon) ||
+          Number(horizon) < 1 ||
+          Number(horizon) > 365)
+      )
+        throw new DomainError(
+          "invalid_direction",
+          "horizonDays doit être un entier entre 1 et 365, ou null.",
+        );
+      return {
+        actor: memberInput(prediction.actor),
+        response: text(prediction.response, "prediction.response", 600),
+        phase: oneOf(
+          prediction.phase,
+          PREDICTION_PHASES,
+          "invalid_direction",
+          "phase doit valoir immediate, transitional ou equilibrium.",
+        ) as PredictionPhase,
+        horizonDays:
+          horizon === undefined || horizon === null ? null : Number(horizon),
+      };
+    }),
+  };
+}
+
 function operation(value: unknown): CognitiveOperation {
   const input = object(value, "operation");
   exactKeys(input, ["key", "kind", "payload", "rationale"], "operation");
   const key = text(input.key, "operation.key", 80);
   const rationale = text(input.rationale, "operation.rationale", 800);
   const payload = object(input.payload, "operation.payload");
+  if (input.kind === "propose_direction")
+    return {
+      key,
+      kind: "propose_direction",
+      rationale,
+      payload: directionPayload(payload),
+    };
   if (input.kind === "propose_role") {
     exactKeys(
       payload,
@@ -979,7 +1161,11 @@ export function parseCognitiveProposal(value: unknown): CognitiveProposal {
     ],
     "proposal",
   );
-  if (input.schemaVersion !== COGNITION_SCHEMA_VERSION)
+  if (
+    !SUPPORTED_SCHEMA_VERSIONS.includes(
+      input.schemaVersion as (typeof SUPPORTED_SCHEMA_VERSIONS)[number],
+    )
+  )
     throw new DomainError(
       "unsupported_schema_version",
       "Version cognitive non prise en charge.",

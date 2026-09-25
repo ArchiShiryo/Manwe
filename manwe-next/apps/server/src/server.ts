@@ -8,6 +8,8 @@ import {
   DomainError,
   IMPORT_MAX_BYTES,
   parseAnnotationCommand,
+  parseChooseDirectionCommand,
+  parseRecordOutcomeCommand,
   parseCaptureCommand,
   parseAnswerQuestionCommand,
   parseGoalCommand,
@@ -326,6 +328,34 @@ export async function startManweServer(options: ServerOptions) {
               await readJson(request),
               decodeURIComponent(answerRoute[1]),
             ),
+          ),
+        );
+        return;
+      }
+      // BRIEF-005 : l'utilisateur choisit une direction ; aucune exécution.
+      if (pathname === "/api/actions" && request.method === "POST") {
+        json(
+          response,
+          201,
+          store.chooseDirection(
+            parseChooseDirectionCommand(await readJson(request)),
+          ),
+        );
+        return;
+      }
+      const outcomeRoute = pathname.match(/^\/api\/actions\/([^/]+)\/outcome$/);
+      if (outcomeRoute && request.method === "POST") {
+        const body = await readJson(request);
+        const input =
+          body && typeof body === "object" && !Array.isArray(body) ? body : {};
+        json(
+          response,
+          201,
+          store.recordOutcome(
+            parseRecordOutcomeCommand({
+              ...input,
+              actionId: decodeURIComponent(outcomeRoute[1]),
+            }),
           ),
         );
         return;

@@ -32,7 +32,7 @@ import { MemoryApiError, memoryApi, type MemoryStatus } from "./memoryApi.ts";
 import { syncLabels, type ConnectionState } from "./syncLabels.ts";
 import { CORRECTED_LABEL, WorldGraph } from "./WorldGraph.tsx";
 import { AutomaticAnalysisPanel } from "./AutomaticAnalysis.tsx";
-import analystPrompt from "../../../packages/cognition/prompts/analyst-v6.md?raw";
+import analystPrompt from "../../../packages/cognition/prompts/analyst-v7.md?raw";
 import {
   claimModalityLabels,
   confidenceLabels,

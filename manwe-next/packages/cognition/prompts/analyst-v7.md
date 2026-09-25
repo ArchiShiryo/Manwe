@@ -227,7 +227,7 @@ valoir null ; null est écrit null.
   "payload": {
     "text": "<énoncé>",
     "category": "<une des 5 catégories>",
-    "modality": {{enum:modalities}},
+    "modality": "actual" | "intended" | "hypothetical",
     "validFrom": "<date ISO 8601>" | null,
     "validTo": "<date ISO 8601>" | null,
     "citations": [ <CITATION> ]
@@ -241,7 +241,7 @@ valoir null ; null est écrit null.
     "category": "<une des 5 catégories>",
     "occurredStart": "<date ISO 8601>" | null,
     "occurredEnd": "<date ISO 8601>" | null,
-    "temporalPrecision": {{enum:temporalPrecisions}},
+    "temporalPrecision": "exact" | "day" | "approximate" | "interval" | "unknown",
     "context": "<contexte>" | null,
     "citations": [ <CITATION> ]
   },
@@ -250,11 +250,11 @@ valoir null ; null est écrit null.
 { "key": "h1", "kind": "propose_hypothesis",
   "payload": {
     "statement": "<énoncé de l'hypothèse>",
-    "depth": {{enum:depths}},
+    "depth": "D1" | "D2" | "D3" | "D4" | "D5",
     "framework": "<cadre>" | null,
     "construct": "<construct>" | null,
-    "confidence": {{enum:confidences}},
-    "status": {{enum:creationStatuses}},
+    "confidence": "low" | "moderate" | "high",
+    "status": "draft" | "plausible",
     "rank": <entier, 1 = lecture principale> | null,
     "mechanism": {
       "optimizes": "<ce qui est obtenu ou évité>",
@@ -267,7 +267,7 @@ valoir null ; null est écrit null.
       "prediction": "<ce que la lecture prédit, testable>"
     } | null,
     "subjects": [ <MEMBRE> | { "relation": [ <MEMBRE>, <MEMBRE> ] } ],
-    "evidence": [ { "claim": <RÉF_OU_CLÉ>, "stance": {{enum:stances}} } ],
+    "evidence": [ { "claim": <RÉF_OU_CLÉ>, "stance": "supports" | "contradicts" } ],
     "limits": "<ce que les données ne permettent pas de dire>",
     "revisionConditions": "<observation qui ferait réviser>",
     "alternativeTo": <RÉF_OU_CLÉ d'une hypothèse> | null,
@@ -283,10 +283,10 @@ renseigner ; au moins un champ est requis si mechanism n'est pas null.
   "payload": {
     "target": { "kind": "hypothesis", "id": "<id du paquet>" },
     "expectedRowVersion": <champ "revision" de l'hypothèse>,
-    "status": {{enum:statuses}},
-    "confidence": {{enum:confidences}},
+    "status": "draft" | "plausible" | "contradicted" | "superseded",
+    "confidence": "low" | "moderate" | "high",
     "rank": <entier> | null,
-    "addEvidence": [ { "claim": <RÉF_OU_CLÉ>, "stance": {{enum:stances}} } ]
+    "addEvidence": [ { "claim": <RÉF_OU_CLÉ>, "stance": "supports" | "contradicts" } ]
   },
   "rationale": "<justification courte>" }
 
@@ -294,8 +294,8 @@ renseigner ; au moins un champ est requis si mechanism n'est pas null.
   "payload": {
     "event": { "kind": "event", "id": "<id du paquet>" } | { "proposalKey": "<key d'un propose_event>" },
     "subject": <MEMBRE>,
-    "role": {{enum:episodeRoles}},
-    "outcome": {{enum:roleOutcomes}} | null,
+    "role": "initiator" | "recipient" | "requester" | "helper" | "responder" | "observer",
+    "outcome": "accepted" | "declined" | "unknown" | null,
     "citations": [ <CITATION> ]
   },
   "rationale": "<justification courte>" }
@@ -312,7 +312,7 @@ renseigner ; au moins un champ est requis si mechanism n'est pas null.
 { "key": "k1", "kind": "propose_critique",
   "payload": {
     "target": { "kind": "hypothesis", "id": "<id du paquet>" },
-    "findings": [ { "kind": {{enum:critiqueKinds}},
+    "findings": [ { "kind": "ignored_evidence" | "simpler_explanation" | "overgeneralization" | "alternative_not_distinct" | "circular_reasoning" | "other",
                     "detail": "<constat précis>",
                     "claims": [ <RÉF_OU_CLÉ d'un claim> ] } ]
   },
@@ -323,16 +323,16 @@ renseigner ; au moins un champ est requis si mechanism n'est pas null.
     "goal": { "kind": "goal", "id": "<id du paquet>" } | null,
     "title": "<titre court>",
     "action": "<geste concret, petit pas>",
-    "lever": { "kind": {{enum:leverKinds}},
+    "lever": { "kind": "change_reward" | "lower_barrier" | "alternative_source" | "disconfirming_experience" | "change_game" | "do_nothing",
                "hypothesis": <RÉF_OU_CLÉ d'une hypothèse> | null,
-               "mechanismKey": {{enum:mechanismKeys}} | null },
+               "mechanismKey": "optimizes" | "protects" | "defenses" | "beliefs" | "triggers" | "soothes" | "barrier" | "prediction" | null },
     "conditions": "<quand cela a du sens>",
-    "effort": {{enum:efforts}},
+    "effort": "low" | "moderate" | "high",
     "limits": "<ce qui peut mal tourner, ce que cela ne règle pas>",
     "signals": [ "<signal observable>" ],
     "learnsIfFails": "<ce qu'on apprend si cela échoue>",
     "predictions": [ { "actor": <MEMBRE>, "response": "<réponse prédite>",
-                       "phase": {{enum:predictionPhases}}, "horizonDays": <entier> | null } ]
+                       "phase": "immediate" | "transitional" | "equilibrium", "horizonDays": <entier> | null } ]
   },
   "rationale": "<justification courte>" }
 

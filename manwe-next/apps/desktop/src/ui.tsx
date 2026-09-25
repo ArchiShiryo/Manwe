@@ -158,5 +158,33 @@ export function describeOperation(operation: CognitiveOperation): {
               .join(" · ")
           : "Aucun constat",
       };
+    case "propose_direction":
+      return {
+        label:
+          operation.payload.lever.kind === "do_nothing"
+            ? "ne rien entreprendre"
+            : "direction",
+        classification: `${leverLabels[operation.payload.lever.kind]} · effort ${effortLabels[operation.payload.effort]}`,
+        text: `${operation.payload.title} — ${operation.payload.action}`,
+      };
   }
 }
+
+export const leverLabels: Record<string, string> = {
+  change_reward: "changer ce qui est récompensé",
+  lower_barrier: "abaisser la barrière",
+  alternative_source: "autre source du même gain",
+  disconfirming_experience: "expérience qui dément une croyance",
+  change_game: "changer de jeu",
+  do_nothing: "ne rien entreprendre",
+};
+export const effortLabels: Record<string, string> = {
+  low: "faible",
+  moderate: "modéré",
+  high: "élevé",
+};
+export const phaseLabels: Record<string, string> = {
+  immediate: "tout de suite",
+  transitional: "phase transitoire",
+  equilibrium: "nouvel équilibre",
+};

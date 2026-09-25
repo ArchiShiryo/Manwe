@@ -40,3 +40,25 @@ export type HypothesisDepth = (typeof DEPTHS)[number];
 export type Confidence = (typeof CONFIDENCES)[number];
 export type HypothesisStatus = (typeof HYPOTHESIS_STATUSES)[number];
 export type EvidenceStance = (typeof EVIDENCE_STANCES)[number];
+
+/** Leviers du modèle stratégique (BRIEF-005, MODELE-STRATEGIQUE.md). */
+export const LEVER_KINDS = [
+  "change_reward",
+  "lower_barrier",
+  "alternative_source",
+  "disconfirming_experience",
+  "change_game",
+  "do_nothing",
+] as const;
+export const EFFORTS = ["low", "moderate", "high"] as const;
+/** Sortir d'un minimum local passe souvent par une phase transitoire. */
+export const PREDICTION_PHASES = [
+  "immediate",
+  "transitional",
+  "equilibrium",
+] as const;
+export const PREDICTION_VERDICTS = ["confirmed", "refuted", "unclear"] as const;
+
+export type LeverKind = (typeof LEVER_KINDS)[number];
+export type PredictionPhase = (typeof PREDICTION_PHASES)[number];
+export type PredictionVerdict = (typeof PREDICTION_VERDICTS)[number];
