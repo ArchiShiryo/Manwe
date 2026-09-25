@@ -403,7 +403,10 @@ export function Directions({
                         <ul className="direction-verdicts">
                           {action.expectation.predictions.map(
                             (prediction, index) => (
-                              <li key={index}>
+                              <li
+                                key={index}
+                                className={`verdict-${action.verdicts?.[index] ?? "none"}`}
+                              >
                                 {prediction.response} —{" "}
                                 {action.verdicts?.[index]
                                   ? VERDICT_LABELS[

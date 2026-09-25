@@ -30,6 +30,15 @@ import {
   type DetailLevel,
   type PlacedNode,
 } from "./graphLayout.ts";
+import { JewelField, type FieldSegment } from "./JewelField.tsx";
+import {
+  CONTEXT_COLORS,
+  personContexts,
+  rgb,
+  type ContextKey,
+} from "./jewelTheme.ts";
+
+type Strand = { key: ContextKey; share: number };
 
 const KIND_LABELS: Record<PlacedNode["kind"], string> = {
   self: "vous",
@@ -74,11 +83,14 @@ function Edge({
   from,
   to,
   shaky,
+  strands,
 }: {
   edge: GraphEdge;
   from: PlacedNode;
   to: PlacedNode;
   shaky: string;
+  /** Contextes de la relation (thème Jewel case) : un brin par contexte. */
+  strands: Strand[];
 }) {
   const d = `M${from.x},${from.y} L${to.x},${to.y}`;
   const className = `world-edge world-edge-${edge.style} world-edge-${edge.kind}`;
@@ -89,7 +101,72 @@ function Edge({
         <path d={d} className="world-edge-double-inner" />
       </g>
     );
-  return <path d={d} className={className} />;
+  if (!strands.length) return <path d={d} className={className} />;
+  // Brins parallèles : couleur = contexte, épaisseur = part des épisodes.
+  const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+  const nx = -(to.y - from.y) / length;
+  const ny = (to.x - from.x) / length;
+  return (
+    <g className="world-edge-strands">
+      {strands.map((strand, index) => {
+        const offset = (index - (strands.length - 1) / 2) * 5;
+        const path = `M${from.x + nx * offset},${from.y + ny * offset} L${to.x + nx * offset},${to.y + ny * offset}`;
+        const color = CONTEXT_COLORS[strand.key];
+        return (
+          <g key={strand.key}>
+            <path
+              d={path}
+              className={`${className} world-edge-glow`}
+              style={{
+                stroke: rgb(color, 0.18),
+                strokeWidth: 6 + strand.share * 6,
+              }}
+            />
+            <path
+              d={path}
+              className={className}
+              style={{
+                stroke: rgb(color),
+                strokeWidth: 1.2 + strand.share * 2.4,
+              }}
+            />
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+/** Anneau d'une personne : un arc par contexte, proportionnel aux épisodes. */
+function ContextRing({
+  radius,
+  strands,
+}: {
+  radius: number;
+  strands: Strand[];
+}) {
+  const circumference = 2 * Math.PI * (radius + 2.5);
+  let start = 0;
+  return (
+    <g className="world-node-ring" transform="rotate(-90)">
+      {strands.map((strand) => {
+        const arc = strand.share * circumference;
+        const element = (
+          <circle
+            key={strand.key}
+            r={radius + 2.5}
+            style={{
+              stroke: rgb(CONTEXT_COLORS[strand.key]),
+              strokeDasharray: `${arc} ${circumference}`,
+              strokeDashoffset: -start,
+            }}
+          />
+        );
+        start += arc;
+        return element;
+      })}
+    </g>
+  );
 }
 
 type Annotate = (
@@ -485,6 +562,70 @@ export function WorldGraph({
       .map((node) => [node.id, node]),
   );
   const hidden = placed.length - byId.size;
+  // Thème Jewel case : contextes des personnes et des relations affichées.
+  const strandsOf = useMemo(() => {
+    const cache = new Map<string, Strand[]>();
+    const ofPerson = (personId: string) =>
+      personContexts(snapshot, personId).slice(0, 3);
+    return (node: PlacedNode | undefined): Strand[] => {
+      if (!node) return [];
+      const cached = cache.get(node.id);
+      if (cached) return cached;
+      let result: Strand[] = [];
+      if (node.kind === "person") result = ofPerson(node.id.slice(7));
+      if (node.kind === "relation") {
+        const relation = snapshot.relations.find(
+          (item) => item.id === node.id.slice(9),
+        );
+        const shares = new Map<ContextKey, number>();
+        const members = (relation?.members ?? []).filter(
+          (member) => member.kind === "person",
+        );
+        for (const member of members)
+          if (member.kind === "person")
+            for (const strand of ofPerson(member.personId))
+              shares.set(
+                strand.key,
+                (shares.get(strand.key) ?? 0) + strand.share / members.length,
+              );
+        result = [...shares.entries()]
+          .map(([key, share]) => ({ key, share }))
+          .sort((left, right) => right.share - left.share)
+          .slice(0, 3);
+      }
+      cache.set(node.id, result);
+      return result;
+    };
+  }, [snapshot]);
+  const SOCIAL = new Set(["self", "person", "relation"]);
+  const edgeStrands = (from: PlacedNode, to: PlacedNode): Strand[] => {
+    if (!SOCIAL.has(from.kind) || !SOCIAL.has(to.kind)) return [];
+    const other = from.kind === "self" ? to : from;
+    const own = strandsOf(other);
+    return own.length ? own : strandsOf(other === from ? to : from);
+  };
+  const center = projection
+    ? placed.find((node) => node.id === focusNodeId(projection))
+    : undefined;
+  const fieldSegments: FieldSegment[] = (projection?.edges ?? []).flatMap(
+    (edge) => {
+      const from = byId.get(edge.from);
+      const to = byId.get(edge.to);
+      if (!from || !to) return [];
+      const strands = edgeStrands(from, to);
+      if (!strands.length) return [];
+      return [
+        {
+          ax: from.x,
+          ay: from.y,
+          bx: to.x,
+          by: to.y,
+          color: CONTEXT_COLORS[strands[0].key],
+          weight: edge.style === "impression" ? 0.55 : 0.85,
+        },
+      ];
+    },
+  );
   const detail = selected ? byId.get(selected) : undefined;
   const centerId = projection ? focusNodeId(projection) : "self";
 
@@ -600,83 +741,98 @@ export function WorldGraph({
         </p>
       )}
       {projection && placed.length > 1 && (
-        <svg
-          className="world-graph-canvas"
-          viewBox={`0 0 ${LAYOUT_WIDTH} ${LAYOUT_HEIGHT}`}
-          role="group"
-          aria-label="Personnes, relations et lectures autour du focus. Sélectionnez un élément pour recentrer."
-        >
-          {projection.edges.map((edge) => {
-            const from = byId.get(edge.from);
-            const to = byId.get(edge.to);
-            if (!from || !to) return null;
-            const hypothesis = [from, to].find(
-              (node) => node.kind === "hypothesis",
-            );
-            return (
-              <Edge
-                key={edge.id}
-                edge={edge}
-                from={from}
-                to={to}
-                shaky={hypothesis ? tremor(hypothesis) : "medium"}
-              />
-            );
-          })}
-          {placed
-            .filter((node) => visible.has(node.id))
-            .map((node) => {
-              const radius = nodeRadius(node);
-              const label =
-                node.kind === "question" ? `? ${node.label}` : node.label;
+        <div className="world-graph-stage">
+          <JewelField
+            segments={fieldSegments}
+            width={LAYOUT_WIDTH}
+            height={LAYOUT_HEIGHT}
+            focus={{
+              x: center?.x ?? LAYOUT_WIDTH / 2,
+              y: center?.y ?? LAYOUT_HEIGHT / 2,
+            }}
+          />
+          <svg
+            className="world-graph-canvas"
+            viewBox={`0 0 ${LAYOUT_WIDTH} ${LAYOUT_HEIGHT}`}
+            role="group"
+            aria-label="Personnes, relations et lectures autour du focus. Sélectionnez un élément pour recentrer."
+          >
+            {projection.edges.map((edge) => {
+              const from = byId.get(edge.from);
+              const to = byId.get(edge.to);
+              if (!from || !to) return null;
+              const hypothesis = [from, to].find(
+                (node) => node.kind === "hypothesis",
+              );
               return (
-                <g
-                  key={node.id}
-                  className={`world-node world-node-${node.kind} world-node-${node.style} ${node.id === centerId ? "is-focus" : ""} ${node.id === selected ? "is-selected" : ""} ${node.meta.contested ? "is-contested" : ""}`}
-                  style={{ transform: `translate(${node.x}px, ${node.y}px)` }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${KIND_LABELS[node.kind]} : ${node.label}`}
-                  onClick={() => choose(node)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      choose(node);
-                    }
-                  }}
-                >
-                  {node.kind === "relation" ? (
-                    <rect
-                      x={-radius}
-                      y={-radius * 0.6}
-                      width={radius * 2}
-                      height={radius * 1.2}
-                      rx={radius * 0.6}
-                    />
-                  ) : node.kind === "hypothesis" ? (
-                    <polygon
-                      points={`0,${-radius} ${radius},0 0,${radius} ${-radius},0`}
-                    />
-                  ) : (
-                    <circle r={radius} />
-                  )}
-                  {node.kind === "hypothesis" && node.meta.rank === 1 && (
-                    <text className="world-node-rank" dy="4">
-                      1
-                    </text>
-                  )}
-                  {(node.style === "unknown" || node.kind === "question") && (
-                    <text className="world-node-unknown" dy="4">
-                      ?
-                    </text>
-                  )}
-                  <text className="world-node-label" y={radius + 14}>
-                    {short(label)}
-                  </text>
-                </g>
+                <Edge
+                  key={edge.id}
+                  edge={edge}
+                  from={from}
+                  to={to}
+                  shaky={hypothesis ? tremor(hypothesis) : "medium"}
+                  strands={edgeStrands(from, to)}
+                />
               );
             })}
-        </svg>
+            {placed
+              .filter((node) => visible.has(node.id))
+              .map((node) => {
+                const radius = nodeRadius(node);
+                const label =
+                  node.kind === "question" ? `? ${node.label}` : node.label;
+                return (
+                  <g
+                    key={node.id}
+                    className={`world-node world-node-${node.kind} world-node-${node.style} ${node.id === centerId ? "is-focus" : ""} ${node.id === selected ? "is-selected" : ""} ${node.meta.contested ? "is-contested" : ""}`}
+                    style={{ transform: `translate(${node.x}px, ${node.y}px)` }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${KIND_LABELS[node.kind]} : ${node.label}`}
+                    onClick={() => choose(node)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        choose(node);
+                      }
+                    }}
+                  >
+                    {node.kind === "relation" ? (
+                      <rect
+                        x={-radius}
+                        y={-radius * 0.6}
+                        width={radius * 2}
+                        height={radius * 1.2}
+                        rx={radius * 0.6}
+                      />
+                    ) : node.kind === "hypothesis" ? (
+                      <polygon
+                        points={`0,${-radius} ${radius},0 0,${radius} ${-radius},0`}
+                      />
+                    ) : (
+                      <circle r={radius} />
+                    )}
+                    {node.kind === "person" && strandsOf(node).length > 0 && (
+                      <ContextRing radius={radius} strands={strandsOf(node)} />
+                    )}
+                    {node.kind === "hypothesis" && node.meta.rank === 1 && (
+                      <text className="world-node-rank" dy="4">
+                        1
+                      </text>
+                    )}
+                    {(node.style === "unknown" || node.kind === "question") && (
+                      <text className="world-node-unknown" dy="4">
+                        ?
+                      </text>
+                    )}
+                    <text className="world-node-label" y={radius + 14}>
+                      {short(label)}
+                    </text>
+                  </g>
+                );
+              })}
+          </svg>
+        </div>
       )}
       {projection && (
         <SynthesisPanel

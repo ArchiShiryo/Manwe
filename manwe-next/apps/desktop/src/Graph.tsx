@@ -1,11 +1,43 @@
 import { useState } from "react";
 import { ArrowUpRight, Focus, Minus, Plus } from "lucide-react";
+import { JewelField, type FieldSegment } from "./JewelField.tsx";
+import { CONTEXT_COLORS } from "./jewelTheme.ts";
 import {
   getHypothesis,
   people,
   type DemoState,
   type Selection,
 } from "../../../packages/domain/src/demo.ts";
+
+// Liens sociaux de la démonstration pour le champ du thème Jewel case :
+// travail (Marc, Léa), jeu (Marc), amitié (Claire).
+const DEMO_FIELD: FieldSegment[] = [
+  { ax: 533, ay: 411, bx: 450, by: 241, color: CONTEXT_COLORS.play, weight: 1 },
+  {
+    ax: 467,
+    ay: 223,
+    bx: 668,
+    by: 183,
+    color: CONTEXT_COLORS.work,
+    weight: 0.55,
+  },
+  {
+    ax: 541,
+    ay: 407,
+    bx: 680,
+    by: 199,
+    color: CONTEXT_COLORS.work,
+    weight: 0.8,
+  },
+  {
+    ax: 563,
+    ay: 432,
+    bx: 762,
+    by: 445,
+    color: CONTEXT_COLORS.close,
+    weight: 0.8,
+  },
+];
 
 type Props = {
   state: DemoState;
@@ -69,6 +101,12 @@ export function Graph({ state, selection, onSelect, context }: Props) {
         </span>
       </div>
       <div className="graph-canvas">
+        <JewelField
+          segments={DEMO_FIELD}
+          width={960}
+          height={610}
+          focus={{ x: 540, y: 420 }}
+        />
         <svg
           className="living-graph"
           role="group"
@@ -84,15 +122,15 @@ export function Graph({ state, selection, onSelect, context }: Props) {
               height="25"
               patternUnits="userSpaceOnUse"
             >
-              <circle cx="1" cy="1" r=".7" fill="#a7b5a9" opacity=".16" />
+              <circle cx="1" cy="1" r=".7" fill="#b1afb7" opacity=".16" />
             </pattern>
             <radialGradient id="work-glow">
-              <stop offset="0" stopColor="#547562" stopOpacity=".15" />
-              <stop offset="1" stopColor="#547562" stopOpacity="0" />
+              <stop offset="0" stopColor="#64626d" stopOpacity=".15" />
+              <stop offset="1" stopColor="#64626d" stopOpacity="0" />
             </radialGradient>
             <radialGradient id="friend-glow">
-              <stop offset="0" stopColor="#6f7589" stopOpacity=".1" />
-              <stop offset="1" stopColor="#6f7589" stopOpacity="0" />
+              <stop offset="0" stopColor="#515ca7" stopOpacity=".1" />
+              <stop offset="1" stopColor="#515ca7" stopOpacity="0" />
             </radialGradient>
             <filter id="soft-glow">
               <feGaussianBlur stdDeviation="10" />
@@ -266,7 +304,7 @@ export function Graph({ state, selection, onSelect, context }: Props) {
               <path
                 d="M-8 3l8-12 8 12M-4-3L0 10 4-3"
                 fill="none"
-                stroke="#d2d8cc"
+                stroke="#d7d6da"
                 strokeWidth="1.4"
               />
               <text textAnchor="middle" y="62" className="self-label">

@@ -1,0 +1,388 @@
+/*
+ * Thème « Jewel case » (maquette 13, docs/references/themes/06-themes-monde) :
+ * boîtier PS1 sombre, rouge #D03440 pour les étiquettes, lilas pour les
+ * lectures de MANWË, couleurs de contexte sur les liens, lignes de balayage
+ * et reflet de plastique. Chargé après styles.css.
+ * Règle commune : jamais de bande de réussite sur une hypothèse.
+ */
+:root {
+  --bg: #0a0a0c;
+  --panel: #141417;
+  --panel-2: #101013;
+  --line: #232327;
+  --line-2: #303034;
+  --frame: #5a5862;
+  --tx: #f3f3f3;
+  --tx2: #c4c3c8;
+  --tx3: #9e9a9d;
+  --muted: #9e9a9d;
+  --accent: #d03440;
+  /* Rouge lisible pour le petit texte (5,7:1 sur le fond, R4.8). */
+  --accent-text: #e65a64;
+  --lilac: #9eaad5;
+  --inferred: #d6d4f5;
+  --work: #7f8be0;
+  --play: #ee993c;
+  --close: #d03440;
+  --kin: #c4c3c8;
+  --sage: var(--lilac);
+  --clay: var(--play);
+  --blue: var(--work);
+  --bands: repeating-linear-gradient(
+    180deg,
+    #f3f3f3 0 1.5px,
+    #d03440 1.5px 4.5px
+  );
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-display: "Chakra Petch", "IBM Plex Sans", sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+  font-family: var(--font-body);
+  color: var(--tx);
+  background: var(--bg);
+}
+body {
+  background: var(--bg);
+}
+
+/* Typographie : titres Chakra Petch, étiquettes Space Mono en rouge. */
+h1,
+h2,
+h3,
+.page-heading h1,
+.modal-heading h2,
+.brand > span,
+.nav-item,
+.world-graph-detail p,
+.direction-card h3 {
+  font-family: var(--font-display) !important;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.page-heading h1 {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: clamp(22px, 2.4vw, 30px);
+}
+.brand > span {
+  letter-spacing: 0.32em;
+}
+.eyebrow,
+.node-eyebrow,
+.sidebar-label,
+.world-graph-detail .eyebrow {
+  font-family: var(--font-mono) !important;
+  color: var(--accent-text) !important;
+  letter-spacing: 0.14em;
+}
+code,
+kbd,
+small,
+.search-hint,
+.composer-shortcut,
+.nav-item .count {
+  font-family: var(--font-mono);
+}
+
+/* Coque : panneaux en dégradé, cadre fin gris. */
+.sidebar {
+  background: linear-gradient(180deg, #141417, #0a0a0c) !important;
+  border-right: 1px solid var(--line-2) !important;
+}
+.topbar {
+  border-bottom: 1px solid var(--line) !important;
+  background: transparent;
+}
+.nav-item {
+  color: #a3a9bc;
+  border-radius: 3px !important;
+}
+.nav-item.active {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14) !important;
+}
+.nav-item.active .nav-dot {
+  background: var(--accent);
+}
+.primary-button {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #fff !important;
+  border-radius: 4px !important;
+  font-family: var(--font-display);
+}
+.segmented {
+  border-radius: 4px !important;
+}
+.segmented button {
+  font-family: var(--font-display);
+  border-radius: 3px !important;
+}
+.segmented button.active {
+  color: #fff !important;
+  background: #12141c !important;
+  box-shadow: inset 0 0 0 1px #3a3a40;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline-color: var(--inferred);
+}
+
+/* Légende des contextes et numéro de série du boîtier. */
+.context-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 16px;
+}
+.context-legend .sidebar-label {
+  padding-bottom: 6px;
+}
+.context-legend span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 26px;
+  font-size: 13px;
+  color: var(--tx2);
+}
+.context-legend span.is-empty {
+  color: #7f869b;
+  font-size: 12px;
+  height: 22px;
+}
+.context-legend b {
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  flex: none;
+}
+.context-legend span.is-empty b {
+  opacity: 0.45;
+}
+.context-legend i {
+  margin-left: auto;
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #7f869b;
+}
+.jewel-serial {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--tx3);
+  padding: 0 4px 10px;
+}
+.jewel-barcode {
+  display: block;
+  height: 22px;
+  width: 130px;
+  margin-top: 8px;
+  opacity: 0.7;
+  background: repeating-linear-gradient(
+    90deg,
+    #c9ceda 0 2px,
+    transparent 2px 3px,
+    #c9ceda 3px 4px,
+    transparent 4px 7px,
+    #c9ceda 7px 10px,
+    transparent 10px 12px
+  );
+}
+
+/* Surcouches du boîtier : trame, reflet de plastique, tranche. */
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+.jewel-scan,
+.jewel-glare {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+}
+.jewel-scan {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.012) 0 1px,
+    transparent 1px 4px
+  );
+}
+.jewel-glare {
+  mix-blend-mode: screen;
+  background:
+    linear-gradient(
+      112deg,
+      transparent 18%,
+      rgba(255, 255, 255, 0.045) 21%,
+      rgba(255, 255, 255, 0.012) 27%,
+      transparent 31%,
+      transparent 60%,
+      rgba(255, 255, 255, 0.03) 63%,
+      transparent 69%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.035),
+      transparent 12%,
+      transparent 90%,
+      rgba(255, 255, 255, 0.03)
+    );
+}
+.jewel-glare::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    97deg,
+    transparent 0 140px,
+    rgba(255, 255, 255, 0.035) 140px 141px,
+    transparent 141px 311px
+  );
+}
+.jewel-spine {
+  position: fixed;
+  z-index: 1;
+  right: 14px;
+  top: 90px;
+  writing-mode: vertical-rl;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 30px;
+  letter-spacing: 0.06em;
+  color: rgba(243, 243, 243, 0.08);
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  pointer-events: none;
+  user-select: none;
+}
+.jewel-spine span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+@media (max-width: 900px) {
+  .jewel-spine {
+    display: none;
+  }
+}
+
+/* Graphe « Mon monde » : champ génératif sous le schéma. */
+.world-graph {
+  --edge: #dde1ea;
+  --edge-muted: #8a90a3;
+  background: #0a0a0c !important;
+  border: 1px solid var(--line-2) !important;
+  border-radius: 4px !important;
+}
+.world-graph-stage {
+  position: relative;
+}
+.jewel-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.jewel-field-fallback {
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(158, 170, 213, 0.06) 0 1.4px,
+    transparent 1.4px 5px
+  );
+}
+.world-graph-canvas {
+  position: relative;
+}
+.world-edge-glow {
+  stroke-dasharray: none !important;
+}
+.world-edge-double-outer {
+  stroke: var(--inferred) !important;
+  stroke-opacity: 0.8;
+  stroke-dasharray: 4 4;
+}
+.world-edge-double-inner {
+  stroke: #0a0a0c !important;
+}
+.world-node circle,
+.world-node rect,
+.world-node polygon {
+  fill: #141417 !important;
+}
+.world-node-self circle {
+  stroke: #6b7186 !important;
+}
+.world-node-hypothesis polygon {
+  stroke: var(--inferred) !important;
+}
+.world-node-ring circle {
+  fill: none !important;
+  stroke-width: 3;
+}
+.world-node text {
+  font-family: var(--font-display);
+  fill: #f3f3f3 !important;
+  paint-order: stroke;
+  stroke: #0a0a0c;
+  stroke-width: 3px;
+}
+.world-node.is-selected circle,
+.world-node.is-selected rect,
+.world-node.is-selected polygon,
+.world-node:focus-visible circle,
+.world-node:focus-visible rect,
+.world-node:focus-visible polygon {
+  stroke: #fff !important;
+}
+.world-graph-detail {
+  border-top-color: var(--line-2) !important;
+}
+
+/* Lectures : cadre en tirets lilas, jamais de couleur de réussite. */
+.synthesis-card,
+.hypothesis-card,
+.reading-card {
+  border-style: dashed !important;
+  border-color: rgba(214, 212, 245, 0.45) !important;
+}
+
+/* Réussite : bande blanc-rouge, seulement pour une prédiction confirmée. */
+.direction-verdicts li.verdict-confirmed {
+  position: relative;
+  padding-left: 16px;
+}
+.direction-verdicts li.verdict-confirmed::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  width: 8px;
+  height: 0.9em;
+  background: var(--bands);
+}
+.direction-card.status-chosen {
+  border-color: #f3f3f3 !important;
+  box-shadow: inset 0 0 0 1px rgba(243, 243, 243, 0.35);
+}
+
+/* Graphe de démonstration : même champ génératif. */
+.graph-canvas {
+  position: relative;
+}
+.graph-canvas > svg {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-edge-inferred {
+    animation: none !important;
+  }
+}

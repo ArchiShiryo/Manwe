@@ -60,7 +60,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **Prochaine étape** : R5.7 (démonstration à l'utilisateur dans l'application). À surveiller : cinq rejets de premier essai sur dix en R5-S05, tous corrigés par la seconde tentative (bride à lever : une seule tentative). À trancher : accepter dans le contrat qu'une référence porte `claim` et `stance`. Corpus de téléréalité (D-022) : saison 1 de Survivor en sous-titres bruts dans `manwe-next/.qa/corpus/survivor/` (ignoré par git) ; prétraitement par DeepSeek et recherche d'autres corpus de groupe en discussion avec l'utilisateur.
 
-**Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
+**Thème d'interface** : « Jewel case » (maquette 13) appliqué à `apps/desktop` (D-027) : `jewel.css`, shader `JewelField.tsx`, couleurs de contexte `jewelTheme.ts`. Références : `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)).
 
 **Méthode à conserver pour chaque lot** :
 

@@ -10,3 +10,7 @@ Points d'ancrage avec l'existant :
 - **Règles communes** : pas d'arc-en-ciel ni de marque de réussite sur une hypothèse ; 7 relations au plus par schéma.
 
 Les versions animées chargent des polices Google : il faudra les embarquer localement (application locale, projet confidentiel).
+
+## Adaptation faite (25 septembre 2026, D-027)
+
+Le thème **13 · Jewel case** est appliqué à `apps/desktop` : `src/jewel.css` (jetons, typographie, surcouches), `src/JewelField.tsx` (shader des lignes de balayage), `src/jewelTheme.ts` (couleurs de contexte), anneaux et brins de contexte dans `WorldGraph.tsx`, légende « Contextes = couleurs » dans la barre latérale. Les couleurs vertes d'origine de `styles.css` ont été converties vers la palette du boîtier. Les polices sont embarquées (`@fontsource`), sans appel à Google. Les thèmes 12, 14 et 15 ne sont pas intégrés.

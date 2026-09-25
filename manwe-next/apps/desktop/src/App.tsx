@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  CONTEXT_COLORS,
+  CONTEXT_LABELS,
+  rgb,
+  workspaceContexts,
+} from "./jewelTheme.ts";
+import {
   ArrowUp,
   ArrowUpRight,
   BookOpen,
@@ -317,6 +323,11 @@ export default function App() {
     <div
       className={`app-shell ${mode === "demo" && inspectorOpen ? "with-inspector" : ""} ${focusGraph ? "focused-layout" : ""}`}
     >
+      <div className="jewel-scan" aria-hidden />
+      <div className="jewel-glare" aria-hidden />
+      <div className="jewel-spine" aria-hidden>
+        MANWË<span>SLUS-973 · SOCIAL MEMORY</span>
+      </div>
       <aside className="sidebar">
         <a
           className="brand"
@@ -398,9 +409,43 @@ export default function App() {
               {personal.snapshot?.events.length === 1 ? "" : "s"} · révision{" "}
               {personal.snapshot?.workspace.revision ?? 0}
             </p>
+            {personal.snapshot && (
+              <div
+                className="context-legend"
+                aria-label="Contextes des relations et leurs couleurs"
+              >
+                <div className="sidebar-label">CONTEXTES = COULEURS</div>
+                {workspaceContexts(personal.snapshot).map(({ key, count }) => (
+                  <span
+                    key={key}
+                    className={count ? "" : "is-empty"}
+                    title={`${count} note${count === 1 ? "" : "s"}`}
+                  >
+                    <b style={{ background: rgb(CONTEXT_COLORS[key]) }} />
+                    {CONTEXT_LABELS[key]}
+                    <i>{count}</i>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
         <div className="sidebar-bottom">
+          <div className="jewel-serial" aria-hidden>
+            SLUS_973.
+            {String(personal.snapshot?.workspace.revision ?? 0).padStart(
+              2,
+              "0",
+            )}{" "}
+            · rév.{" "}
+            {String(personal.snapshot?.workspace.revision ?? 0).padStart(
+              3,
+              "0",
+            )}
+            <br />
+            mode : {mode === "personal" ? "mémoire locale" : "démonstration"}
+            <span className="jewel-barcode" />
+          </div>
           <div className="sidebar-quote">
             <span>«</span>
             <p>
