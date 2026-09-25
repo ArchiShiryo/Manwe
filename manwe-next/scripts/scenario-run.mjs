@@ -36,12 +36,13 @@ import { SqliteMemoryStore } from "../packages/storage/src/sqliteStore.ts";
 import {
   DEFAULT_EFFORT,
   DEFAULT_MODEL,
-  callAnalyst,
   withEnvProxy,
 } from "./lib/deepseek.mjs";
+import { createDeepSeekCall } from "../apps/server/src/analystProvider.ts";
+import { MEMORY_TOOLS } from "../packages/cognition/src/memoryTools.ts";
 
 const PROMPT_TEXT = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v8.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v9.md", import.meta.url),
   "utf8",
 );
 const QA_ROOT = resolve(process.cwd(), ".qa");
@@ -453,11 +454,35 @@ async function driveScenario(runDir, scenario, options, log) {
       prompt = `${prompt.trimEnd()}\n\nTa réponse précédente à ce paquet a été rejetée par le validateur :\n${errors}\nRenvoie un objet CognitiveProposal complet et corrigé, qui respecte exactement le format.\n`;
       writeFileSync(join(stepDir, "PROMPT.retry.txt"), prompt, "utf8");
     }
-    const call = await callAnalyst({
-      prompt,
-      model: options.model,
+    // D-023 : même client que l'application ; le modèle interroge librement
+    // la mémoire du scénario, en lecture seule, pendant l'analyse.
+    const requestId = readJson(join(stepDir, "context.json")).requestId;
+    const toolStore = openStore(runDir, scenario.id, state);
+    let call;
+    try {
+      call = await createDeepSeekCall({
+        endpoint: process.env.DEEPSEEK_BASE_URL,
+        apiKey: process.env.DEEPSEEK_API_KEY,
+        model: options.model,
+        effort: options.effort,
+      })({
+        prompt,
+        signal: new AbortController().signal,
+        tools: MEMORY_TOOLS,
+        executeTool: (name, args) =>
+          toolStore.queryMemory(requestId, name, args),
+      });
+    } finally {
+      toolStore.close();
+    }
+    call.meta = {
+      provider: "deepseek",
+      requestedModel: options.model,
       effort: options.effort,
-    });
+      ...call.meta,
+    };
+    if (call.meta.queries?.length)
+      writeJson(join(stepDir, `queries${suffix}.json`), call.meta.queries);
     writeFileSync(join(stepDir, file), call.content, "utf8");
     writeJson(join(stepDir, `call${suffix}.json`), call.meta);
     if (call.reasoning)

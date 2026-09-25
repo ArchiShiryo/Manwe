@@ -7,9 +7,9 @@ import {
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.6" as const;
+export const COGNITION_SCHEMA_VERSION = "1.7" as const;
 /** Versions acceptées : 1.4 reste valide (prompt v6), 1.5 ajoute les directions. */
-export const SUPPORTED_SCHEMA_VERSIONS = ["1.4", "1.5", "1.6"] as const;
+export const SUPPORTED_SCHEMA_VERSIONS = ["1.4", "1.5", "1.6", "1.7"] as const;
 export const COGNITION_VALIDATOR_VERSION = "1.2.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;

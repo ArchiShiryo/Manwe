@@ -13,6 +13,7 @@ import type {
   ContextPacket,
 } from "../../../packages/cognition/src/contract.ts";
 import type { EntityRef } from "../../../packages/domain/src/memory.ts";
+import { MEMORY_TOOLS } from "../../../packages/cognition/src/memoryTools.ts";
 import type { SqliteMemoryStore } from "../../../packages/storage/src/sqliteStore.ts";
 
 export type ProviderCallResult = {
@@ -23,6 +24,9 @@ export type ProviderCallResult = {
     finishReason: string | null;
     usage: unknown;
     latencyMs: number;
+    /** D-023 : requêtes faites par le modèle pendant l'analyse. */
+    queries?: Array<{ name: string; args: unknown }>;
+    rounds?: number;
   };
 };
 
@@ -30,6 +34,10 @@ export type ProviderCallResult = {
 export type AnalystCall = (input: {
   prompt: string;
   signal: AbortSignal;
+  /** D-023 : requêtes mémoire offertes au modèle (lecture seule). */
+  tools?: readonly unknown[];
+  executeTool?: (name: string, args: Record<string, unknown>) => unknown;
+  maxRounds?: number;
 }) => Promise<ProviderCallResult>;
 
 export type ProviderConfig = {
@@ -108,6 +116,9 @@ const pause = (ms: number, signal: AbortSignal) =>
 /**
  * Client DeepSeek (API compatible OpenAI). La clé vient de l'environnement ou
  * du proxy de la session ; elle n'est jamais journalisée ni renvoyée.
+ * D-023 : si des requêtes mémoire sont fournies, le modèle peut les appeler
+ * autant de tours que nécessaire (bride : maxRounds, à lever à terme) avant
+ * de rendre sa proposition.
  */
 export function createDeepSeekCall(options: {
   endpoint?: string;
@@ -121,23 +132,36 @@ export function createDeepSeekCall(options: {
   const endpoint = `${options.endpoint ?? "https://api.deepseek.com"}/chat/completions`;
   const timeoutMs = options.timeoutMs ?? 10 * 60 * 1000;
   const retries = options.transportRetries ?? 2;
-  return async ({ prompt, signal }) => {
-    const headers: Record<string, string> = {
-      "content-type": "application/json",
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (options.apiKey) headers.authorization = `Bearer ${options.apiKey}`;
+
+  type Message = {
+    role: string;
+    content: string;
+    tool_calls?: unknown[];
+    tool_call_id?: string;
+    reasoning_content?: string;
+  };
+  type Choice = {
+    finish_reason?: string;
+    message?: {
+      content?: string;
+      reasoning_content?: string;
+      tool_calls?: Array<{
+        id: string;
+        function: { name: string; arguments: string };
+      }>;
     };
-    if (options.apiKey) headers.authorization = `Bearer ${options.apiKey}`;
-    const body = JSON.stringify({
-      model: options.model,
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-      reasoning_effort: options.effort ?? "high",
-      max_tokens: 64000,
-    });
+  };
+
+  const post = async (payload: unknown, signal: AbortSignal) => {
+    const body = JSON.stringify(payload);
     let last: ProviderError | null = null;
     for (let attempt = 0; attempt <= retries; attempt += 1) {
       if (attempt)
         await pause((options.backoffMs ?? 2000) * 2 ** (attempt - 1), signal);
-      const started = Date.now();
       const timeout = AbortSignal.timeout(timeoutMs);
       let response: Response;
       try {
@@ -184,35 +208,85 @@ export function createDeepSeekCall(options: {
           "provider_error",
           `Le fournisseur a refusé la requête (${response.status}).`,
         );
-      let data: {
-        model?: string;
-        usage?: unknown;
-        choices?: {
-          finish_reason?: string;
-          message?: { content?: string; reasoning_content?: string };
-        }[];
-      };
       try {
-        data = JSON.parse(text);
+        return JSON.parse(text) as {
+          model?: string;
+          usage?: Record<string, number>;
+          choices?: Choice[];
+        };
       } catch {
         throw new ProviderError(
           "provider_error",
           "Réponse du fournisseur illisible.",
         );
       }
+    }
+    throw last ?? new ProviderError("provider_error", "Appel impossible.");
+  };
+
+  return async ({ prompt, signal, tools, executeTool, maxRounds = 12 }) => {
+    const started = Date.now();
+    const messages: Message[] = [{ role: "user", content: prompt }];
+    const usage: Record<string, number> = {};
+    const queries: Array<{ name: string; args: unknown }> = [];
+    let servedModel: string | null = null;
+    for (let round = 0; ; round += 1) {
+      const allowTools = Boolean(tools && executeTool) && round < maxRounds;
+      const data = await post(
+        {
+          model: options.model,
+          messages,
+          response_format: { type: "json_object" },
+          reasoning_effort: options.effort ?? "high",
+          max_tokens: 64000,
+          ...(allowTools ? { tools } : {}),
+        },
+        signal,
+      );
+      servedModel = data.model ?? servedModel;
+      for (const [key, value] of Object.entries(data.usage ?? {}))
+        if (typeof value === "number") usage[key] = (usage[key] ?? 0) + value;
       const choice = data.choices?.[0];
+      const calls = choice?.message?.tool_calls ?? [];
+      if (allowTools && calls.length && executeTool) {
+        messages.push({
+          role: "assistant",
+          content: choice?.message?.content ?? "",
+          tool_calls: calls,
+          ...(choice?.message?.reasoning_content
+            ? { reasoning_content: choice.message.reasoning_content }
+            : {}),
+        });
+        for (const call of calls) {
+          let args: Record<string, unknown> = {};
+          try {
+            args = JSON.parse(call.function.arguments || "{}");
+          } catch {
+            args = {};
+          }
+          queries.push({ name: call.function.name, args });
+          const result = await executeTool(call.function.name, args);
+          messages.push({
+            role: "tool",
+            tool_call_id: call.id,
+            content: JSON.stringify(result).slice(0, 60_000),
+          });
+        }
+        continue;
+      }
       return {
         content: choice?.message?.content ?? "",
         reasoning: choice?.message?.reasoning_content ?? null,
         meta: {
-          servedModel: data.model ?? null,
+          servedModel,
           finishReason: choice?.finish_reason ?? null,
-          usage: data.usage ?? null,
+          usage,
           latencyMs: Date.now() - started,
+          queries,
+          rounds: round + 1,
         },
       };
     }
-    throw last ?? new ProviderError("provider_error", "Appel impossible.");
   };
 }
 
@@ -232,6 +306,7 @@ export type AutomaticJob = {
     latencyMs: number | null;
     usage: unknown;
     servedModel: string | null;
+    queries: Array<{ name: string; args: unknown }>;
   }[];
   preview: AnalysisPreview | null;
   error: { code: string; message: string } | null;
@@ -379,7 +454,14 @@ export class AutomaticAnalyses {
     try {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const sent = attempt ? composeRetryPrompt(prompt, errors) : prompt;
-        const call = await provider.call({ prompt: sent, signal });
+        const call = await provider.call({
+          prompt: sent,
+          signal,
+          // D-023 : le modèle explore librement la mémoire, en lecture seule.
+          tools: MEMORY_TOOLS,
+          executeTool: (name, args) =>
+            this.store.queryMemory(job.requestId, name, args),
+        });
         this.onCall?.({
           requestId: job.requestId,
           attempt: attempt + 1,
@@ -416,6 +498,7 @@ export class AutomaticAnalyses {
           latencyMs: call.meta.latencyMs,
           usage: call.meta.usage,
           servedModel: call.meta.servedModel,
+          queries: call.meta.queries ?? [],
         });
         if (preview && preview.status !== "rejected") {
           job.preview = {

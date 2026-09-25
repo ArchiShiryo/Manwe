@@ -13,7 +13,7 @@ import {
 } from "../apps/server/src/analystProvider.ts";
 
 const PROMPT_V6 = readFileSync(
-  new URL("../packages/cognition/prompts/analyst-v8.md", import.meta.url),
+  new URL("../packages/cognition/prompts/analyst-v9.md", import.meta.url),
   "utf8",
 );
 
@@ -382,7 +382,7 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
     ).json();
     assert.equal(analysis.packet.providerId, "deepseek:test");
     assert.equal(analysis.packet.mode, "automatic");
-    assert.equal(analysis.promptVersion, "analyst-v8");
+    assert.equal(analysis.promptVersion, "analyst-v9");
     const applied = await on.call(`/api/analyses/${job.requestId}/apply`, {
       method: "POST",
       body: JSON.stringify({
@@ -431,4 +431,150 @@ test("IA-A.4 · budget quotidien : consommation comptée, refus explicite au-del
       call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
     });
     assert.equal(unlimited.budget().dailyTokens, null);
+  }));
+
+test("D-023 · le client laisse le modèle interroger la mémoire, puis rend sa réponse", async () => {
+  const bodies = [];
+  const server = createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      const parsed = JSON.parse(body);
+      bodies.push(parsed);
+      const toolAnswered = parsed.messages.some(
+        (message) => message.role === "tool",
+      );
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(
+        JSON.stringify({
+          model: "deepseek-flash",
+          usage: { total_tokens: 10 },
+          choices: [
+            toolAnswered
+              ? { finish_reason: "stop", message: { content: '{"ok":true}' } }
+              : {
+                  finish_reason: "tool_calls",
+                  message: {
+                    content: "",
+                    reasoning_content: "je dois relire la note",
+                    tool_calls: [
+                      {
+                        id: "call_1",
+                        type: "function",
+                        function: {
+                          name: "get_note",
+                          arguments: '{"sourceId":"s1"}',
+                        },
+                      },
+                    ],
+                  },
+                },
+          ],
+        }),
+      );
+    });
+  });
+  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  try {
+    const executed = [];
+    const call = createDeepSeekCall({
+      endpoint: `http://127.0.0.1:${server.address().port}`,
+      model: "deepseek-flash",
+    });
+    const result = await call({
+      prompt: "p",
+      signal: new AbortController().signal,
+      tools: [{ type: "function", function: { name: "get_note" } }],
+      executeTool: (name, args) => {
+        executed.push([name, args]);
+        return { text: "note" };
+      },
+    });
+    assert.equal(result.content, '{"ok":true}');
+    assert.deepEqual(executed, [["get_note", { sourceId: "s1" }]]);
+    assert.deepEqual(result.meta.queries, [
+      { name: "get_note", args: { sourceId: "s1" } },
+    ]);
+    assert.equal(result.meta.rounds, 2);
+    assert.equal(result.meta.usage.total_tokens, 20, "usage cumulé");
+    const followUp = bodies[1].messages;
+    assert.equal(followUp[1].reasoning_content, "je dois relire la note");
+    assert.equal(followUp[2].role, "tool");
+    // Bride (à lever à terme) : au-delà de maxRounds, plus d'outils offerts.
+    const capped = await call({
+      prompt: "p",
+      signal: new AbortController().signal,
+      tools: [{ type: "function", function: { name: "get_note" } }],
+      executeTool: () => ({}),
+      maxRounds: 0,
+    });
+    assert.ok(!("tools" in bodies.at(-1)));
+    void capped;
+  } finally {
+    server.closeAllConnections();
+    await new Promise((done) => server.close(done));
+  }
+});
+
+test("D-023 · une requête mémoire est journalisée, n'écrit rien, et rend l'objet servi référençable", () =>
+  withStore(async (store) => {
+    const extract = store.prepareAnalysis({ task: "extract" });
+    const applied = store.receiveAnalysis(JSON.parse(validProposal(extract)));
+    store.applyAnalysis(applied.responseId);
+    const claimId = store.snapshot().claims[0].id;
+    // Paquet centré sur une autre note : ce fait n'y est pas, il faut le demander.
+    const other = store.capture({
+      idempotencyKey: "auto:capture:other",
+      text: "Une autre note sans rapport.",
+    });
+    const packet = store.prepareAnalysis({
+      task: "interpret",
+      focus: [other.created.find((ref) => ref.kind === "event")],
+    });
+    assert.ok(!packet.claims.some((claim) => claim.id === claimId));
+    const revision = store.revision;
+    const note = store.queryMemory(packet.requestId, "get_note", {
+      sourceId: store
+        .snapshot()
+        .sources.find((source) => source.content.includes("Claire")).id,
+    });
+    assert.ok(note.text.includes("Claire"));
+    assert.equal(note.claims[0].claimId, claimId);
+    assert.equal(store.revision, revision, "aucune écriture");
+    assert.equal(store.analysisQueries(packet.requestId).length, 1);
+    assert.deepEqual(store.queryMemory(packet.requestId, "inconnue", {}), {
+      error: "Requête inconnue : inconnue.",
+    });
+    const preview = store.receiveAnalysis({
+      ...JSON.parse(validProposal(packet)),
+      schemaVersion: "1.6",
+      operations: [
+        {
+          key: "h1",
+          kind: "propose_hypothesis",
+          payload: {
+            statement: "Claire préfère la solitude le week-end.",
+            depth: "D1",
+            framework: null,
+            construct: null,
+            confidence: "low",
+            subjects: [{ mention: "Claire" }],
+            evidence: [
+              { claim: { kind: "claim", id: claimId }, stance: "supports" },
+            ],
+            limits: "Une note.",
+            revisionConditions: "Une sortie choisie le week-end.",
+            alternativeTo: null,
+            validFrom: null,
+            validTo: null,
+          },
+          rationale: "S'appuie sur un fait obtenu par requête.",
+        },
+      ],
+    });
+    assert.equal(
+      preview.status,
+      "ready_for_review",
+      JSON.stringify(preview.errors),
+    );
   }));

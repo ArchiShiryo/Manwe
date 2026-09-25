@@ -683,12 +683,27 @@ export class HypothesisStore {
         : context.packet.hypotheses
       ).map((item) => String((item as { id: string }).id)),
     );
-    if (!packetIds.has(ref.id))
+    if (!packetIds.has(ref.id) && !this.served(context, kind).has(ref.id))
       throw new DomainError(
         "reference_not_in_context",
-        `${kind}:${ref.id} n’appartient pas au paquet de contexte.`,
+        `${kind}:${ref.id} n’appartient ni au paquet de contexte ni aux requêtes de cette analyse.`,
       );
     return ref.id;
+  }
+
+  /** D-023 : identifiants servis par les requêtes du modèle pour cette analyse. */
+  private served(context: OperationContext, kind: string) {
+    const ids = new Set<string>();
+    for (const row of this.database
+      .prepare(
+        "SELECT served_json FROM analysis_queries WHERE workspace_id = ? AND request_id = ?",
+      )
+      .all(this.workspaceId, context.packet.requestId) as SqlRow[])
+      for (const id of (
+        JSON.parse(String(row.served_json)) as Record<string, string[]>
+      )[kind] ?? [])
+        ids.add(id);
+    return ids;
   }
 
   private resolveEvent(ref: TargetRef, context: OperationContext): string {
@@ -708,10 +723,10 @@ export class HypothesisStore {
         (entity as { id?: string; title?: string }).id === ref.id &&
         (entity as { title?: string }).title !== undefined,
     );
-    if (!inPacket)
+    if (!inPacket && !this.served(context, "event").has(ref.id))
       throw new DomainError(
         "reference_not_in_context",
-        `event:${ref.id} n’appartient pas au paquet de contexte.`,
+        `event:${ref.id} n’appartient ni au paquet de contexte ni aux requêtes de cette analyse.`,
       );
     return ref.id;
   }
@@ -728,10 +743,10 @@ export class HypothesisStore {
             subject.person.id &&
           (entity as { displayName?: string }).displayName !== undefined,
       );
-      if (!inPacket)
+      if (!inPacket && !this.served(context, "person").has(subject.person.id))
         throw new DomainError(
           "reference_not_in_context",
-          `person:${subject.person.id} n’appartient pas au paquet de contexte.`,
+          `person:${subject.person.id} n’appartient ni au paquet de contexte ni aux requêtes de cette analyse.`,
         );
       return { kind: "person", personId: subject.person.id };
     }

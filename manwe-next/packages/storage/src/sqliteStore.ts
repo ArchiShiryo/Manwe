@@ -8,6 +8,7 @@ import {
   DomainError,
   type AnnotationCommand,
   type ChooseDirectionCommand,
+  type RelationMember,
   type DirectionRecord,
   type RecordOutcomeCommand,
   type AnswerQuestionCommand,
@@ -71,11 +72,11 @@ function canonicalJson(value: unknown): string {
 const sha256 = (value: string) =>
   createHash("sha256").update(value, "utf8").digest("hex");
 const nowIso = () => new Date().toISOString();
-const ANALYST_PROMPT_VERSION = "analyst-v8";
+const ANALYST_PROMPT_VERSION = "analyst-v9";
 const ANALYST_PROMPT_HASH = sha256(
   readFileSync(
     fileURLToPath(
-      new URL("../../cognition/prompts/analyst-v8.md", import.meta.url),
+      new URL("../../cognition/prompts/analyst-v9.md", import.meta.url),
     ),
     "utf8",
   ),
@@ -195,6 +196,15 @@ export class SqliteMemoryStore {
         new URL("./migrations/011_partial_application.sql", import.meta.url),
       );
       this.database.exec(readFileSync(partialMigrationPath, "utf8"));
+    }
+    const queriesMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 12")
+      .get();
+    if (!queriesMigration) {
+      const queriesMigrationPath = fileURLToPath(
+        new URL("./migrations/012_memory_queries.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(queriesMigrationPath, "utf8"));
     }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
@@ -2440,6 +2450,323 @@ export class SqliteMemoryStore {
       annotations: pruneItems(compact.annotations),
       episodes: pruneItems(compact.episodes),
     };
+  }
+
+  /**
+   * D-023 : requête du modèle dans la mémoire, en lecture seule. Le résultat
+   * est journalisé avec l'analyse ; les objets servis deviennent citables et
+   * référençables dans sa proposition. Une requête invalide renvoie une
+   * erreur lisible au modèle au lieu d'interrompre l'analyse.
+   */
+  queryMemory(requestId: string, name: string, args: Record<string, unknown>) {
+    const request = this.database
+      .prepare(
+        "SELECT id FROM analysis_requests WHERE workspace_id = ? AND id = ?",
+      )
+      .get(this.workspaceId, requestId);
+    if (!request)
+      throw new DomainError(
+        "analysis_request_not_found",
+        "Demande d’analyse inconnue.",
+        404,
+      );
+    const snapshot = this.snapshot();
+    const served: Record<string, Set<string>> = {
+      source: new Set(),
+      event: new Set(),
+      person: new Set(),
+      claim: new Set(),
+      hypothesis: new Set(),
+      relation: new Set(),
+    };
+    const str = (value: unknown) =>
+      typeof value === "string" && value.trim() ? value.trim() : undefined;
+    const person = (id: string) =>
+      snapshot.persons.find((item) => item.id === id)?.displayName ?? null;
+    const memberName = (member: RelationMember) =>
+      member.kind === "self" ? "utilisateur" : person(member.personId);
+    const note = (sourceId: string) => {
+      const source = snapshot.sources.find((item) => item.id === sourceId);
+      if (!source) return null;
+      served.source.add(source.id);
+      const events = snapshot.events.filter(
+        (event) => event.sourceId === source.id,
+      );
+      for (const event of events) served.event.add(event.id);
+      const claims = snapshot.claims.filter((claim) =>
+        claim.citations.some((citation) => citation.sourceId === source.id),
+      );
+      for (const claim of claims) served.claim.add(claim.id);
+      return {
+        sourceId: source.id,
+        contentHash: source.contentHash,
+        text: source.content,
+        events: events.map((event) => ({
+          eventId: event.id,
+          title: event.title,
+          occurredStart: event.occurredStart,
+        })),
+        claims: claims.map((claim) => ({
+          claimId: claim.id,
+          text: claim.text,
+          category: claim.category,
+          contested: claim.contestedRevision !== null,
+        })),
+        roles: snapshot.roles
+          .filter((role) => events.some((event) => event.id === role.eventId))
+          .map((role) => ({
+            eventId: role.eventId,
+            member: memberName(role.subject),
+            role: role.role,
+            outcome: role.outcome,
+          })),
+      };
+    };
+    const readingSummary = (id: string) => {
+      const hypothesis = snapshot.hypotheses.find((item) => item.id === id);
+      if (!hypothesis) return null;
+      served.hypothesis.add(hypothesis.id);
+      return {
+        hypothesisId: hypothesis.id,
+        statement: hypothesis.statement,
+        depth: hypothesis.depth,
+        status: hypothesis.status,
+        confidence: hypothesis.confidence,
+        rank: hypothesis.rank,
+      };
+    };
+    const relationView = (relationId: string) => {
+      const relation = snapshot.relations.find(
+        (item) => item.id === relationId,
+      );
+      if (!relation) return null;
+      served.relation.add(relation.id);
+      const keys = new Set(
+        relation.members.map((member) =>
+          member.kind === "self" ? "self" : `person:${member.personId}`,
+        ),
+      );
+      return {
+        relationId: relation.id,
+        members: relation.members.map(memberName),
+        indicators: relation.indicators,
+        roles: snapshot.roles
+          .filter((role) =>
+            keys.has(
+              role.subject.kind === "self"
+                ? "self"
+                : `person:${role.subject.personId}`,
+            ),
+          )
+          .map((role) => {
+            served.event.add(role.eventId);
+            return {
+              eventId: role.eventId,
+              member: memberName(role.subject),
+              role: role.role,
+              outcome: role.outcome,
+            };
+          }),
+        readings: snapshot.hypotheses
+          .filter((item) =>
+            item.subjects.some(
+              (subject) =>
+                subject.kind === "relation" &&
+                subject.relationId === relation.id,
+            ),
+          )
+          .map((item) => readingSummary(item.id)),
+      };
+    };
+    let result: unknown;
+    try {
+      if (name === "search_notes") {
+        const limit = Math.min(20, Math.max(1, Number(args.limit ?? 10) || 10));
+        const who = str(args.person);
+        const personId = who
+          ? snapshot.persons.find(
+              (item) => item.displayName.toLowerCase() === who.toLowerCase(),
+            )?.id
+          : undefined;
+        const text = str(args.query);
+        const from = str(args.from);
+        const to = str(args.to);
+        const matches = snapshot.sources
+          .filter((source) => {
+            const event = snapshot.events.find(
+              (item) => item.sourceId === source.id,
+            );
+            const when = event?.occurredStart ?? source.recordedAt;
+            if (
+              text &&
+              !source.content.toLowerCase().includes(text.toLowerCase())
+            )
+              return false;
+            if (
+              who &&
+              !personId &&
+              !source.content.toLowerCase().includes(who.toLowerCase())
+            )
+              return false;
+            if (
+              personId &&
+              !source.content
+                .toLowerCase()
+                .includes(String(person(personId)).toLowerCase())
+            )
+              return false;
+            if (from && when && when < from) return false;
+            if (to && when && when > to) return false;
+            return true;
+          })
+          .slice(0, limit);
+        result = { notes: matches.map((source) => note(source.id)) };
+      } else if (name === "get_note") {
+        const sourceId =
+          str(args.sourceId) ??
+          snapshot.events.find((event) => event.id === str(args.eventId))
+            ?.sourceId;
+        const found = sourceId ? note(sourceId) : null;
+        result = found ?? { error: "Note introuvable." };
+      } else if (name === "get_person") {
+        const target =
+          snapshot.persons.find((item) => item.id === str(args.personId)) ??
+          snapshot.persons.find(
+            (item) =>
+              item.displayName.toLowerCase() ===
+              String(str(args.name) ?? "").toLowerCase(),
+          );
+        if (!target) result = { error: "Personne introuvable." };
+        else {
+          served.person.add(target.id);
+          const key = `person:${target.id}`;
+          const roles = snapshot.roles.filter(
+            (role) =>
+              role.subject.kind === "person" &&
+              role.subject.personId === target.id,
+          );
+          for (const role of roles) served.event.add(role.eventId);
+          result = {
+            personId: target.id,
+            name: target.displayName,
+            episodes: roles.map((role) => {
+              const event = snapshot.events.find(
+                (item) => item.id === role.eventId,
+              );
+              return {
+                eventId: role.eventId,
+                title: event?.title ?? null,
+                occurredStart: event?.occurredStart ?? null,
+                role: role.role,
+                outcome: role.outcome,
+              };
+            }),
+            relations: snapshot.relations
+              .filter((relation) =>
+                relation.members.some(
+                  (member) =>
+                    member.kind === "person" && member.personId === target.id,
+                ),
+              )
+              .map((relation) => relationView(relation.id)),
+            readings: snapshot.hypotheses
+              .filter((item) =>
+                item.subjects.some((subject) =>
+                  subject.kind === "relation"
+                    ? subject.members.some(
+                        (member) =>
+                          member.kind === "person" &&
+                          `person:${member.personId}` === key,
+                      )
+                    : subject.kind === "person" &&
+                      subject.personId === target.id,
+                ),
+              )
+              .map((item) => readingSummary(item.id)),
+          };
+        }
+      } else if (name === "get_relation") {
+        result = relationView(String(str(args.relationId))) ?? {
+          error: "Relation introuvable.",
+        };
+      } else if (name === "get_hypothesis") {
+        const hypothesis = snapshot.hypotheses.find(
+          (item) => item.id === str(args.hypothesisId),
+        );
+        if (!hypothesis) result = { error: "Lecture introuvable." };
+        else {
+          served.hypothesis.add(hypothesis.id);
+          result = {
+            ...hypothesis,
+            evidence: hypothesis.evidence.map((item) => {
+              const claim = snapshot.claims.find(
+                (entry) => entry.id === item.claimId,
+              );
+              if (claim) served.claim.add(claim.id);
+              for (const citation of claim?.citations ?? [])
+                served.source.add(citation.sourceId);
+              return {
+                claimId: item.claimId,
+                stance: item.stance,
+                active: item.supersededRevision === null,
+                text: claim?.text ?? null,
+                citations: claim?.citations ?? [],
+              };
+            }),
+            history: snapshot.revisions
+              .filter((revision) =>
+                revision.changedRefs.some(
+                  (ref) =>
+                    ref.kind === "hypothesis" && ref.id === hypothesis.id,
+                ),
+              )
+              .map((revision) => ({
+                revision: revision.revision,
+                commandType: revision.commandType,
+                createdAt: revision.createdAt,
+              })),
+          };
+        }
+      } else result = { error: `Requête inconnue : ${name}.` };
+    } catch (error) {
+      result = {
+        error: error instanceof Error ? error.message : "Requête impossible.",
+      };
+    }
+    this.database
+      .prepare(
+        "INSERT INTO analysis_queries(id, workspace_id, request_id, name, args_json, served_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        randomUUID(),
+        this.workspaceId,
+        requestId,
+        name,
+        JSON.stringify(args),
+        JSON.stringify(
+          Object.fromEntries(
+            Object.entries(served).map(([kind, ids]) => [kind, [...ids]]),
+          ),
+        ),
+        nowIso(),
+      );
+    return result;
+  }
+
+  /** Requêtes journalisées d'une analyse (D-023). */
+  analysisQueries(requestId: string) {
+    return (
+      this.database
+        .prepare(
+          "SELECT name, args_json, served_json, created_at FROM analysis_queries WHERE workspace_id = ? AND request_id = ? ORDER BY created_at, id",
+        )
+        .all(this.workspaceId, requestId) as SqlRow[]
+    ).map((row) => ({
+      name: String(row.name),
+      args: JSON.parse(String(row.args_json)),
+      served: JSON.parse(String(row.served_json)) as Record<string, string[]>,
+      createdAt: String(row.created_at),
+    }));
   }
 
   /** IA-A.4 : usage, modèle servi et durée d'inférence d'une réponse automatique. */
