@@ -26,6 +26,7 @@ const GAPS = [
   "suivi",
   "ouverture",
   "detresse",
+  "modelisation",
 ] as const;
 
 export class Interviewer {
@@ -34,9 +35,20 @@ export class Interviewer {
   private thinking: Promise<void> | null = null;
   private lastError: string | null = null;
 
-  constructor(store: SqliteMemoryStore, provider: ProviderConfig | null) {
+  /** DEMO-R5-7 (constat 26) : la conversation peut lancer la modélisation. */
+  private readonly onModel: () => void;
+  /** Ce que l'agent d'analyse fait, pour que la conversation le dise juste. */
+  private readonly analysisState: () => unknown;
+
+  constructor(
+    store: SqliteMemoryStore,
+    provider: ProviderConfig | null,
+    hooks: { onModel?: () => void; analysisState?: () => unknown } = {},
+  ) {
     this.store = store;
     this.provider = provider;
+    this.onModel = hooks.onModel ?? (() => {});
+    this.analysisState = hooks.analysisState ?? (() => null);
   }
 
   state() {
@@ -106,7 +118,13 @@ export class Interviewer {
       .conversation(24)
       .map((turn) => ({ role: turn.role, text: turn.text }));
     const prompt = `${INTERVIEWER_PROMPT.trimEnd()}\n\n${JSON.stringify(
-      { memory: this.store.interviewDigest(), conversation },
+      {
+        memory: {
+          ...this.store.interviewDigest(),
+          analysis: this.analysisState(),
+        },
+        conversation,
+      },
       null,
       2,
     )}\n`;
@@ -121,7 +139,9 @@ export class Interviewer {
       reply?: unknown;
       gap?: unknown;
       motive?: unknown;
+      action?: unknown;
     };
+    if (parsed.action === "modeliser") this.onModel();
     const reply =
       typeof parsed.reply === "string" ? parsed.reply.trim().slice(0, 600) : "";
     if (!reply) throw new Error("Réponse de l’agent vide.");

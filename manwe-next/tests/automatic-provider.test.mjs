@@ -378,7 +378,20 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
       {
         id: "deepseek:test",
         model: "test",
-        call: async ({ prompt }) => reply(validProposal(packetOf(prompt))),
+        call: async ({ prompt }) => {
+          const packet = packetOf(prompt);
+          // Sans note nouvelle à citer, le modèle simulé ne change rien.
+          if (packet.sources.length) return reply(validProposal(packet));
+          return reply(
+            JSON.stringify({
+              ...JSON.parse(
+                validProposal({ ...packet, sources: [{ text: "" }] }),
+              ),
+              outcome: "no_change",
+              operations: [],
+            }),
+          );
+        },
       },
       { quietMs: 30 },
     );
@@ -409,7 +422,11 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
       await on.call("/api/analyses/automatic/current")
     ).json();
     assert.equal(current.job.requestId, job.requestId);
-    assert.equal(current.next, null, "plus rien à analyser");
+    assert.equal(
+      current.next?.task,
+      "interpret",
+      "après les faits, l'agent prévoit de les comprendre",
+    );
 
     // Sans consentement, rien ne part ; une fois donné, l'agent analyse
     // seul une nouvelle note, après un court silence.
@@ -425,23 +442,42 @@ test("IA-A.2 · routes du service : désactivé par défaut, puis parcours autom
         text: "Claire m'a rappelé ce soir pour s'excuser.",
       }),
     });
-    let autonomous = null;
-    for (let i = 0; i < 100; i += 1) {
-      await new Promise((done) => setTimeout(done, 20));
-      autonomous = (
-        await (await on.call("/api/analyses/automatic/current")).json()
-      ).job;
+    // L'agent enchaîne seul : relever la note, puis la comprendre ; on attend
+    // qu'il n'ait plus rien à faire, puis on lit son historique en base.
+    let agentState = null;
+    for (let i = 0; i < 200; i += 1) {
+      await new Promise((done) => setTimeout(done, 25));
+      agentState = await (
+        await on.call("/api/analyses/automatic/current")
+      ).json();
       if (
-        autonomous &&
-        autonomous.requestId !== job.requestId &&
-        autonomous.status !== "running"
+        agentState.job?.status !== "running" &&
+        !agentState.scheduled &&
+        agentState.next === null
       )
         break;
     }
-    assert.notEqual(autonomous.requestId, job.requestId);
-    assert.equal(autonomous.task, "interpret");
-    assert.match(autonomous.reason, /nouvelle note/);
-    assert.equal(autonomous.status, "applied");
+    assert.equal(agentState.next, null, "l'agent a tout traité");
+    const { DatabaseSync } = await import("node:sqlite");
+    const database = new DatabaseSync(join(directory, "memory.sqlite3"), {
+      readOnly: true,
+    });
+    const tasks = database
+      .prepare(
+        "SELECT task, status FROM analysis_requests WHERE mode = 'automatic' ORDER BY created_at",
+      )
+      .all()
+      .map((row) => `${row.task}:${row.status}`);
+    database.close();
+    assert.ok(
+      tasks.slice(1).includes("extract:applied"),
+      `relevé autonome de la nouvelle note (${tasks.join(", ")})`,
+    );
+    assert.ok(
+      tasks.includes("interpret:applied") ||
+        tasks.includes("interpret:no_change"),
+      `interprétation autonome ensuite (${tasks.join(", ")})`,
+    );
   } finally {
     for (const server of servers) await server.close().catch(() => {});
     rmSync(directory, { recursive: true, force: true });

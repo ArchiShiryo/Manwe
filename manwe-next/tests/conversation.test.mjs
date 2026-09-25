@@ -81,16 +81,44 @@ test("R5.8 · un message devient une note et l'agent répond par une question mo
       question.motive.every((ref) => ref.id !== "inconnue"),
       "un motif inexistant est écarté",
     );
+    // DEMO-R5-7 (constat 26) : « modélise » lance l'analyse tout de suite.
+    let modeled = 0;
+    const modeling = new Interviewer(
+      store,
+      {
+        id: "deepseek:test",
+        model: "test",
+        call: async () => ({
+          content: JSON.stringify({
+            reply:
+              "Je lance la modélisation ; le graphe se mettra à jour de lui-même.",
+            gap: "modelisation",
+            motive: [],
+            action: "modeliser",
+          }),
+          meta: { latencyMs: 1, usage: null, servedModel: "test" },
+        }),
+      },
+      {
+        onModel: () => (modeled += 1),
+        analysisState: () => ({ running: false }),
+      },
+    );
+    modeling.say("conv:msg:0002", "Tu peux modéliser maintenant ?");
+    await modeling.settle();
+    assert.equal(modeled, 1);
+    assert.equal(modeling.state().turns.at(-1).gap, "modelisation");
+
     // Le même message, rejoué, ne crée ni doublon de note ni de tour.
     interviewer.say(
       "conv:msg:0001",
       "Samedi j'ai dîné avec Paul, c'était tendu.",
     );
     await interviewer.settle();
-    assert.equal(store.snapshot().sources.length, 1);
+    assert.equal(store.snapshot().sources.length, 2);
     assert.equal(
       interviewer.state().turns.filter((t) => t.role === "user").length,
-      1,
+      2,
     );
   } finally {
     store.close();

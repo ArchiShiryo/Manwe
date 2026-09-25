@@ -405,6 +405,31 @@ export class AutomaticAnalyses {
     this.timer.unref?.();
   }
 
+  /** Demande explicite de la personne : on analyse tout de suite, même après un échec. */
+  now() {
+    this.failedAt = null;
+    this.nudge(0);
+  }
+
+  /** Résumé pour la conversation : ce qui est construit, ce qui est en cours. */
+  summary() {
+    const snapshot = this.store.snapshot();
+    const running = [...this.jobs.values()].some(
+      (job) => job.status === "running",
+    );
+    return {
+      running,
+      pending: this.provider ? (this.store.agentPlan()?.reason ?? null) : null,
+      built: {
+        persons: snapshot.persons.length,
+        relations: snapshot.relations.length,
+        readings: snapshot.hypotheses.filter(
+          (item) => item.status !== "superseded",
+        ).length,
+      },
+    };
+  }
+
   private tick() {
     if ([...this.jobs.values()].some((job) => job.status === "running")) {
       this.again = true;
@@ -620,8 +645,10 @@ export class AutomaticAnalyses {
     } catch (error) {
       if (job.status === "cancelled") return;
       job.status = "failed";
+      // DEMO-R5-7 (constat 28) : une erreur du moteur (mémoire changée,
+      // opération refusée) n'est pas une erreur du fournisseur.
       job.error =
-        error instanceof ProviderError
+        error instanceof ProviderError || error instanceof DomainError
           ? { code: error.code, message: error.message }
           : {
               code: "provider_error",

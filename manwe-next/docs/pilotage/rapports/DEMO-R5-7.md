@@ -91,3 +91,59 @@ Statut : **brouillon à relire par l'utilisateur** avant tout commit. Aucune don
 ## Suite proposée
 
 Ouvrir une session de conception UX (constats 1 à 13), puis corriger l'extraction pour que toute personne citée apparaisse (constats 14 et 15), et rejouer la démonstration complète, y compris les étapes 5 et 6 non jouées.
+
+## Seconde session · version `408be22` (thème Jewel case, agent autonome, conversation, écran du lieu)
+
+Même jour, même utilisateur, nouvelle base vide (`demo-lieu.sqlite3`, ignorée par git). 110 tests sur 110 et `typecheck` propres avant le lancement. Session arrêtée à la demande de l'utilisateur : « ça n'a rien donné ». **Aucune des étapes 3 à 6 du déroulé n'a pu être jouée.**
+
+### Ce qui s'est passé
+
+- **Interface** : l'utilisateur la juge « déjà plus agréable » que la première version (thème sombre, majuscules, étiquettes rouges, encadré de consentement en tête d'écran). L'écran du lieu est le lieu de la conversation et du graphe.
+- **Conversation** : 45 échanges, 22 notes enregistrées, 22 révisions. L'agent mène un entretien et résume ce qu'il entend, mais quand l'utilisateur lui demande de modéliser (« tu peux modéliser ? », puis « bah vas y »), il annonce « ton aperçu arrive » puis pose une nouvelle question au lieu de construire. L'utilisateur relève : « tu es censé modéliser le monde dans l'UI ».
+- **Graphe** : resté vide. La base finale contient 0 personne, 0 affirmation, 0 relation, 0 lecture, 0 hypothèse.
+- **Analyses** : 8 demandes, toutes de type « interpréter » et aucune d'« extraire ». 4 réponses reçues, dont 3 périmées (`stale`) et 1 rejetée (`subject_not_in_sources`). 5 demandes annulées (à la main ou après échec). Aucune appliquée.
+
+### Constats complémentaires
+
+| N°  | Étape        | Constat                                                                                                                                                                                                                                                                                                        | Gravité            | Correction proposée                                                                                                                                   |
+| --- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 22  | Ouverture    | Le système ne demande rien sur l'utilisateur (âge, sexe, humeur, situation, histoire), alors qu'il doit d'abord bien le connaître. Chaque acteur, l'utilisateur compris, se modélise pour lui-même ; aucun ne se lit à partir d'un autre.                                                                      | bloquant           | Profil de départ facultatif construit par l'entretien, avec statut « inconnu » tant qu'un champ est vide. Sensible pour un public vulnérable (D-004). |
+| 23  | Agent        | L'agent n'a pas d'objectif propre. Il devrait être piloté par l'objectif de cartographier, pour pouvoir guider, et pour tous les acteurs (utilisateur, proches, groupes).                                                                                                                                      | bloquant (produit) | Plan de couverture explicite et visible, mis à jour par l'agent, d'où viennent ses questions et ses analyses.                                         |
+| 24  | Agent        | L'IA doit être « driven », pas passive : elle cherche l'information qui améliore le plus la carte, avec respect du rythme et du consentement de la personne.                                                                                                                                                   | bloquant (produit) | Voir 23. À arbitrer avec la discipline épistémique (questions non suggestives).                                                                       |
+| 25  | Analyse      | Le plan automatique de l'agent (`agentPlan`, `sqliteStore.ts`) déclenche « interpréter » dès que de nouvelles notes arrivent, sans jamais planifier « extraire ». Les événements, rôles et personnes ne sont donc jamais créés et le graphe reste vide. Une analyse est rejetée avec `subject_not_in_sources`. | bloquant           | Planifier l'extraction avant l'interprétation. MANWË choisit seul l'étape (constat 5).                                                                |
+| 26  | Conversation | L'agent promet un aperçu qui ne vient pas et pose une question de plus quand l'utilisateur demande explicitement de modéliser. Une personne est citée par un prénom dont l'origine est incertaine.                                                                                                             | bloquant           | Donner au chat la commande « modéliser maintenant ». Ne citer que ce qui figure dans les notes.                                                       |
+| 27  | Analyse      | Course de vitesse : une analyse dure 75 à 117 s et chaque échange crée une révision. Trois analyses sur quatre reçues sont périmées, ce qui gaspille environ 150 000 jetons.                                                                                                                                   | bloquant           | Appliquer les opérations sans conflit sur la révision courante, mettre les notes en file pendant le calcul, ou relancer sur la révision courante.     |
+| 28  | Analyse      | Une erreur du domaine (`stale_revision`, « La mémoire a changé depuis la préparation de cette analyse ») s'affiche sous « Erreur inattendue du fournisseur ».                                                                                                                                                  | gênant             | Distinguer les erreurs du domaine de celles du fournisseur.                                                                                           |
+
+Le constat 19 de la première session (message par défaut qui masque la cause) est de même nature.
+
+### Ce qui a convaincu l'utilisateur
+
+- L'interface de la seconde version est plus agréable.
+- L'idée d'une conversation qui pose des questions pour cartographier, dans son principe (la réalisation ne construit pas encore).
+
+### Données techniques de la seconde session
+
+- **Jetons** (calculés depuis la base) : 148 434 pour les 4 réponses reçues (26 902, 35 496, 43 824 et 42 212).
+- **Inférence** : 75 s, 105 s, 115 s et 117 s, soit 410 s cumulées.
+- **Rejets** : 1 (`subject_not_in_sources`). Périmées : 3. Annulées : 5. Appliquées : 0.
+- **État final** : révision 22, 22 notes, 45 échanges, 0 personne, 0 affirmation, 0 relation, 0 lecture.
+
+### Questions ouvertes supplémentaires pour le pilote
+
+1. **Modèle de l'utilisateur et de chaque acteur** : ces exigences (profil de départ, objectifs de l'agent, plan de couverture pour tous) sont-elles déjà dans la spécification et la roadmap ?
+2. **Ordre des étapes** : l'agent choisit-il seul entre extraire, interpréter et réviser, et comment gère-t-il l'écriture pendant un calcul ?
+3. **Priorité** : corriger l'extraction (25 à 27) avant toute nouvelle démonstration ? Rejouer alors le déroulé complet, dont les étapes 3 à 6 jamais jouées.
+
+### Corrections faites après la seconde session (pilote)
+
+| Constat    | Correction                                                                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 25         | L'agent relève d'abord (extraction : personnes, épisodes, rôles, faits), puis interprète.                                                                                     |
+| 27         | Une analyse s'applique même si des notes ont été ajoutées pendant le calcul ; seule une autre écriture (correction, analyse, choix) la rend périmée.                          |
+| 25 (rejet) | Une opération refusée par le moteur (sujet absent des notes) est écartée seule, avec ses dépendantes, dans la limite de 20 % (D-025) ; la réponse n'est plus rejetée en bloc. |
+| 26         | La conversation peut lancer la modélisation (« action » `modeliser`), sait ce qui est déjà construit, ne promet plus d'aperçu et n'invente aucun prénom.                      |
+| 28         | Les erreurs du moteur ne s'affichent plus comme des erreurs du fournisseur.                                                                                                   |
+| —          | Lanceur Windows (`MANWE.cmd`) : mise à jour depuis git, installation si besoin, lancement et ouverture du navigateur.                                                         |
+
+Les constats 22 à 24 (profil de l'utilisateur, objectif propre de l'agent, plan de couverture) sont des choix de produit, proposés à l'utilisateur.

@@ -24,7 +24,7 @@ test("D-028 · l'agent interprète les nouvelles notes, puis explore une intenti
       }),
     );
     const plan = store.agentPlan();
-    assert.equal(plan.task, "interpret");
+    assert.equal(plan.task, "extract", "relever d'abord");
     assert.match(plan.reason, /1 nouvelle note/);
     assert.ok(plan.focus.some((ref) => ref.kind === "event"));
 
@@ -50,6 +50,29 @@ test("D-028 · l'agent interprète les nouvelles notes, puis explore une intenti
       summary: "Rien à ajouter.",
     });
     store.applyAnalysis(preview.responseId);
+    const interpret = store.agentPlan();
+    assert.equal(interpret?.task, "interpret", "puis comprendre");
+    const second = store.prepareAnalysis({
+      task: interpret.task,
+      focus: interpret.focus,
+    });
+    const reading = store.receiveAnalysis({
+      schemaVersion: "1.8",
+      requestId: second.requestId,
+      workspaceId: second.workspaceId,
+      baseRevision: second.baseRevision,
+      contextHash: second.contextHash,
+      modelDeclaration: {
+        declaredModel: "Test",
+        role: "analyst",
+        technicalId: null,
+      },
+      outcome: "no_change",
+      operations: [],
+      clarifications: [],
+      summary: "Rien à ajouter.",
+    });
+    store.applyAnalysis(reading.responseId);
     assert.equal(store.agentPlan(), null, "rien de nouveau depuis");
 
     store.updateGoal(

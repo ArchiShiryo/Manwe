@@ -349,9 +349,10 @@ test("une citation altérée est conservée comme rejet sans mutation", () =>
     store.close();
   }));
 
-test("une correction après export rend la réponse obsolète", () =>
+test("une correction après export rend la réponse obsolète ; une note ajoutée, non", () =>
   withStore((store) => {
     capturedStore(store);
+    // DEMO-R5-7 : écrire pendant le calcul ne périme pas l'analyse.
     const packet = store.prepareAnalysis({ task: "extract" });
     store.capture(
       parseCaptureCommand({
@@ -361,13 +362,28 @@ test("une correction après export rend la réponse obsolète", () =>
     );
     const preview = store.receiveAnalysis(proposal(packet));
     assert.equal(preview.status, "ready_for_review");
+    const applied = store.applyAnalysis(preview.responseId);
+    assert.equal(applied.status, "applied");
+    assert.equal(applied.baseRevision, 1);
+    assert.equal(store.snapshot().claims.length, 1);
+
+    // Une correction, elle, change ce que l'analyse a lu : réponse périmée.
+    const second = store.prepareAnalysis({ task: "extract" });
+    store.annotate({
+      idempotencyKey: "cognition:annotate:correction",
+      target: { kind: "event", id: store.snapshot().events.at(-1).id },
+      text: "Correction : ce n’était pas mardi mais mercredi.",
+      annotationType: "factual_correction",
+    });
+    const late = store.receiveAnalysis(proposal(second));
+    assert.equal(late.status, "ready_for_review");
+    const claims = store.snapshot().claims.length;
     assert.throws(
-      () => store.applyAnalysis(preview.responseId),
+      () => store.applyAnalysis(late.responseId),
       (error) => error.code === "stale_revision",
     );
-    assert.equal(store.revision, 2);
-    assert.equal(store.snapshot().claims.length, 0);
-    assert.equal(store.getAnalysis(packet.requestId).status, "stale");
+    assert.equal(store.snapshot().claims.length, claims);
+    assert.equal(store.getAnalysis(second.requestId).status, "stale");
     store.close();
   }));
 

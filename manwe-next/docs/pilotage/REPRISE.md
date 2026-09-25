@@ -66,7 +66,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 - **consentement unique** : migration 015 ;
 - **écran du lieu** : `Lieu.tsx`, avec graphe, conversation, journal et ligne d'activité.
 
-Contrôle navigateur : `node scripts/ui-check-lieu.mjs`.
+Contrôle navigateur : `node scripts/ui-check-lieu.mjs`. **Lanceur Windows** : `MANWE.cmd` à la racine (double-clic) met à jour depuis git, installe si besoin, demande la clé DeepSeek (mémorisable, chiffrée pour le compte Windows, hors du dépôt) et ouvre l'interface ; options `-Espace nom`, `-SansMaj`, `-OublierCle`. Corrections après la seconde démonstration (DEMO-R5-7, constats 25 à 28) : extraction avant interprétation, analyses appliquées malgré les notes écrites pendant le calcul, opération refusée écartée seule, conversation capable de lancer la modélisation.
 
 **Prochaine étape** : l'utilisateur rejoue la démonstration dans le lieu (BRIEF-007, lot P4), puis on note les constats. Restent à faire : fusion de deux fiches qui désignent la même personne (D-030) ; lot scellé mesurant la conversation et `propose_person` sur DeepSeek.
 

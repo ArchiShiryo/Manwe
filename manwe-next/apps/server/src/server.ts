@@ -92,7 +92,10 @@ export async function startManweServer(options: ServerOptions) {
     null,
     options.agent ?? {},
   );
-  const interviewer = new Interviewer(store, options.analyst ?? null);
+  const interviewer = new Interviewer(store, options.analyst ?? null, {
+    onModel: () => automatic.now(),
+    analysisState: () => automatic.summary(),
+  });
   const sessionToken = randomBytes(32).toString("base64url");
   const rate = new Map<string, number[]>();
 

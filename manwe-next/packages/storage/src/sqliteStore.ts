@@ -2135,10 +2135,19 @@ export class SqliteMemoryStore {
           : "Du contexte a été ajouté à une lecture.",
         focus,
       };
+    // DEMO-R5-7 (constat 25) : d'abord relever les faits, les personnes et
+    // les épisodes (le graphe se remplit vite), puis interpréter.
     if (fresh.length)
       return {
+        task: "extract",
+        reason: `${fresh.length} nouvelle${fresh.length > 1 ? "s" : ""} note${fresh.length > 1 ? "s" : ""} à relever.`,
+        focus,
+      };
+    const lastInterpret = lastRequest(["interpret", "revise"]) ?? "";
+    if (lastReading > lastInterpret)
+      return {
         task: "interpret",
-        reason: `${fresh.length} nouvelle${fresh.length > 1 ? "s" : ""} note${fresh.length > 1 ? "s" : ""} à comprendre.`,
+        reason: "De nouveaux faits à comprendre.",
         focus,
       };
     const lastExplore = lastRequest(["explore"]) ?? "";
@@ -2402,8 +2411,63 @@ export class SqliteMemoryStore {
           "La proposition contient une opération non autorisée.",
         );
       const packet = JSON.parse(String(request.context_json)) as ContextPacket;
-      const { kept, dropped } = this.withoutMiscited(proposal, packet);
-      this.dryRun(() => this.applyOperations(kept, packet, receivedAt));
+      const miscited = this.withoutMiscited(proposal, packet);
+      let kept = miscited.kept;
+      const dropped = [...miscited.dropped];
+      // Une opération que le moteur refuse (sujet absent des notes, référence
+      // inconnue…) est écartée avec ses dépendantes, comme une citation
+      // fausse (D-025), dans la même limite de 20 %.
+      for (;;) {
+        try {
+          this.dryRun(() => this.applyOperations(kept, packet, receivedAt));
+          break;
+        } catch (error) {
+          const key =
+            error instanceof DomainError
+              ? (error as DomainError & { operationKey?: string }).operationKey
+              : undefined;
+          if (!key) throw error;
+          const bad = new Set([key]);
+          for (let grew = true; grew; ) {
+            grew = false;
+            for (const operation of kept.operations) {
+              if (bad.has(operation.key)) continue;
+              const text = JSON.stringify(operation.payload);
+              if (
+                [...bad].some((item) =>
+                  text.includes(`"proposalKey":"${item}"`),
+                )
+              ) {
+                bad.add(operation.key);
+                grew = true;
+              }
+            }
+          }
+          for (const operation of kept.operations)
+            if (bad.has(operation.key))
+              dropped.push({
+                key: operation.key,
+                kind: operation.kind,
+                code:
+                  operation.key === key
+                    ? (error as DomainError).code
+                    : "dependent_dropped",
+                message:
+                  operation.key === key
+                    ? (error as DomainError).message
+                    : `Dépend de l’opération écartée « ${key} ».`,
+              });
+          kept = {
+            ...kept,
+            operations: kept.operations.filter((item) => !bad.has(item.key)),
+          };
+          if (
+            dropped.length > proposal.operations.length * 0.2 ||
+            !kept.operations.length
+          )
+            throw error;
+        }
+      }
       const status =
         proposal.outcome === "needs_context"
           ? "needs_context"
@@ -2462,6 +2526,24 @@ export class SqliteMemoryStore {
     }
   }
 
+  /**
+   * DEMO-R5-7 (constat 27) : une analyse dure une à deux minutes ; pendant ce
+   * temps, la personne continue d'écrire. Des notes ajoutées ne contredisent
+   * rien de ce que l'analyse a lu : on l'applique quand même. Toute autre
+   * écriture (correction, analyse, choix) la rend périmée.
+   */
+  private canApplyOver(baseRevision: number) {
+    if (this.revision === baseRevision) return true;
+    const since = this.database
+      .prepare(
+        "SELECT command_type FROM revisions WHERE workspace_id = ? AND revision > ?",
+      )
+      .all(this.workspaceId, baseRevision) as SqlRow[];
+    return since.every((row) =>
+      ["capture", "import"].includes(String(row.command_type)),
+    );
+  }
+
   applyAnalysis(responseId: string): ApplicationResult {
     const response = this.database
       .prepare(
@@ -2489,7 +2571,7 @@ export class SqliteMemoryStore {
     const request = this.database
       .prepare("SELECT * FROM analysis_requests WHERE id = ?")
       .get(String(response.request_id)) as SqlRow;
-    if (this.revision !== Number(request.base_revision)) {
+    if (!this.canApplyOver(Number(request.base_revision))) {
       this.database
         .prepare("UPDATE analysis_responses SET status = 'stale' WHERE id = ?")
         .run(responseId);
@@ -2515,7 +2597,7 @@ export class SqliteMemoryStore {
       const lockedRequest = this.database
         .prepare("SELECT * FROM analysis_requests WHERE id = ?")
         .get(String(request.id)) as SqlRow;
-      if (this.revision !== Number(lockedRequest.base_revision))
+      if (!this.canApplyOver(Number(lockedRequest.base_revision)))
         throw new DomainError(
           "stale_revision",
           "La mémoire a changé pendant l’application.",
@@ -2615,74 +2697,82 @@ export class SqliteMemoryStore {
       (left, right) => order.indexOf(left.kind) - order.indexOf(right.kind),
     );
     for (const operation of operations) {
-      if (operation.kind === "propose_claim") {
-        const id = randomUUID();
-        this.database
-          .prepare(
-            "INSERT INTO claims(id, workspace_id, text, category, modality, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
-          )
-          .run(
-            id,
-            this.workspaceId,
-            operation.payload.text,
-            operation.payload.category,
-            operation.payload.modality,
-            operation.payload.validFrom,
-            operation.payload.validTo,
-            timestamp,
-            timestamp,
-          );
-        for (const source of operation.payload.citations)
+      try {
+        if (operation.kind === "propose_claim") {
+          const id = randomUUID();
           this.database
             .prepare(
-              "INSERT INTO claim_sources(claim_id, source_id, span_start, span_end, quote) VALUES (?, ?, ?, ?, ?)",
+              "INSERT INTO claims(id, workspace_id, text, category, modality, knowledge_status, valid_from, valid_to, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'unresolved', ?, ?, 1, ?, ?)",
             )
             .run(
               id,
-              source.sourceId,
-              source.spanStart,
-              source.spanEnd,
-              source.quote,
+              this.workspaceId,
+              operation.payload.text,
+              operation.payload.category,
+              operation.payload.modality,
+              operation.payload.validFrom,
+              operation.payload.validTo,
+              timestamp,
+              timestamp,
             );
-        created.push({ kind: "claim", id });
-        context.keys.set(operation.key, { kind: "claim", id });
-      }
-      if (operation.kind === "propose_event") {
-        const id = randomUUID();
-        this.database
-          .prepare(
-            "INSERT INTO events(id, workspace_id, title, text, category, source_id, episode_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 1, ?, ?)",
-          )
-          .run(
-            id,
-            this.workspaceId,
-            operation.payload.title,
-            operation.payload.text,
-            operation.payload.category,
-            operation.payload.citations[0].sourceId,
-            operation.payload.occurredStart,
-            operation.payload.occurredEnd,
-            operation.payload.temporalPrecision,
-            operation.payload.context,
-            timestamp,
-            timestamp,
-          );
-        created.push({ kind: "event", id });
-        context.keys.set(operation.key, { kind: "event", id });
-      }
-      if (
-        operation.kind === "propose_hypothesis" ||
-        operation.kind === "revise_hypothesis" ||
-        operation.kind === "propose_question" ||
-        operation.kind === "propose_critique" ||
-        operation.kind === "propose_role" ||
-        operation.kind === "propose_direction" ||
-        operation.kind === "propose_goal" ||
-        operation.kind === "propose_person"
-      ) {
-        const result = this.hypotheses.applyOperation(operation, context);
-        created.push(...result.created);
-        changed.push(...result.changed);
+          for (const source of operation.payload.citations)
+            this.database
+              .prepare(
+                "INSERT INTO claim_sources(claim_id, source_id, span_start, span_end, quote) VALUES (?, ?, ?, ?, ?)",
+              )
+              .run(
+                id,
+                source.sourceId,
+                source.spanStart,
+                source.spanEnd,
+                source.quote,
+              );
+          created.push({ kind: "claim", id });
+          context.keys.set(operation.key, { kind: "claim", id });
+        }
+        if (operation.kind === "propose_event") {
+          const id = randomUUID();
+          this.database
+            .prepare(
+              "INSERT INTO events(id, workspace_id, title, text, category, source_id, episode_id, occurred_start, occurred_end, temporal_precision, context, row_version, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 1, ?, ?)",
+            )
+            .run(
+              id,
+              this.workspaceId,
+              operation.payload.title,
+              operation.payload.text,
+              operation.payload.category,
+              operation.payload.citations[0].sourceId,
+              operation.payload.occurredStart,
+              operation.payload.occurredEnd,
+              operation.payload.temporalPrecision,
+              operation.payload.context,
+              timestamp,
+              timestamp,
+            );
+          created.push({ kind: "event", id });
+          context.keys.set(operation.key, { kind: "event", id });
+        }
+        if (
+          operation.kind === "propose_hypothesis" ||
+          operation.kind === "revise_hypothesis" ||
+          operation.kind === "propose_question" ||
+          operation.kind === "propose_critique" ||
+          operation.kind === "propose_role" ||
+          operation.kind === "propose_direction" ||
+          operation.kind === "propose_goal" ||
+          operation.kind === "propose_person"
+        ) {
+          const result = this.hypotheses.applyOperation(operation, context);
+          created.push(...result.created);
+          changed.push(...result.changed);
+        }
+      } catch (error) {
+        // Pour écarter seulement l'opération fautive (DEMO-R5-7, constat 25).
+        if (error instanceof DomainError)
+          (error as DomainError & { operationKey?: string }).operationKey =
+            operation.key;
+        throw error;
       }
     }
     for (const link of context.links) link();
