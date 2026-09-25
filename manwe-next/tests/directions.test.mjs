@@ -489,3 +489,36 @@ test("R5.4 · un objectif émerge de la conversation, reste à adopter, ne rempl
       true,
     );
   }));
+
+test("RAPPORT-011 · une citation mal recopiée est refusée avec un message qui permet de la corriger", () =>
+  withStore((store) => {
+    setup(store);
+    const packet = store.prepareAnalysis({ task: "extract" });
+    const source = packet.sources[0];
+    const quote = source.text.replace("crevé", "crevè");
+    const preview = store.receiveAnalysis(
+      proposal(packet, [
+        {
+          key: "c9",
+          kind: "propose_claim",
+          payload: {
+            text: "Fait mal cité.",
+            category: "reported_observation",
+            modality: "actual",
+            validFrom: null,
+            validTo: null,
+            citations: [{ ...citation(source), quote }],
+          },
+          rationale: "x".repeat(1200),
+        },
+      ]),
+    );
+    assert.equal(preview.status, "rejected");
+    assert.equal(preview.errors[0].code, "citation_mismatch");
+    assert.match(preview.errors[0].message, /« c9 »/);
+    assert.match(
+      preview.errors[0].message,
+      /crevé/,
+      "le texte exact est rappelé",
+    );
+  }));

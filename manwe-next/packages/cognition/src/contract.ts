@@ -1034,7 +1034,7 @@ function operation(value: unknown): CognitiveOperation {
   const input = object(value, "operation");
   exactKeys(input, ["key", "kind", "payload", "rationale"], "operation");
   const key = text(input.key, "operation.key", 80);
-  const rationale = text(input.rationale, "operation.rationale", 800);
+  const rationale = text(input.rationale, "operation.rationale", 1500);
   const payload = object(input.payload, "operation.payload");
   if (input.kind === "propose_goal") {
     exactKeys(

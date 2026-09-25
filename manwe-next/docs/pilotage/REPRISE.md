@@ -50,7 +50,9 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **R5.3 fait** (`node scripts/ui-check-r5-3.mjs`).
 
-**Prochaine étape** : R5.1, R5.4, R5.6 et R5.7 (démonstration à l'utilisateur), puis les cas R5 d'IA-A.5.
+**R5.4 codé, lot R5-S02 non validé** ([RAPPORT-011](./rapports/RAPPORT-011.md)) : l'objectif émerge de la conversation (`propose_goal`, contrat 1.6, prompt v8), et s'adopte, se reformule ou s'écarte sur l'écran Intentions. P02 (volley) passe tout ; P01 (colocation) perd trois analyses sur des citations mal recopiées.
+
+**Prochaine étape** : faire trancher D-025 par l'utilisateur (application partielle, sujets de groupe, taille des paquets), puis sceller et jouer R5-S03 (R5.1, R5.4, R5.6), puis R5.7 (démonstration à l'utilisateur). À confirmer aussi : D-023 et D-024.
 
 **Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
 
@@ -87,7 +89,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 ```sh
 cd manwe-next
 npm ci
-npm test            # 98 tests au 25 septembre 2026
+npm test            # 100 tests au 25 septembre 2026
 npm run typecheck
 npm run dev         # interface http://127.0.0.1:5180, service :5181
 

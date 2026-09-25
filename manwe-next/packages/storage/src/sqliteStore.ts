@@ -2374,7 +2374,10 @@ export class SqliteMemoryStore {
         )
           throw new DomainError(
             "citation_mismatch",
-            "La citation n’est pas une tranche exacte de la source.",
+            // RAPPORT-011 : le message nomme l'opération et le texte exact de
+            // la source, pour que la seconde tentative informée (D-021) puisse
+            // corriger une citation mal recopiée.
+            `La citation de l’opération « ${operation.key} » n’est pas une tranche exacte de la source : « ${citation.quote.slice(0, 120)} ». Texte exact de la source à ces positions : « ${source.text.slice(citation.spanStart, Math.min(citation.spanEnd, citation.spanStart + 120))} ». Recopie le texte de la source caractère pour caractère, ou cite la source entière.`,
           );
       }
     }
