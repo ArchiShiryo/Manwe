@@ -3,7 +3,7 @@
 // leurs identifiants. Elle porte la révision dont elle est issue, pour qu'une
 // synthèse ancienne ne soit jamais présentée comme celle d'une révision plus
 // récente (ROADMAP §6).
-import type { WorkspaceSnapshot } from "../../domain/src/memory.ts";
+import type { Hypothesis, WorkspaceSnapshot } from "../../domain/src/memory.ts";
 import type { GraphProjection } from "./projection.ts";
 import { rankHypotheses } from "./projection.ts";
 
@@ -38,6 +38,16 @@ export type Synthesis = {
   /** Éléments qui contredisent une lecture affichée. */
   counterexamples: SynthesisFact[];
   openQuestions: { questionId: string; question: string }[];
+  /**
+   * R5.2 : la situation active tient en deux lectures concurrentes au plus
+   * (la principale et son alternative directe) et une question qui les
+   * départage.
+   */
+  situation: {
+    principal: SynthesisReading | null;
+    competitor: SynthesisReading | null;
+    question: { questionId: string; question: string } | null;
+  };
   relation: {
     episodes: number;
     counterexamples: number;
@@ -124,8 +134,79 @@ export function buildSynthesis(
   const relation = relationId
     ? snapshot.relations.find((item) => item.id === relationId)
     : undefined;
+  const describe = (hypothesis: Hypothesis): SynthesisReading => {
+    const live = hypothesis.evidence.filter(
+      (item) => item.supersededRevision === null,
+    );
+    const alternative = snapshot.hypotheses.find(
+      (item) =>
+        item.id !== hypothesis.id &&
+        (item.id === hypothesis.alternativeTo ||
+          item.alternativeTo === hypothesis.id),
+    );
+    return {
+      hypothesisId: hypothesis.id,
+      statement: hypothesis.statement,
+      depth: hypothesis.depth,
+      status: hypothesis.status,
+      confidence: hypothesis.confidence,
+      rank: hypothesis.rank,
+      supports: live.filter((item) => item.stance === "supports").length,
+      contradicts: live.filter((item) => item.stance === "contradicts").length,
+      alternative: alternative?.statement ?? null,
+    };
+  };
+  const active = (item: Hypothesis) =>
+    item.status !== "superseded" && item.status !== "contradicted";
+  const principal = readings.find(active) ?? null;
+  const sharesSubject = (left: Hypothesis, right: Hypothesis) =>
+    left.subjects.some((a) =>
+      right.subjects.some((b) => JSON.stringify(a) === JSON.stringify(b)),
+    );
+  const competitor = principal
+    ? (snapshot.hypotheses.find(
+        (item) =>
+          item.id !== principal.id &&
+          active(item) &&
+          (item.id === principal.alternativeTo ||
+            item.alternativeTo === principal.id),
+      ) ??
+      readings.find(
+        (item) =>
+          item.id !== principal.id &&
+          active(item) &&
+          sharesSubject(item, principal),
+      ) ??
+      null)
+    : null;
+  const situationIds = new Set([principal?.id, competitor?.id].filter(Boolean));
+  const situationQuestion =
+    snapshot.questions
+      .filter(
+        (question) =>
+          question.status === "open" &&
+          question.targets.some(
+            (target) =>
+              target.kind === "hypothesis" && situationIds.has(target.id),
+          ),
+      )
+      .sort(
+        (left, right) =>
+          right.createdAt.localeCompare(left.createdAt) ||
+          left.id.localeCompare(right.id),
+      )[0] ?? null;
   return {
     revision: projection.revision,
+    situation: {
+      principal: principal ? describe(principal) : null,
+      competitor: competitor ? describe(competitor) : null,
+      question: situationQuestion
+        ? {
+            questionId: situationQuestion.id,
+            question: situationQuestion.question,
+          }
+        : null,
+    },
     facts: facts.slice(0, MAX_FACTS),
     readings: readings.slice(0, MAX_READINGS).map((hypothesis) => {
       const live = hypothesis.evidence.filter(

@@ -77,6 +77,41 @@ test("R4.6 · la synthèse ne reprend que des faits cités et non contestés, da
       "déterministe",
     );
 
+    // R5.2 : deux lectures concurrentes au plus et une question qui les départage.
+    const { principal, competitor, question } = synthesis.situation;
+    assert.ok(principal, "une lecture principale");
+    assert.equal(principal.hypothesisId, synthesis.readings[0].hypothesisId);
+    if (competitor) {
+      assert.notEqual(competitor.hypothesisId, principal.hypothesisId);
+      const hypothesis = snapshot.hypotheses.find(
+        (item) => item.id === principal.hypothesisId,
+      );
+      const rival = snapshot.hypotheses.find(
+        (item) => item.id === competitor.hypothesisId,
+      );
+      assert.ok(
+        hypothesis.alternativeTo === rival.id ||
+          rival.alternativeTo === hypothesis.id ||
+          rival.subjects.some((a) =>
+            hypothesis.subjects.some(
+              (b) => JSON.stringify(a) === JSON.stringify(b),
+            ),
+          ),
+        "la concurrente est l'alternative ou porte sur le même sujet",
+      );
+    }
+    if (question) {
+      const target = snapshot.questions.find(
+        (item) => item.id === question.questionId,
+      );
+      assert.ok(
+        target.targets.some((ref) =>
+          [principal.hypothesisId, competitor?.hypothesisId].includes(ref.id),
+        ),
+        "la question vise l'une des deux lectures",
+      );
+    }
+
     // Une correction retire le fait de la synthèse suivante.
     const target = synthesis.facts[0];
     store.annotate({

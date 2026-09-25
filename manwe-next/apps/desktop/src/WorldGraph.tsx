@@ -302,76 +302,120 @@ function SynthesisPanel({
             ` · ${synthesis.relation.episodesPer30Days} par 30 jours`}
         </p>
       )}
-      {synthesis.readings.length > 0 && (
-        <>
-          <h3>Lectures principales</h3>
-          <ol>
-            {synthesis.readings.map((reading) => (
-              <li key={reading.hypothesisId}>
-                <button
-                  className="world-synthesis-link"
-                  onClick={() => onSelect(`hypothesis:${reading.hypothesisId}`)}
-                >
-                  {reading.statement}
-                </button>
-                <small>
-                  {reading.depth} ·{" "}
-                  {STATUS_LABELS[reading.status] ?? reading.status} · confiance{" "}
-                  {CONFIDENCE_LABELS[reading.confidence] ?? reading.confidence}{" "}
-                  · {reading.supports} pour, {reading.contradicts} contre
-                </small>
-                {reading.alternative && (
-                  <small>Alternative : {reading.alternative}</small>
-                )}
-              </li>
-            ))}
-          </ol>
-        </>
+      {synthesis.situation.principal && (
+        <div className="world-situation" aria-label="Situation active">
+          <h3>Situation</h3>
+          <div className="world-situation-readings">
+            {[synthesis.situation.principal, synthesis.situation.competitor]
+              .filter((reading) => reading !== null)
+              .map((reading, index) => (
+                <article key={reading.hypothesisId}>
+                  <span className="eyebrow">
+                    {index === 0 ? "LECTURE PRINCIPALE" : "LECTURE CONCURRENTE"}
+                  </span>
+                  <button
+                    className="world-synthesis-link"
+                    onClick={() =>
+                      onSelect(`hypothesis:${reading.hypothesisId}`)
+                    }
+                  >
+                    {reading.statement}
+                  </button>
+                  <small>
+                    {reading.depth} ·{" "}
+                    {STATUS_LABELS[reading.status] ?? reading.status} ·
+                    confiance{" "}
+                    {CONFIDENCE_LABELS[reading.confidence] ??
+                      reading.confidence}{" "}
+                    · {reading.supports} pour, {reading.contradicts} contre
+                  </small>
+                </article>
+              ))}
+          </div>
+          {synthesis.situation.question && (
+            <p className="world-situation-question">
+              ? {synthesis.situation.question.question}
+            </p>
+          )}
+        </div>
       )}
-      {synthesis.facts.length > 0 && (
-        <>
-          <h3>Ce qui est établi</h3>
-          <ul>
-            {synthesis.facts.map((fact) => (
-              <li key={fact.claimId}>
-                {fact.text}{" "}
-                <small>
-                  {CATEGORY_LABELS[fact.category] ?? fact.category}
-                  {fact.quote && ` · « ${fact.quote} »`}
-                </small>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {synthesis.counterexamples.length > 0 && (
-        <>
-          <h3>Ce qui ne colle pas</h3>
-          <ul>
-            {synthesis.counterexamples.map((fact) => (
-              <li key={fact.claimId}>
-                {fact.text}
-                {fact.quote && <small> · « {fact.quote} »</small>}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {synthesis.openQuestions.length > 0 && (
-        <>
-          <h3>Ce qui reste ouvert</h3>
-          <ul>
-            {synthesis.openQuestions.map((question) => (
-              <li key={question.questionId}>? {question.question}</li>
-            ))}
-          </ul>
-        </>
-      )}
-      {synthesis.truncated && (
-        <p className="world-graph-note">
-          Synthèse abrégée : recentrez sur une lecture pour tout voir.
-        </p>
-      )}
+      <details className="world-synthesis-all">
+        <summary>Tout voir</summary>
+        {synthesis.readings.length > 0 && (
+          <>
+            <h3>Lectures principales</h3>
+            <ol>
+              {synthesis.readings.map((reading) => (
+                <li key={reading.hypothesisId}>
+                  <button
+                    className="world-synthesis-link"
+                    onClick={() =>
+                      onSelect(`hypothesis:${reading.hypothesisId}`)
+                    }
+                  >
+                    {reading.statement}
+                  </button>
+                  <small>
+                    {reading.depth} ·{" "}
+                    {STATUS_LABELS[reading.status] ?? reading.status} ·
+                    confiance{" "}
+                    {CONFIDENCE_LABELS[reading.confidence] ??
+                      reading.confidence}{" "}
+                    · {reading.supports} pour, {reading.contradicts} contre
+                  </small>
+                  {reading.alternative && (
+                    <small>Alternative : {reading.alternative}</small>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
+        {synthesis.facts.length > 0 && (
+          <>
+            <h3>Ce qui est établi</h3>
+            <ul>
+              {synthesis.facts.map((fact) => (
+                <li key={fact.claimId}>
+                  {fact.text}{" "}
+                  <small>
+                    {CATEGORY_LABELS[fact.category] ?? fact.category}
+                    {fact.quote && ` · « ${fact.quote} »`}
+                  </small>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {synthesis.counterexamples.length > 0 && (
+          <>
+            <h3>Ce qui ne colle pas</h3>
+            <ul>
+              {synthesis.counterexamples.map((fact) => (
+                <li key={fact.claimId}>
+                  {fact.text}
+                  {fact.quote && <small> · « {fact.quote} »</small>}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {synthesis.openQuestions.length > 0 && (
+          <>
+            <h3>Ce qui reste ouvert</h3>
+            <ul>
+              {synthesis.openQuestions.map((question) => (
+                <li key={question.questionId}>? {question.question}</li>
+              ))}
+            </ul>
+          </>
+        )}
+        {synthesis.truncated && (
+          <p className="world-graph-note">
+            Synthèse abrégée : recentrez sur une lecture pour tout voir.
+          </p>
+        )}
+      </details>
     </section>
   );
 }

@@ -105,7 +105,14 @@ try {
   const hypothesisLabel = await page
     .locator(".world-node-hypothesis.is-focus")
     .getAttribute("aria-label");
-  const factsBefore = await page.locator(".world-synthesis").innerText();
+  // La synthèse complète est repliée (R5.2) : on l'ouvre avant de la lire.
+  const openSynthesis = async () => {
+    await page
+      .locator(".world-synthesis-all")
+      .evaluateAll((items) => items.forEach((item) => (item.open = true)));
+    return page.locator(".world-synthesis").innerText();
+  };
+  const factsBefore = await openSynthesis();
   await claimNode.click();
   await page.getByRole("button", { name: "Corriger", exact: true }).click();
   await page
@@ -124,7 +131,7 @@ try {
     why.toLowerCase().includes("corrigé par vous"),
     "« Pourquoi ? » signale la correction",
   );
-  const synthesis = await page.locator(".world-synthesis").innerText();
+  const synthesis = await openSynthesis();
   const established = (synthesis.split("Ce qui est établi")[1] ?? "").split(
     /Ce qui ne colle pas|Ce qui reste ouvert/,
   )[0];

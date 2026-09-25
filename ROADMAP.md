@@ -295,7 +295,7 @@ Passage : changer de personne ne laisse aucun texte du scénario précédent ; u
 Objectif : valider le parcours cognitif de la vision, avec de vraies transitions métier et Sol comme LLM assisté. L'automatisation de ce parcours est validée séparément à IA-A.
 
 - [ ] R5.1 Réaliser le parcours de trois personnes et vingt événements depuis un espace vide.
-- [ ] R5.2 Montrer au maximum deux hypothèses concurrentes et une question utile à la situation active.
+- [x] R5.2 Montrer au maximum deux hypothèses concurrentes et une question utile à la situation active. (Preuve, 25 septembre : `situation` de `buildSynthesis` : lecture principale, sa concurrente directe (alternative active, sinon lecture de même sujet) et la question ouverte la plus récente qui vise l'une des deux ; affichée en tête de la synthèse du graphe, le reste replié sous « Tout voir » ; `tests/synthesis.test.mjs`.)
 - [ ] R5.3 Permettre la correction sur une preuve, la réponse à une question et l'inspection de la révision produite.
 - [ ] R5.4 Faire émerger un problème et un objectif de la conversation ; rendre leur formulation modifiable immédiatement.
 - [x] R5.5 Produire deux directions qualitatives liées aux données : hypothèses, conditions, effort, limites, signaux à observer et possibilité de ne rien entreprendre. Chaque direction nomme le levier qu'elle actionne dans le modèle stratégique et la réponse prédite des acteurs, y compris la phase transitoire (D-017). (Preuve, 25 septembre : BRIEF-005, opération `propose_direction` du contrat 1.5, prompt v7 ; lot R5-S01 en mode automatique, 11/12 [L], 2/2 [B], aucun interdit ([RAPPORT-010](./manwe-next/docs/pilotage/rapports/RAPPORT-010.md)).)
