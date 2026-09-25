@@ -54,7 +54,9 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **BRIEF-006 codé, lot R5-S03 non validé** ([RAPPORT-012](./rapports/RAPPORT-012.md)) : mémoire de travail (D-026), requêtes libres du modèle en lecture seule (D-023), sujets de groupe et application partielle (D-025), pas de plafond de directions (D-024). Aucune analyse perdue, 9/9 [L], 3/4 [B] : les paquets A2–A5 ne baissent que de 23,4 % contre 40 % attendus, car les lectures et les directions ne sont pas encore allégées.
 
-**Prochaine étape** : alléger les lectures et les directions non choisies dans la mémoire de travail (détail servi par `get_hypothesis`), mesurer la réduction sur un même état, faire choisir au harnais la direction cohérente avec le résultat, puis sceller et jouer R5-S04, puis R5.7 (démonstration à l'utilisateur). Corpus de téléréalité (D-022) : saison 1 de Survivor en sous-titres bruts dans `manwe-next/.qa/corpus/survivor/` (ignoré par git, jamais commité).
+**Lot R5-S04 non validé** ([RAPPORT-013](./rapports/RAPPORT-013.md)) : lectures et directions non choisies résumées (prompt v10), réduction de 48,7 % sur un même état, le modèle ouvre les lectures par `get_hypothesis` avant de proposer ses directions ; 9/9 [L], 6/8 [B] : la règle de choix par mots-clés du harnais a choisi des directions sans rapport avec le résultat.
+
+**Prochaine étape** : corriger la règle de choix du harnais (recommandation : un résultat par levier dans la fixture), sceller et jouer R5-S05, puis R5.7 (démonstration à l'utilisateur). À trancher : accepter dans le contrat qu'une référence porte `claim` et `stance` (deux rejets de format). Corpus de téléréalité (D-022) : saison 1 de Survivor en sous-titres bruts dans `manwe-next/.qa/corpus/survivor/` (ignoré par git) ; prétraitement par DeepSeek en discussion avec l'utilisateur.
 
 **Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
 
