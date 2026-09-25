@@ -3594,3 +3594,182 @@ kbd {
 .personal-mechanism dd {
   margin: 0;
 }
+
+/* Graphe vivant du mode personnel (R4.3) : sémiologie des thèmes. */
+.world-graph {
+  --edge: #b9c4b0;
+  --edge-muted: #6f7a6c;
+  position: relative;
+  margin: 8px 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: #0f1411;
+}
+.world-graph-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.world-graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.world-graph-legend span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.world-graph-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+}
+.world-graph-empty,
+.world-graph-note {
+  color: var(--muted);
+  font-size: 11px;
+}
+.world-edge {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 1.2;
+}
+.world-edge-reported {
+  stroke-dasharray: 7 4;
+}
+.world-edge-impression {
+  stroke-dasharray: 1.5 4;
+  stroke-linecap: round;
+}
+.world-edge-unknown {
+  stroke: var(--edge-muted);
+  stroke-dasharray: 3 5;
+}
+.world-edge-contradicts {
+  stroke: var(--clay);
+}
+.world-edge-double-outer {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 4;
+}
+.world-edge-double-inner {
+  fill: none;
+  stroke: #0f1411;
+  stroke-width: 1.6;
+}
+.world-edge-inferred.tremor-low {
+  animation: world-tremor 2.4s ease-in-out infinite;
+}
+.world-edge-inferred.tremor-medium {
+  animation: world-tremor 1.2s ease-in-out infinite;
+}
+.world-edge-inferred.tremor-high {
+  animation: world-tremor-strong 0.6s ease-in-out infinite;
+}
+@keyframes world-tremor {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0.6px, -0.6px);
+  }
+}
+@keyframes world-tremor-strong {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(1.4px, -1px);
+  }
+  75% {
+    transform: translate(-1.2px, 1.2px);
+  }
+}
+.world-node {
+  cursor: pointer;
+  outline: none;
+}
+.world-node circle,
+.world-node rect,
+.world-node polygon {
+  fill: #151b17;
+  stroke: var(--edge);
+  stroke-width: 1.2;
+}
+.world-node-self circle,
+.world-node.is-focus circle,
+.world-node.is-focus rect,
+.world-node.is-focus polygon {
+  stroke: var(--sage);
+  stroke-width: 2;
+}
+.world-node-hypothesis polygon {
+  stroke-dasharray: 3 2;
+}
+.world-node-unknown circle,
+.world-node-question circle {
+  stroke: var(--edge-muted);
+  stroke-dasharray: 3 3;
+}
+.world-node.is-selected circle,
+.world-node.is-selected rect,
+.world-node.is-selected polygon,
+.world-node:focus-visible circle,
+.world-node:focus-visible rect,
+.world-node:focus-visible polygon {
+  stroke: var(--blue);
+  stroke-width: 2.4;
+}
+.world-node text {
+  fill: #c8d0c2;
+  font-size: 11px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.world-node .world-node-unknown,
+.world-node .world-node-rank {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.world-graph-detail {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  font-size: 12px;
+}
+.world-graph-detail p {
+  margin: 6px 0;
+}
+.world-graph-detail small,
+.world-graph-detail ul {
+  color: var(--muted);
+}
+.world-graph-detail ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-edge-inferred {
+    animation: none !important;
+  }
+}
+@media (max-width: 640px) {
+  /* Le SVG est réduit d'environ 2,5 fois : on compense les libellés. */
+  .world-node text {
+    font-size: 24px;
+  }
+  .world-node .world-node-unknown,
+  .world-node .world-node-rank {
+    font-size: 22px;
+  }
+}

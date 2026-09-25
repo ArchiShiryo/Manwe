@@ -29,6 +29,7 @@ import type {
   ContextPacket,
 } from "../../../packages/cognition/src/contract.ts";
 import { MemoryApiError, memoryApi } from "./memoryApi.ts";
+import { WorldGraph } from "./WorldGraph.tsx";
 import analystPrompt from "../../../packages/cognition/prompts/analyst-v6.md?raw";
 import {
   claimModalityLabels,
@@ -131,6 +132,9 @@ export function PersonalWorld({
           </button>
         )}
       </div>
+      {(snapshot.relations.length > 0 || snapshot.hypotheses.length > 0) && (
+        <WorldGraph snapshot={snapshot} />
+      )}
       <div className="personal-world-foot">
         <span>
           <ShieldCheck size={13} /> Sources brutes conservées

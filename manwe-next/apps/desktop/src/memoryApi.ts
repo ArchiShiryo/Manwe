@@ -18,6 +18,10 @@ import type {
   ContextPacket,
   PrepareAnalysisCommand,
 } from "../../../packages/cognition/src/contract.ts";
+import type {
+  FocusContext,
+  GraphProjection,
+} from "../../../packages/cognition/src/projection.ts";
 
 const API_ORIGIN = "http://127.0.0.1:5181";
 
@@ -103,6 +107,11 @@ class MemoryApi {
 
   snapshot() {
     return this.request<WorkspaceSnapshot>("/api/workspace");
+  }
+
+  graph(focus: FocusContext) {
+    const params = new URLSearchParams({ kind: focus.kind, id: focus.id });
+    return this.request<GraphProjection>(`/api/graph?${params}`);
   }
 
   search(query: MemorySearchQuery) {

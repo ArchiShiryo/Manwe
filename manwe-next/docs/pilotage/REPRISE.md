@@ -35,7 +35,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 **Prochaine étape** : (les relations et leurs indicateurs s'affichent dans l'inspecteur depuis le 25 septembre) R4.0e est validé ; le registre ontologique (R4.0d) est amorcé : `packages/cognition/src/ontology.ts` (types, liens, actions, vocabulaires) et `tests/ontology.test.mjs`, qui échoue si le contrat, le prompt ou le stockage divergent. Reste à en faire dériver le prompt et le paquet, puis le graphe et le graphe R4. La sur-lecture de l'utilisateur est corrigée par le prompt v6 ([RAPPORT-007](./rapports/RAPPORT-007.md)). La pull request [ArchiShiryo/Manwe#1](https://github.com/ArchiShiryo/Manwe/pull/1) attend d'être fusionnée dans `main`.
 
-**Graphe (R4.1-R4.2 faits)** : `projectGraph(snapshot, focus)` produit nœuds et liens typés (styles épistémiques observé, rapporté, impression, inféré, inconnu) ; route `GET /api/graph?kind=person|self|relation|hypothesis|question&id=…`. Prochaine étape : R4.3, rendre ces projections dans l'interface avec les thèmes de `docs/references/themes/`.
+**Graphe (R4.1-R4.3 faits)** : `projectGraph(snapshot, focus)` produit nœuds et liens typés (styles épistémiques observé, rapporté, impression, inféré, inconnu) ; route `GET /api/graph?kind=person|self|relation|hypothesis|question&id=…`. L'écran « Monde » du mode personnel l'affiche (`apps/desktop/src/WorldGraph.tsx`, disposition déterministe dans `graphLayout.ts`) : focus au centre, anneaux par distance, recentrage au clic, double trait qui tremble d'autant plus que la confiance est basse. Prochaine étape : R4.4 (stabilité des positions entre recentrages, sélection préservée) puis R4.5 (preuves reliées aux extraits, « Pourquoi ? », « Corriger »).
 
 **Thèmes d'interface** : les maquettes et thèmes de l'utilisateur sont dans `manwe-next/docs/references/themes/` ([A-ADAPTER.md](../references/themes/A-ADAPTER.md)) ; ils sont à adapter à `apps/desktop`.
 
@@ -72,7 +72,7 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 ```sh
 cd manwe-next
 npm ci
-npm test            # 77 tests au 25 septembre 2026
+npm test            # 79 tests au 25 septembre 2026
 npm run typecheck
 npm run dev         # interface http://127.0.0.1:5180, service :5181
 
@@ -104,6 +104,8 @@ node scripts/scenario-run.mjs summary packages/evaluation/runs/<date>-<nom>
 - `node:sqlite` est encore expérimental : les avertissements sont normaux.
 - `npx prettier --write` ne doit jamais toucher `packages/evaluation/runs/` ni `packages/cognition/prompts/` : ils sont protégés par `.prettierignore`.
 - L'interface de ChatGPT insère `:chatgpt-content-reference{index="0"}`. Le harnais retire ce marqueur et le signale dans le reçu.
+- Ne jamais lancer `pkill -f …` : le motif correspond aussi au shell courant, qui est tué. Arrêter les serveurs par PID (`ps aux`, puis `kill`).
+- Pour voir l'interface sur des données réelles : copier un `final.sqlite3` de run, puis lancer le service avec `LOCALAPPDATA=<dossier> MANWE_DATABASE_PATH=<copie> MANWE_WORKSPACE_ID=evaluation-<run>-<scénario>` (l'identifiant d'espace doit correspondre, sinon l'instantané est vide).
 - Les bases de travail des runs sont dans `.qa/` (éphémère). Les copies versionnées `prepared.sqlite3` et `final.sqlite3` permettent de reprendre ailleurs.
 
 ## 8. Horizon
