@@ -1,8 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import {
+  memberKey,
+  relationIndicators,
+  relationKey,
+  type RoleFact,
+} from "../../cognition/src/relations.ts";
+import {
   DomainError,
   type AnnotationType,
+  type EpisodeRoleRecord,
+  type RelationMember,
+  type RelationRecord,
   type EntityRef,
   type Hypothesis,
   type HypothesisSubject,
@@ -13,6 +22,7 @@ import type {
   CognitiveOperation,
   ContextPacket,
   EvidenceInput,
+  MemberInput,
   TargetRef,
 } from "../../cognition/src/contract.ts";
 import {
@@ -83,6 +93,16 @@ export class HypothesisStore {
           ? { kind: "self" }
           : { kind: "person", personId: String(subject.person_id) },
     );
+    for (const link of this.database
+      .prepare(
+        "SELECT relation_id FROM hypothesis_relations WHERE hypothesis_id = ? ORDER BY relation_id",
+      )
+      .all(id) as SqlRow[])
+      subjects.push({
+        kind: "relation",
+        relationId: String(link.relation_id),
+        members: this.relationMembers(String(link.relation_id)),
+      });
     const evidence = (
       this.database
         .prepare(
@@ -136,7 +156,8 @@ export class HypothesisStore {
       validFrom: nullableString(row.valid_from),
       validTo: nullableString(row.valid_to),
       alternativeTo: nullableString(row.alternative_to),
-      rank: row.rank === null || row.rank === undefined ? null : Number(row.rank),
+      rank:
+        row.rank === null || row.rank === undefined ? null : Number(row.rank),
       mechanism: row.mechanism_json
         ? (JSON.parse(String(row.mechanism_json)) as Hypothesis["mechanism"])
         : null,
@@ -210,6 +231,141 @@ export class HypothesisStore {
 
   summary(hypothesisId: string, upToRevision?: number): EvidenceSummary {
     return independentUnits(this.evidenceFacts(hypothesisId, upToRevision));
+  }
+
+  // ---- Relations et rôles (BRIEF-004) --------------------------------
+
+  relationMembers(relationId: string): RelationMember[] {
+    return (
+      this.database
+        .prepare(
+          "SELECT member_kind, person_id FROM relation_members WHERE relation_id = ? ORDER BY member_kind, person_id",
+        )
+        .all(relationId) as SqlRow[]
+    ).map((row) =>
+      row.member_kind === "self"
+        ? { kind: "self" }
+        : { kind: "person", personId: String(row.person_id) },
+    );
+  }
+
+  /** Relation d'une dyade, créée au besoin : une dyade n'existe qu'une fois. */
+  ensureRelation(members: RelationMember[], timestamp: string): string {
+    const keys = members.map(memberKey);
+    if (new Set(keys).size !== 2)
+      throw new DomainError(
+        "invalid_subject",
+        "Une relation réunit deux membres distincts.",
+      );
+    const key = relationKey(keys);
+    const existing = this.database
+      .prepare(
+        "SELECT id FROM relations WHERE workspace_id = ? AND member_key = ?",
+      )
+      .get(this.workspaceId, key) as SqlRow | undefined;
+    if (existing) return String(existing.id);
+    const id = randomUUID();
+    this.database
+      .prepare(
+        "INSERT INTO relations(id, workspace_id, member_key, created_at) VALUES (?, ?, ?, ?)",
+      )
+      .run(id, this.workspaceId, key, timestamp);
+    for (const member of members)
+      this.database
+        .prepare(
+          "INSERT INTO relation_members(relation_id, member_kind, person_id) VALUES (?, ?, ?)",
+        )
+        .run(
+          id,
+          member.kind,
+          member.kind === "person" ? member.personId : null,
+        );
+    return id;
+  }
+
+  roles(): EpisodeRoleRecord[] {
+    return (
+      this.database
+        .prepare(
+          "SELECT * FROM event_roles WHERE workspace_id = ? ORDER BY created_at, id",
+        )
+        .all(this.workspaceId) as SqlRow[]
+    ).map((row) => ({
+      id: String(row.id),
+      eventId: String(row.event_id),
+      subject:
+        row.subject_kind === "self"
+          ? { kind: "self" }
+          : { kind: "person", personId: String(row.person_id) },
+      role: String(row.role) as EpisodeRoleRecord["role"],
+      outcome: (row.outcome ?? null) as EpisodeRoleRecord["outcome"],
+      citations: JSON.parse(String(row.citations_json)),
+      createdRevision: Number(row.created_revision),
+    }));
+  }
+
+  private roleFacts(): RoleFact[] {
+    return (
+      this.database
+        .prepare(
+          "SELECT r.*, e.occurred_start FROM event_roles r JOIN events e ON e.id = r.event_id WHERE r.workspace_id = ?",
+        )
+        .all(this.workspaceId) as SqlRow[]
+    ).map((row) => ({
+      eventId: String(row.event_id),
+      member:
+        row.subject_kind === "self"
+          ? "self"
+          : `person:${String(row.person_id)}`,
+      role: String(row.role) as RoleFact["role"],
+      outcome: (row.outcome ?? null) as RoleFact["outcome"],
+      occurredAt: nullableString(row.occurred_start),
+    }));
+  }
+
+  /**
+   * Relations connues et dyades implicites « utilisateur + personne » ou
+   * « personne + personne » qui partagent au moins un épisode avec rôles,
+   * avec leurs indicateurs calculés.
+   */
+  relations(): RelationRecord[] {
+    const facts = this.roleFacts();
+    const byEvent = new Map<string, Set<string>>();
+    for (const fact of facts) {
+      const set = byEvent.get(fact.eventId) ?? new Set<string>();
+      set.add(fact.member);
+      byEvent.set(fact.eventId, set);
+    }
+    const keys = new Set<string>();
+    for (const row of this.database
+      .prepare("SELECT member_key FROM relations WHERE workspace_id = ?")
+      .all(this.workspaceId) as SqlRow[])
+      keys.add(String(row.member_key));
+    for (const members of byEvent.values()) {
+      const list = [...members].sort();
+      for (let i = 0; i < list.length; i += 1)
+        for (let j = i + 1; j < list.length; j += 1)
+          keys.add(relationKey([list[i], list[j]]));
+    }
+    const records: RelationRecord[] = [];
+    for (const key of [...keys].sort()) {
+      const members = key.split("|");
+      const stored = this.database
+        .prepare(
+          "SELECT id FROM relations WHERE workspace_id = ? AND member_key = ?",
+        )
+        .get(this.workspaceId, key) as SqlRow | undefined;
+      records.push({
+        id: stored ? String(stored.id) : `implicit:${key}`,
+        members: members.map((member) =>
+          member === "self"
+            ? { kind: "self" }
+            : { kind: "person", personId: member.slice("person:".length) },
+        ),
+        indicators: relationIndicators(members, facts),
+      });
+    }
+    return records;
   }
 
   /** Révision du dernier accord de l'utilisateur sur cette hypothèse, ou null. */
@@ -460,13 +616,35 @@ export class HypothesisStore {
     return ref.id;
   }
 
+  private resolveEvent(ref: TargetRef, context: OperationContext): string {
+    if ("proposalKey" in ref) {
+      const local = context.keys.get(ref.proposalKey);
+      if (!local || local.kind !== "event")
+        throw new DomainError(
+          "unknown_proposal_key",
+          `La clé ${ref.proposalKey} ne désigne pas un événement de cette proposition.`,
+        );
+      return local.id;
+    }
+    if (ref.kind !== "event")
+      throw new DomainError("invalid_reference", "Référence event attendue.");
+    const inPacket = context.packet.entities.some(
+      (entity) =>
+        (entity as { id?: string; title?: string }).id === ref.id &&
+        (entity as { title?: string }).title !== undefined,
+    );
+    if (!inPacket)
+      throw new DomainError(
+        "reference_not_in_context",
+        `event:${ref.id} n’appartient pas au paquet de contexte.`,
+      );
+    return ref.id;
+  }
+
   private resolveSubject(
-    subject: Extract<
-      CognitiveOperation,
-      { kind: "propose_hypothesis" }
-    >["payload"]["subjects"][number],
+    subject: MemberInput,
     context: OperationContext,
-  ): HypothesisSubject {
+  ): RelationMember {
     if ("self" in subject) return { kind: "self" };
     if ("person" in subject) {
       const inPacket = context.packet.entities.some(
@@ -622,9 +800,20 @@ export class HypothesisStore {
           payload.rank,
           payload.mechanism ? JSON.stringify(payload.mechanism) : null,
         );
-      const subjects = payload.subjects.map((subject) =>
-        this.resolveSubject(subject, context),
-      );
+      const subjects: RelationMember[] = [];
+      for (const subject of payload.subjects) {
+        if ("relation" in subject) {
+          const members = subject.relation.map((member) =>
+            this.resolveSubject(member, context),
+          );
+          const relationId = this.ensureRelation(members, context.timestamp);
+          this.database
+            .prepare(
+              "INSERT OR IGNORE INTO hypothesis_relations(hypothesis_id, relation_id) VALUES (?, ?)",
+            )
+            .run(id, relationId);
+        } else subjects.push(this.resolveSubject(subject, context));
+      }
       const seen = new Set<string>();
       for (const subject of subjects) {
         const key =
@@ -696,6 +885,38 @@ export class HypothesisStore {
       return { created: [{ kind: "hypothesis", id }], changed: [] };
     }
 
+    if (operation.kind === "propose_role") {
+      const payload = operation.payload;
+      const eventId = this.resolveEvent(payload.event, context);
+      const member = this.resolveSubject(payload.subject, context);
+      const id = randomUUID();
+      this.database
+        .prepare(
+          "INSERT INTO event_roles(id, workspace_id, event_id, subject_kind, person_id, role, outcome, citations_json, created_revision, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+          id,
+          this.workspaceId,
+          eventId,
+          member.kind,
+          member.kind === "person" ? member.personId : null,
+          payload.role,
+          payload.outcome,
+          JSON.stringify(payload.citations),
+          context.revision,
+          context.timestamp,
+        );
+      // Le rôle rattache aussi la personne à l'épisode, pour les paquets suivants.
+      if (member.kind === "person")
+        this.database
+          .prepare(
+            "INSERT OR IGNORE INTO event_participants(event_id, person_id, role) VALUES (?, ?, NULL)",
+          )
+          .run(eventId, member.personId);
+      context.keys.set(operation.key, { kind: "event", id: eventId });
+      return { created: [], changed: [{ kind: "event", id: eventId }] };
+    }
+
     if (operation.kind === "revise_hypothesis") {
       const payload = operation.payload;
       const id = this.resolve(payload.target, "hypothesis", context);
@@ -737,7 +958,8 @@ export class HypothesisStore {
             : "draft";
           context.warnings.push({
             code: "status_not_allowed",
-            message: `hypothesis:${id} : « ${payload.status} » refusé, statut « ${status} » conservé. ${check.reason ?? ""}`.trim(),
+            message:
+              `hypothesis:${id} : « ${payload.status} » refusé, statut « ${status} » conservé. ${check.reason ?? ""}`.trim(),
           });
         }
         let confidence = this.capConfidence(

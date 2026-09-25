@@ -157,6 +157,15 @@ export class SqliteMemoryStore {
       );
       this.database.exec(readFileSync(brief003MigrationPath, "utf8"));
     }
+    const relationsMigration = this.database
+      .prepare("SELECT version FROM schema_migrations WHERE version = 8")
+      .get();
+    if (!relationsMigration) {
+      const relationsMigrationPath = fileURLToPath(
+        new URL("./migrations/008_relations_roles.sql", import.meta.url),
+      );
+      this.database.exec(readFileSync(relationsMigrationPath, "utf8"));
+    }
     this.hypotheses = new HypothesisStore(this.database, workspaceId);
     const timestamp = nowIso();
     this.database
@@ -1085,6 +1094,8 @@ export class SqliteMemoryStore {
       sources: sources.map(this.mapSource),
       events: events.map(this.mapEvent),
       annotations: annotations.map(this.mapAnnotation),
+      roles: this.hypotheses.roles(),
+      relations: this.hypotheses.relations(),
       goals: goals.map((row) => ({
         id: String(row.id),
         workspaceId: String(row.workspace_id),
@@ -1499,6 +1510,16 @@ export class SqliteMemoryStore {
       hypotheses: packetHypotheses.hypotheses,
       annotations: packetAnnotations,
       questions: packetHypotheses.questions,
+      // Rôles des épisodes du paquet et relations des personnes présentes (BRIEF-004).
+      roles: snapshot.roles.filter((role) =>
+        selectedEvents.some((event) => event.id === role.eventId),
+      ),
+      relations: snapshot.relations.filter((relation) =>
+        relation.members.some(
+          (member) =>
+            member.kind === "person" && selectedPersonIds.has(member.personId),
+        ),
+      ),
       goals: snapshot.goals.filter((goal) => focused.has(`goal:${goal.id}`)),
       coverage: {
         included: [...sourceIds],
@@ -1797,6 +1818,7 @@ export class SqliteMemoryStore {
     const order: CognitiveOperationKind[] = [
       "propose_event",
       "propose_claim",
+      "propose_role",
       "propose_hypothesis",
       "propose_critique",
       "revise_hypothesis",
@@ -1865,7 +1887,8 @@ export class SqliteMemoryStore {
         operation.kind === "propose_hypothesis" ||
         operation.kind === "revise_hypothesis" ||
         operation.kind === "propose_question" ||
-        operation.kind === "propose_critique"
+        operation.kind === "propose_critique" ||
+        operation.kind === "propose_role"
       ) {
         const result = this.hypotheses.applyOperation(operation, context);
         created.push(...result.created);

@@ -473,13 +473,22 @@ function PersonalClaimInspector({ snapshot }: { snapshot: WorkspaceSnapshot }) {
   );
 }
 
+function memberLabel(
+  snapshot: WorkspaceSnapshot,
+  member: { kind: "self" } | { kind: "person"; personId: string },
+) {
+  return member.kind === "self"
+    ? "toi"
+    : (snapshot.persons.find((person) => person.id === member.personId)
+        ?.displayName ?? "personne inconnue");
+}
+
 function subjectLabel(snapshot: WorkspaceSnapshot, hypothesis: Hypothesis) {
   return hypothesis.subjects
     .map((subject) =>
-      subject.kind === "self"
-        ? "toi"
-        : (snapshot.persons.find((person) => person.id === subject.personId)
-            ?.displayName ?? "personne inconnue"),
+      subject.kind === "relation"
+        ? `relation ${subject.members.map((member) => memberLabel(snapshot, member)).join(" – ")}`
+        : memberLabel(snapshot, subject),
     )
     .join(", ");
 }
@@ -1267,7 +1276,7 @@ function AssistedAnalysisPanel({
                 value={proposalText}
                 onChange={(event) => setProposalText(event.target.value)}
                 rows={8}
-                placeholder='{"schemaVersion":"1.3", …}'
+                placeholder='{"schemaVersion":"1.4", …}'
                 aria-label="Proposition JSON de Sol"
               />
               <button

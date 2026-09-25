@@ -47,7 +47,7 @@ function citation(source) {
 
 function proposal(packet, operations, outcome = "proposed") {
   return {
-    schemaVersion: "1.3",
+    schemaVersion: "1.4",
     requestId: packet.requestId,
     workspaceId: packet.workspaceId,
     baseRevision: packet.baseRevision,
@@ -1022,5 +1022,108 @@ test("BRIEF-003 · D1–D2 plausible dès la création, rang et formulation méc
     const codes = result.warnings.map((item) => item.code);
     assert.ok(codes.includes("status_downgraded"));
     assert.ok(codes.includes("confidence_capped"));
+    store.close();
+  }));
+
+test("BRIEF-004 · rôles cités, indicateurs de relation calculés, hypothèse ayant une relation pour sujet", () =>
+  withStore((open) => {
+    const store = open();
+    const texts = [
+      [
+        "Lucas m’a demandé de l’aider à peindre ; j’y ai passé la journée.",
+        "2026-06-02T12:00:00-03:00",
+        "person",
+        "requester",
+      ],
+      [
+        "Lucas m’a demandé 150 euros, je les lui ai virés.",
+        "2026-06-20T12:00:00-03:00",
+        "person",
+        "requester",
+      ],
+      [
+        "J’ai demandé à Lucas de porter un canapé ; il a refusé.",
+        "2026-07-05T12:00:00-03:00",
+        "self",
+        "requester",
+      ],
+    ];
+    const events = texts.map(([text, date]) =>
+      capture(store, text, date).created.find((ref) => ref.kind === "event"),
+    );
+    const packet = store.prepareAnalysis({ task: "extract", focus: events });
+    const sourceFor = (index) =>
+      packet.sources.find((item) => item.text === texts[index][0]);
+    const operations = [];
+    texts.forEach(([, , who, role], index) => {
+      const lucas = { mention: "Lucas" };
+      const asker = who === "self" ? { self: true } : lucas;
+      const other = who === "self" ? lucas : { self: true };
+      operations.push({
+        key: `r${index}a`,
+        kind: "propose_role",
+        payload: {
+          event: events[index],
+          subject: asker,
+          role,
+          outcome: null,
+          citations: [citation(sourceFor(index))],
+        },
+        rationale: "Rôle cité.",
+      });
+      operations.push({
+        key: `r${index}b`,
+        kind: "propose_role",
+        payload: {
+          event: events[index],
+          subject: other,
+          role: who === "self" ? "responder" : "helper",
+          outcome: who === "self" ? "declined" : null,
+          citations: [citation(sourceFor(index))],
+        },
+        rationale: "Rôle cité.",
+      });
+    });
+    const { preview } = respond(store, packet, operations);
+    assert.equal(
+      preview.status,
+      "ready_for_review",
+      JSON.stringify(preview.errors),
+    );
+    const snapshot = store.snapshot();
+    assert.equal(snapshot.roles.length, 6);
+    const lucas = snapshot.persons.find(
+      (person) => person.displayName === "Lucas",
+    );
+    const relation = snapshot.relations.find((item) =>
+      item.members.some((member) => member.personId === lucas.id),
+    );
+    const key = `person:${lucas.id}`;
+    assert.equal(relation.indicators.requests[key], 2);
+    assert.equal(relation.indicators.requests.self, 1);
+    assert.equal(relation.indicators.help.self, 2);
+    assert.equal(relation.indicators.declinedRequests[key], 1);
+
+    const claim = claimFrom(
+      store,
+      "Lucas demande souvent de l’aide.",
+      "2026-07-18T12:00:00-03:00",
+    );
+    const id = createHypothesis(store, [claim], {
+      statement: "La relation fonctionne comme un échange asymétrique.",
+      depth: "D2",
+      subjects: [{ relation: [{ mention: "Lucas" }, { self: true }] }],
+    });
+    const created = hypothesis(store, id);
+    assert.equal(created.subjects[0].kind, "relation");
+    assert.equal(created.subjects[0].members.length, 2);
+    const next = store.prepareAnalysis({
+      task: "interpret",
+      focus: [{ kind: "person", id: lucas.id }],
+    });
+    assert.ok(
+      next.relations.some((item) => item.indicators.requests[key] === 2),
+    );
+    assert.equal(next.roles.length, 6);
     store.close();
   }));

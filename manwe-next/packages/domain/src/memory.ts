@@ -112,9 +112,56 @@ export type Episode = {
   updatedAt: string;
 };
 
-export type HypothesisSubject =
+export type RelationMember =
   | { kind: "person"; personId: string }
   | { kind: "self" };
+
+/** Une hypothèse porte sur une personne, sur l'utilisateur ou sur une relation (D-012). */
+export type HypothesisSubject =
+  | RelationMember
+  | { kind: "relation"; relationId: string; members: RelationMember[] };
+
+/** Rôle tenu dans un épisode, extrait avec citation (D-013). */
+export type EpisodeRoleRecord = {
+  id: string;
+  eventId: string;
+  subject: RelationMember;
+  role:
+    | "initiator"
+    | "recipient"
+    | "requester"
+    | "helper"
+    | "responder"
+    | "observer";
+  outcome: "accepted" | "declined" | "unknown" | null;
+  citations: Array<{
+    sourceId: string;
+    contentHash: string;
+    spanStart: number;
+    spanEnd: number;
+    quote: string;
+  }>;
+  createdRevision: number;
+};
+
+/** Relation (dyade) et ses indicateurs calculés, jamais des preuves à eux seuls. */
+export type RelationRecord = {
+  id: string;
+  members: RelationMember[];
+  indicators: {
+    episodes: number;
+    initiatives: Record<string, number>;
+    requests: Record<string, number>;
+    acceptedRequests: Record<string, number>;
+    declinedRequests: Record<string, number>;
+    help: Record<string, number>;
+    counterexamples: number;
+    firstAt: string | null;
+    lastAt: string | null;
+    spanDays: number;
+    episodesPer30Days: number | null;
+  };
+};
 
 export type HypothesisEvidence = {
   claimId: string;
@@ -255,6 +302,8 @@ export type WorkspaceSnapshot = {
   episodes: Episode[];
   hypotheses: Hypothesis[];
   questions: OpenQuestion[];
+  roles: EpisodeRoleRecord[];
+  relations: RelationRecord[];
   identityAmbiguities: IdentityAmbiguity[];
   revisions: RevisionEntry[];
 };

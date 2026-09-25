@@ -118,15 +118,22 @@ function openStore(runDir, scenarioId, state) {
   return new SqliteMemoryStore(databasePath, workspaceId);
 }
 
-function subjectMatches(snapshot, hypothesis, subject) {
-  return hypothesis.subjects.some((item) =>
-    plain(subject) === "moi"
-      ? item.kind === "self"
-      : item.kind === "person" &&
+function memberMatches(snapshot, item, subject) {
+  return plain(subject) === "moi"
+    ? item.kind === "self"
+    : item.kind === "person" &&
         plain(
           snapshot.persons.find((person) => person.id === item.personId)
             ?.displayName ?? "",
-        ) === plain(subject),
+        ) === plain(subject);
+}
+
+/** Une hypothèse vise le sujet directement, ou via une relation dont il est membre. */
+function subjectMatches(snapshot, hypothesis, subject) {
+  return hypothesis.subjects.some((item) =>
+    item.kind === "relation"
+      ? item.members.some((member) => memberMatches(snapshot, member, subject))
+      : memberMatches(snapshot, item, subject),
   );
 }
 
@@ -509,7 +516,11 @@ function summary(runDirArgument) {
       needsReview: hypothesis.needsReview,
       reviewReason: hypothesis.reviewReason,
       subjects: hypothesis.subjects.map((subject) =>
-        subject.kind === "self" ? "moi" : person(subject.personId),
+        subject.kind === "relation"
+          ? `relation(${subject.members.map((member) => (member.kind === "self" ? "moi" : person(member.personId))).join(" – ")})`
+          : subject.kind === "self"
+            ? "moi"
+            : person(subject.personId),
       ),
       counts: hypothesis.counts,
       rank: hypothesis.rank,

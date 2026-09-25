@@ -110,6 +110,14 @@ export function describeOperation(operation: CognitiveOperation): {
         classification: `${informationCategoryLabels[operation.payload.category]} · ${claimModalityLabels[operation.payload.modality]}`,
         text: operation.payload.text,
       };
+    case "propose_role":
+      return {
+        label: "rôle",
+        classification: operation.payload.outcome
+          ? `${operation.payload.role} · ${operation.payload.outcome}`
+          : operation.payload.role,
+        text: operation.payload.citations[0]?.quote ?? "",
+      };
     case "propose_event":
       return {
         label: "événement",

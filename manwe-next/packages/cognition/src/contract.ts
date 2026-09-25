@@ -7,7 +7,7 @@ import {
   type TemporalPrecision,
 } from "../../domain/src/memory.ts";
 
-export const COGNITION_SCHEMA_VERSION = "1.3" as const;
+export const COGNITION_SCHEMA_VERSION = "1.4" as const;
 export const COGNITION_VALIDATOR_VERSION = "1.2.0" as const;
 export const COGNITION_MAX_BYTES = 1024 * 1024;
 export const COGNITION_MAX_OPERATIONS = 100;
@@ -31,7 +31,8 @@ export type CognitiveOperationKind =
   | "propose_hypothesis"
   | "revise_hypothesis"
   | "propose_question"
-  | "propose_critique";
+  | "propose_critique"
+  | "propose_role";
 
 export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "propose_event",
@@ -40,6 +41,7 @@ export const COGNITIVE_OPERATION_KINDS: CognitiveOperationKind[] = [
   "revise_hypothesis",
   "propose_question",
   "propose_critique",
+  "propose_role",
 ];
 
 /** Opérations proposées par défaut selon la tâche (contrat 1.2). */
@@ -47,10 +49,11 @@ export const DEFAULT_OPERATIONS: Record<
   AnalysisTask,
   CognitiveOperationKind[]
 > = {
-  extract: ["propose_event", "propose_claim"],
+  extract: ["propose_event", "propose_claim", "propose_role"],
   interpret: [
     "propose_event",
     "propose_claim",
+    "propose_role",
     "propose_hypothesis",
     "propose_question",
     "propose_critique",
@@ -58,6 +61,7 @@ export const DEFAULT_OPERATIONS: Record<
   revise: [
     "propose_event",
     "propose_claim",
+    "propose_role",
     "propose_hypothesis",
     "revise_hypothesis",
     "propose_question",
@@ -66,14 +70,23 @@ export const DEFAULT_OPERATIONS: Record<
   explore: ["propose_question"],
 };
 
+import {
+  EPISODE_ROLES,
+  ROLE_OUTCOMES,
+  type EpisodeRole,
+  type RoleOutcome,
+} from "./relations.ts";
+
 /** Référence à un objet existant, ou à une opération de la même proposition. */
 export type LocalRef = { proposalKey: string };
 export type TargetRef = EntityRef | LocalRef;
 
-export type HypothesisSubjectInput =
+export type MemberInput =
   | { person: EntityRef }
   | { mention: string }
   | { self: true };
+/** Un sujet est une personne, l'utilisateur, ou une relation entre deux membres (D-012). */
+export type HypothesisSubjectInput = MemberInput | { relation: MemberInput[] };
 
 export type EvidenceInput = {
   claim: TargetRef;
@@ -149,6 +162,15 @@ type CritiquePayload = {
   findings: CritiqueFinding[];
 };
 
+type RolePayload = {
+  /** Événement du paquet, ou propose_event de cette réponse. */
+  event: TargetRef;
+  subject: MemberInput;
+  role: EpisodeRole;
+  outcome: RoleOutcome | null;
+  citations: SourceCitation[];
+};
+
 type QuestionPayload = {
   question: string;
   targets: TargetRef[];
@@ -220,6 +242,12 @@ export type CognitiveOperation =
       kind: "propose_critique";
       payload: CritiquePayload;
       rationale: string;
+    }
+  | {
+      key: string;
+      kind: "propose_role";
+      payload: RolePayload;
+      rationale: string;
     };
 
 export type CognitiveProposal = {
@@ -260,6 +288,10 @@ export type ContextPacket = {
   annotations: unknown[];
   questions: unknown[];
   goals: unknown[];
+  /** Rôles des épisodes du paquet (D-013). */
+  roles: unknown[];
+  /** Relations pertinentes et leurs indicateurs calculés (D-012). */
+  relations: unknown[];
   coverage: { included: string[]; omissions: string[]; truncated: boolean };
   allowedOperations: CognitiveOperationKind[];
   limits: { maxBytes: number; maxOperations: number };
@@ -501,6 +533,20 @@ const hypothesisStatuses = [
 ] as const;
 
 function subjectInput(value: unknown): HypothesisSubjectInput {
+  const input = object(value, "subject");
+  if ("relation" in input) {
+    exactKeys(input, ["relation"], "subject");
+    if (!Array.isArray(input.relation) || input.relation.length !== 2)
+      throw new DomainError(
+        "invalid_subject",
+        "Une relation réunit exactement deux membres (dyade).",
+      );
+    return { relation: input.relation.map(memberInput) };
+  }
+  return memberInput(value);
+}
+
+function memberInput(value: unknown): MemberInput {
   const input = object(value, "subject");
   const keys = Object.keys(input);
   if (keys.length !== 1)
@@ -788,6 +834,38 @@ function operation(value: unknown): CognitiveOperation {
   const key = text(input.key, "operation.key", 80);
   const rationale = text(input.rationale, "operation.rationale", 800);
   const payload = object(input.payload, "operation.payload");
+  if (input.kind === "propose_role") {
+    exactKeys(
+      payload,
+      ["event", "subject", "role", "outcome", "citations"],
+      "propose_role.payload",
+    );
+    return {
+      key,
+      kind: "propose_role",
+      rationale,
+      payload: {
+        event: targetRef(payload.event, "role.event"),
+        subject: memberInput(payload.subject),
+        role: oneOf(
+          payload.role,
+          EPISODE_ROLES,
+          "invalid_role",
+          "Rôle d’épisode inconnu.",
+        ),
+        outcome:
+          payload.outcome === null || payload.outcome === undefined
+            ? null
+            : oneOf(
+                payload.outcome,
+                ROLE_OUTCOMES,
+                "invalid_role",
+                "Issue de rôle inconnue.",
+              ),
+        citations: citations(payload.citations),
+      },
+    };
+  }
   if (input.kind === "propose_claim") {
     exactKeys(
       payload,

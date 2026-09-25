@@ -31,7 +31,7 @@ const read = (path) => JSON.parse(readFileSync(path, "utf8"));
 
 function answer(packet, operations) {
   return JSON.stringify({
-    schemaVersion: "1.3",
+    schemaVersion: "1.4",
     requestId: packet.requestId,
     workspaceId: packet.workspaceId,
     baseRevision: packet.baseRevision,

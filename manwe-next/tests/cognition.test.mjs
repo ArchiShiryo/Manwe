@@ -39,7 +39,7 @@ function capturedStore(store, suffix = "base") {
 function proposal(packet, overrides = {}) {
   const source = packet.sources[0];
   return {
-    schemaVersion: "1.3",
+    schemaVersion: "1.4",
     requestId: packet.requestId,
     workspaceId: packet.workspaceId,
     baseRevision: packet.baseRevision,
