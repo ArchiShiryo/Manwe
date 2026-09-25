@@ -6,11 +6,18 @@
 //   node scripts/scenario-run.mjs prepare <fixture.json> <runDir>
 //   node scripts/scenario-run.mjs advance <runDir>
 //   node scripts/scenario-run.mjs summary <runDir>
+//   node scripts/scenario-run.mjs rewind <runDir> <stepId>
+//
+// Une analyse rejetée reste en attente de la seconde tentative autorisée
+// (proposal.retry.raw.json) ; le reçu regroupe les deux essais. « rewind »
+// ramène à une analyse que l'ancien harnais avait close sur un rejet ; les
+// étapes ultérieures, jamais répondues, sont supprimées puis régénérées.
 import {
   copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { basename, join, resolve } from "node:path";
@@ -237,6 +244,8 @@ function applyPending(runDir, scenario, state, store) {
     status: attempts.at(-1).status,
     attempts,
   });
+  // Un premier rejet laisse l'analyse en attente de la seconde tentative.
+  if (attempts.length === 1 && attempts[0].status === "rejected") return false;
   const entry = state.log.findLast((item) => item.step === state.pending);
   entry.outcome = attempts.at(-1).status;
   entry.attempts = attempts.length;
@@ -293,12 +302,61 @@ function advance(runDirArgument) {
   console.log(status(runDir));
 }
 
+function rewind(runDirArgument, stepId) {
+  const runDir = resolve(runDirArgument);
+  const fixture = readJson(join(runDir, "fixture.json"));
+  const scenario = fixture.scenarios.find((item) =>
+    item.steps.some((step) => step.id === stepId),
+  );
+  if (!scenario) throw new Error(`Étape inconnue : ${stepId}`);
+  const index = scenario.steps.findIndex((step) => step.id === stepId);
+  if (scenario.steps[index].type !== "analyze")
+    throw new Error(`${stepId} n'est pas une analyse.`);
+  const { scenarioDir, statePath, databasePath } = paths(runDir, scenario.id);
+  const state = readJson(statePath);
+  const position = state.log.findIndex((item) => item.step === stepId);
+  const entry = state.log[position];
+  if (!entry || entry.outcome !== "rejected")
+    throw new Error(`${stepId} n'a pas été rejetée : rien à reprendre.`);
+  const later = scenario.steps
+    .slice(index + 1)
+    .filter((step) => step.type === "analyze")
+    .map((step) => join(scenarioDir, step.id));
+  for (const directory of later)
+    if (
+      existsSync(join(directory, RAW_PROPOSAL)) ||
+      existsSync(join(directory, RETRY_PROPOSAL))
+    )
+      throw new Error(`Une étape ultérieure a déjà une réponse : ${directory}`);
+  for (const directory of later)
+    rmSync(directory, { recursive: true, force: true });
+  rmSync(join(scenarioDir, FINAL_SNAPSHOT), { force: true });
+  rmSync(databasePath, { force: true });
+  // Le reçu sera réécrit, avec les deux essais, à l'application du second.
+  rmSync(join(scenarioDir, stepId, "receipt.json"), { force: true });
+  state.log = state.log.slice(0, position + 1);
+  state.log[position] = {
+    step: stepId,
+    type: "analyze",
+    outcome: "awaiting_response",
+    requestId: entry.requestId,
+  };
+  state.nextStepIndex = index + 1;
+  state.pending = stepId;
+  writeJson(statePath, state);
+  console.log(`${stepId} : en attente de ${RETRY_PROPOSAL}`);
+}
+
 function status(runDir) {
   const fixture = readJson(join(runDir, "fixture.json"));
   return fixture.scenarios
     .map((scenario) => {
       const state = readJson(paths(runDir, scenario.id).statePath);
-      return `${scenario.id} : ${state.pending ? `en attente de ${state.pending}/PROMPT.txt` : "terminé"}`;
+      if (!state.pending) return `${scenario.id} : terminé`;
+      const rejected = existsSync(
+        join(runDir, scenario.id, state.pending, RAW_PROPOSAL),
+      );
+      return `${scenario.id} : ${rejected ? `${state.pending} rejetée, en attente de ${RETRY_PROPOSAL}` : `en attente de ${state.pending}/PROMPT.txt`}`;
     })
     .join("\n");
 }
@@ -399,14 +457,16 @@ function summary(runDirArgument) {
   console.log(`${scenarios.length} scénarios résumés.`);
 }
 
-const [command, first, second] = process.argv.slice(2);
+const [command, first, second, third] = process.argv.slice(2);
 try {
   if (command === "prepare" && first && second) prepare(first, second);
   else if (command === "advance" && first && !second) advance(first);
   else if (command === "summary" && first && !second) summary(first);
+  else if (command === "rewind" && first && second && !third)
+    rewind(first, second);
   else {
     console.error(
-      "Usage : scenario-run.mjs prepare <fixture> <runDir> | advance <runDir> | summary <runDir>",
+      "Usage : scenario-run.mjs prepare <fixture> <runDir> | advance <runDir> | summary <runDir> | rewind <runDir> <stepId>",
     );
     process.exitCode = 2;
   }

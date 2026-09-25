@@ -222,3 +222,92 @@ test("le harnais multi-étapes enchaîne analyses, annotations et réponses, pui
     rmSync(qaDir, { recursive: true, force: true });
   }
 });
+
+test("une analyse rejetée reste en attente de sa seconde tentative, puis le reçu garde les deux essais", () => {
+  const directory = mkdtempSync(join(tmpdir(), "manwe-scenario-"));
+  const runDir = join(directory, `run-${randomUUID()}`);
+  const qaDir = join(process.cwd(), ".qa", basename(runDir));
+  const fixturePath = join(directory, "fixture.json");
+  const date = "2026-05-12T12:00:00-03:00";
+  writeFileSync(
+    fixturePath,
+    JSON.stringify({
+      schemaVersion: "1.0",
+      scenarios: [
+        {
+          id: "T2",
+          steps: [
+            {
+              id: "T2-1",
+              type: "capture",
+              command: {
+                idempotencyKey: "scenario-test:T2-1",
+                title: "Étape T2-1",
+                text: "Inès a annulé le dîner.",
+                recordedAt: date,
+                narratedAt: date,
+                occurredStart: date,
+                occurredEnd: null,
+                temporalPrecision: "day",
+                context: "Test",
+              },
+            },
+            { id: "T2-A1", type: "analyze", task: "extract", focus: null },
+          ],
+        },
+      ],
+    }),
+    "utf8",
+  );
+  try {
+    execute("prepare", fixturePath, runDir);
+    const stepDir = join(runDir, "T2", "T2-A1");
+    const packet = read(join(stepDir, "context.json"));
+    const claim = (citations) => ({
+      key: "c1",
+      kind: "propose_claim",
+      payload: {
+        text: "Inès a annulé le dîner.",
+        category: "sourced_observation",
+        modality: "actual",
+        validFrom: null,
+        validTo: null,
+        citations,
+      },
+      rationale: "Fait.",
+    });
+    writeFileSync(
+      join(stepDir, "proposal.raw.json"),
+      answer(packet, [claim([])]),
+      "utf8",
+    );
+    assert.match(execute("advance", runDir), /T2-A1 rejetée/);
+    assert.equal(read(join(runDir, "T2", "state.json")).pending, "T2-A1");
+    const source = packet.sources[0];
+    writeFileSync(
+      join(stepDir, "proposal.retry.raw.json"),
+      answer(packet, [
+        claim([
+          {
+            sourceId: source.sourceId,
+            contentHash: source.contentHash,
+            spanStart: source.spanStart,
+            spanEnd: source.spanEnd,
+            quote: source.text,
+          },
+        ]),
+      ]),
+      "utf8",
+    );
+    assert.match(execute("advance", runDir), /T2 : terminé/);
+    const receipt = read(join(stepDir, "receipt.json"));
+    assert.equal(receipt.status, "applied");
+    assert.deepEqual(
+      receipt.attempts.map((attempt) => attempt.status),
+      ["rejected", "applied"],
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+    rmSync(qaDir, { recursive: true, force: true });
+  }
+});
