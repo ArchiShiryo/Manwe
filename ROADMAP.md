@@ -455,7 +455,7 @@ Une fois le système complet et fonctionnel, il sera éprouvé et perfectionné 
 - des prédictions vérifiables par les épisodes suivants, qui permettent de mesurer la calibration ;
 - aucune donnée personnelle réelle.
 
-Protocole retenu (D-022) : transcription seule avec locuteurs identifiés ; un candidat joue l'utilisateur et MANWË ne reçoit que les scènes où il est présent, épisode par épisode ; prédictions vérifiées sur les alliances, votes et éliminations ; seul du contenu non vu par le modèle compte pour la prédiction (test de contamination préalable). Pilote sur un épisode avant les 5 saisons de Koh-Lanta envisagées.
+Protocole retenu (D-022) : transcription seule avec locuteurs identifiés ; un candidat joue l'utilisateur et MANWË ne reçoit que les scènes où il est présent, épisode par épisode ; prédictions vérifiées sur les alliances, votes et éliminations ; seul du contenu non vu par le modèle compte pour la prédiction (test de contamination préalable). Premiers corpus : Big Brother US (journaux des flux en direct) et Survivor, anonymisés ; Koh-Lanta ensuite pour la validation en français. Pilote sur quelques jours ou un épisode avant tout volume.
 
 Les références Palantir ([docs/references/palantir](./manwe-next/docs/references/palantir/README.md)) serviront à parfaire l'ontologie et les boucles d'action pendant cette phase.
 
