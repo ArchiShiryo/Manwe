@@ -22,24 +22,28 @@ Ce document permet à une nouvelle instance (Claude ou autre) de reprendre le pi
 
 ## 3. Où en est le projet
 
-| Jalon                   | État                                                                                                                         |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| R0, R1                  | Faits : mémoire locale SQLite, journal, recherche                                                                            |
-| R2                      | Validé en mode assisté ([RAPPORT-001](./rapports/RAPPORT-001.md))                                                            |
-| R3, moteur de révision  | Livré ; **non validé** ([RAPPORT-003](./rapports/RAPPORT-003.md)) : interdit S05 violé, défaut de citabilité des annotations |
-| IA-A, raccordement auto | En cours : évaluations automatiques DeepSeek opérationnelles (D-020)                                                         |
-| R4 et suivants          | À faire                                                                                                                      |
+| Jalon                   | État                                                                                                                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R0, R1                  | Faits : mémoire locale SQLite, journal, recherche                                                                                                                       |
+| R2                      | Validé en mode assisté ([RAPPORT-001](./rapports/RAPPORT-001.md))                                                                                                       |
+| R3, moteur de révision  | **Validé en mode automatique** (DeepSeek V4.1-Flash, prompt v4, contrat 1.3) : [RAPPORT-004](./rapports/RAPPORT-004.md), après [RAPPORT-003](./rapports/RAPPORT-003.md) |
+| IA-A, raccordement auto | En cours : évaluations automatiques DeepSeek opérationnelles (D-020) ; intégration dans l'application à faire                                                           |
+| R4 et suivants          | À faire                                                                                                                                                                 |
 
-**Prochaine étape : le BRIEF-003**, qui implémente :
+**Prochaine étape : le BRIEF-004** (à rédiger), qui porte sur la relation comme objet, les rôles et les indicateurs (D-012, D-013, R4.0a à R4.0c), puis sur la lecture stratégique de la relation (R4.0e) et sur le registre ontologique (R4.0d).
 
-1. les annotations (corrections, contextes, désaccords) deviennent des sources citables ;
-2. aucune promotion sans nouvel épisode dans une passe qui suit un accord ;
-3. le plafond de confiance `high` est réservé à D1 et D2 ;
-4. le moteur conclut : lecture principale classée, et critique possible dans la même passe (D-015, R3.9) ;
-5. prompt v4 : formulations psychodynamiques mécanistes (D-019) et structure stratégique (D-017) ;
-6. puis relation, rôles et indicateurs (D-012, D-013, R4.0a à R4.0e).
+Les petites corrections relevées par le [RAPPORT-004](./rapports/RAPPORT-004.md) §4 entrent dans le même lot :
 
-Ensuite viendra un **lot de contrôle R3-S02** : S04, S05 et S09 rejoués avec de nouveaux noms, sur des attentes scellées **avant** l'implémentation.
+1. le prompt v5 exige, pour une lecture sur l'utilisateur, un acte ou un ressenti qui sort de l'ordinaire ;
+2. une source d'annotation n'est créée qu'une fois quand un désaccord vise plusieurs hypothèses ;
+3. la frontière D3/D4 est précisée dans le prompt.
+
+**Méthode à conserver pour chaque lot** :
+
+1. écrire et sceller les attentes d'un lot de contrôle **avant** de coder ;
+2. coder et tester ;
+3. jouer le lot avec `scenario-run.mjs auto` ;
+4. noter, écrire le rapport et mettre à jour ce document.
 
 ## 4. Carte du dépôt
 
@@ -67,7 +71,7 @@ Ensuite viendra un **lot de contrôle R3-S02** : S04, S05 et S09 rejoués avec d
 ```sh
 cd manwe-next
 npm ci
-npm test            # 71 tests au 25 septembre 2026
+npm test            # 74 tests au 25 septembre 2026
 npm run typecheck
 npm run dev         # interface http://127.0.0.1:5180, service :5181
 

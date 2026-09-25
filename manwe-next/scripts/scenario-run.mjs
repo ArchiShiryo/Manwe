@@ -512,6 +512,8 @@ function summary(runDirArgument) {
         subject.kind === "self" ? "moi" : person(subject.personId),
       ),
       counts: hypothesis.counts,
+      rank: hypothesis.rank,
+      mechanism: hypothesis.mechanism,
       alternativeTo: hypothesis.alternativeTo
         ? (snapshot.hypotheses.find(
             (item) => item.id === hypothesis.alternativeTo,
@@ -550,7 +552,13 @@ function summary(runDirArgument) {
     );
     for (const hypothesis of hypotheses)
       lines.push(
-        `- **${hypothesis.depth}** ${hypothesis.statement} — ${hypothesis.status}, ${hypothesis.confidence}${hypothesis.needsReview ? `, à réexaminer (${hypothesis.reviewReason})` : ""} ; sujets : ${hypothesis.subjects.join(", ")} ; ${hypothesis.counts.anchoredSupports} pour / ${hypothesis.counts.anchoredContradicts} contre${hypothesis.construct ? ` ; construct : ${hypothesis.construct}` : ""}${hypothesis.alternativeTo ? ` ; alternative de : ${hypothesis.alternativeTo}` : ""}`,
+        `- **${hypothesis.depth}** ${hypothesis.statement} — ${hypothesis.status}, ${hypothesis.confidence}${hypothesis.needsReview ? `, à réexaminer (${hypothesis.reviewReason})` : ""} ; sujets : ${hypothesis.subjects.join(", ")} ; ${hypothesis.counts.anchoredSupports} pour / ${hypothesis.counts.anchoredContradicts} contre${hypothesis.construct ? ` ; construct : ${hypothesis.construct}` : ""}${hypothesis.alternativeTo ? ` ; alternative de : ${hypothesis.alternativeTo}` : ""}${hypothesis.rank ? ` ; rang ${hypothesis.rank}` : ""}${
+          hypothesis.mechanism
+            ? ` ; mécanisme : ${Object.entries(hypothesis.mechanism)
+                .map(([key, value]) => `${key} = ${value}`)
+                .join(" | ")}`
+            : ""
+        }`,
       );
     for (const question of result.questions)
       lines.push(`- ? ${question.question} — ${question.status}`);
