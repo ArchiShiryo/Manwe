@@ -225,3 +225,42 @@ Compléments aux limites de la troisième passe. Toujours conduite par l'assista
 - L'écart d'un objectif proposé (non confirmé).
 - La lecture à l'écran : interface, clics, messages d'attente. Tout est passé par l'interface de programmation.
 - Toute expérience de l'utilisateur lui-même.
+
+## Cinquième passe · écart d'un objectif et lecture à l'écran (espace fictif)
+
+Compléments à la quatrième passe, sur un troisième personnage fictif (une infirmière de nuit, une amie proche, un collègue, une mère). Lecture faite dans le navigateur intégré, écrans **Mon monde, Personnes, Intentions et Mémoire**, à 1440 × 900. Les captures contiennent des données fictives et ne sont pas versionnées.
+
+### Écart d'un objectif proposé
+
+- Les cinq premières notes ne font proposer **aucun objectif**, malgré un souhait explicite dans la dernière (variabilité : les passes précédentes en proposaient un). Une sixième note plus nette (« ce que je veux vraiment… ») en fait proposer un.
+- L'écart fonctionne : l'objectif est marqué écarté, aucune direction n'est générée, l'agent ne relance rien.
+
+### Ce que montre l'écran
+
+- **Mon monde** : bandeau de statut (« à jour · dernière lecture il y a 1 min 28 · 7 ajouts, 8 mises à jour »), un objectif et une carte de couverture (43 %), **un seul graphe** centré sur « Vous » avec un bouton par personne, et sous le graphe la synthèse : la « situation », faite de deux lectures concurrentes et d'une question. Le clic sur une lecture recentre le graphe sur ses preuves.
+- **« Pourquoi ? »** : liste des soutiens, chacun avec la phrase exacte de la note et son titre. Lisible et sourcé. Boutons « Contester » et « Ajouter du contexte » à côté.
+- **Intentions** : sans objectif, un état vide sobre (« Aucune direction formulée ») avec un champ pour formuler une intention.
+- **Personnes** : liste courte avec la relation de chacun et « Modifier » (renommage).
+- **Mémoire** : journal des notes, avec un titre généré pour chacune.
+
+### Constats
+
+| N° | Étape | Constat | Gravité | Correction proposée |
+| --- | --- | --- | --- | --- |
+| 41 | Mon monde | Deux « objectifs » différents cohabitent : le bandeau du haut (« Cartographier le monde social de la personne… », avec « Changer ») est la mission de l'agent ; l'écran Intentions porte le but de l'utilisateur. Rien ne les distingue. | gênant | Nommer la mission de l'agent autrement (« ce que fait MANWË ») et réserver « objectif » à l'utilisateur. |
+| 42 | Mon monde | Le détail d'une lecture (« Pourquoi ? », « Contester », « Ajouter du contexte ») s'ouvre tout en bas de la page, sous la synthèse. Il faut défiler : le graphe et le détail ne sont jamais visibles ensemble. Les étiquettes du graphe sont petites et tronquées (« … »). | gênant | Panneau latéral pour le détail, étiquettes lisibles au survol ou au clic. |
+| 43 | Mon monde | L'utilisateur est « Vous » dans le graphe mais « Maëlle » dans le texte des lectures. | confort | Une seule désignation, choisie par l'utilisateur. |
+| 44 | Intentions | Le texte de l'état vide dit « Soi pourra plus tard proposer des pistes », probablement une coquille. | confort | Corriger la formulation. |
+| 45 | Interprétation | Un souhait exprimé sans détour dans une note ne suffit pas toujours à faire proposer un objectif. | gênant | À examiner avec les règles de proposition d'objectif du prompt. |
+| 46 | Mon monde | Le graphe est tronqué sur les schémas plus riches (« 7 relations et 5 lectures au plus »), donc la vue d'ensemble demandée (constat 12) n'est pas encore là. La synthèse reste de la prose dense : le constat 8 (« trop de texte, pas assez de visuels ») demeure. | gênant | Vue globale avec zoom, indicateurs visuels plutôt que phrases. |
+
+### Ce qui fonctionne bien à l'écran
+
+- Une seule surface pour le graphe, la synthèse, la conversation et l'ajout de notes : le constat 12 (onglets multiples) est nettement atténué.
+- Les preuves citent la phrase exacte : la discipline épistémique du projet est visible.
+- La situation (deux lectures concurrentes et une question) donne un point d'entrée clair.
+- Les écrans vides et les écrans courts sont sobres.
+
+### Appréciation d'ensemble (assistant, pas utilisateur)
+
+Nettement plus lisible que la première version : une seule surface, un fil qui va de la note à la lecture puis à sa preuve. Il reste deux frottements majeurs pour un public en difficulté : trop de texte en prose, et un détail relégué en bas de page. Cette appréciation ne remplace pas le ressenti de l'utilisateur, qui doit refaire la démonstration sur ses propres notes.
