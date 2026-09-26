@@ -110,10 +110,10 @@ function Cartography({
   return (
     <div
       className="lieu-map"
-      aria-label="Objectif de MANWË et couverture de la carte"
+      aria-label="Mission de MANWË et couverture de la carte"
     >
       <div className="lieu-mission">
-        <span className="eyebrow">OBJECTIF</span>
+        <span className="eyebrow">MISSION DE MANWË</span>
         {editing ? (
           <form
             onSubmit={async (event) => {
@@ -123,7 +123,7 @@ function Cartography({
             }}
           >
             <input
-              aria-label="Objectif de MANWË"
+              aria-label="Mission de MANWË"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder="Vide = revenir à : cartographier"

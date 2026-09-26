@@ -1513,7 +1513,7 @@ export function PersonalIntentions({
       <div className="eyebrow">VOTRE INTENTION</div>
       <h2>{current?.text ?? "Aucune direction formulée."}</h2>
       <p>
-        Cette formulation vient de vous. Sol pourra plus tard proposer des
+        Cette formulation vient de vous. MANWË pourra plus tard proposer des
         pistes, mais ne remplacera pas ce cap sans votre confirmation.
       </p>
       <form

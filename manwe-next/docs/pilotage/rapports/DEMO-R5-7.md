@@ -264,3 +264,15 @@ Compléments à la quatrième passe, sur un troisième personnage fictif (une in
 ### Appréciation d'ensemble (assistant, pas utilisateur)
 
 Nettement plus lisible que la première version : une seule surface, un fil qui va de la note à la lecture puis à sa preuve. Il reste deux frottements majeurs pour un public en difficulté : trop de texte en prose, et un détail relégué en bas de page. Cette appréciation ne remplace pas le ressenti de l'utilisateur, qui doit refaire la démonstration sur ses propres notes.
+
+### Corrections faites après les passes 3 à 5 (assistant, en local)
+
+| Constat | Correction |
+| --- | --- |
+| 29, 30 | Réponse du fournisseur lue en flux, connexion coupée relancée, appels d'outils rejoués avec leur `type`, motif d'un refus affiché (commit `e418e94`). |
+| 31 | Bouton « Fond animé / Fixe » mémorisé (commit `e418e94`). |
+| 37 | Après une analyse périmée (`stale_revision`), l'agent reprend seul sur la révision courante, deux fois au plus. Test ajouté. |
+| 41 | Le bandeau du haut s'intitule « MISSION DE MANWË », et « objectif » reste réservé à l'utilisateur. |
+| 44 | « Sol pourra plus tard proposer des pistes » devient « MANWË pourra… » : reste d'un ancien nom du rôle d'exécutant. |
+
+Restent ouverts : 32 (verdicts proposés par l'agent), 33 (doublons de personnes), 35 et 46 (vue d'ensemble), 36, 38, 39, 40, 42, 43 et 45, ainsi que les constats de fond (entretien guidé, agent piloté par un objectif). Le constat 40 est à réexaminer : je n'ai pas reproduit la cause de l'erreur « ne vise ni lecture ni objectif ».

@@ -817,3 +817,44 @@ test("IA-A.3 · en flux, les appels d'outils sont rejoués avec leur type (sinon
     server.close();
   }
 });
+
+test("DEMO-R5-7 · après une analyse périmée, l'agent reprend seul sur la révision courante, deux fois au plus", () =>
+  withStore(async (store) => {
+    store.setSetting("transmission_consent", "granted");
+    let calls = 0;
+    const automatic = new AutomaticAnalyses(
+      store,
+      {
+        id: "deepseek:test",
+        model: "test",
+        call: async ({ prompt }) => {
+          calls += 1;
+          // Une écriture de l'utilisateur pendant le calcul périme l'analyse.
+          if (calls <= 2)
+            store.updateGoal({
+              idempotencyKey: `stale:goal:${calls}`,
+              text: `But reformulé ${calls}`,
+            });
+          return reply(validProposal(packetOf(prompt)));
+        },
+      },
+      null,
+      { quietMs: 20 },
+    );
+    const first = await automatic.settle(
+      automatic.start({ task: "extract" }).requestId,
+    );
+    assert.equal(first.status, "failed");
+    assert.equal(first.error.code, "stale_revision", first.error.message);
+    // Sans clic ni écriture : l'agent relance seul (reprise 1, puis 2).
+    for (let i = 0; i < 100 && calls < 3; i += 1)
+      await new Promise((done) => setTimeout(done, 20));
+    assert.ok(calls >= 3, `reprises automatiques attendues, appels : ${calls}`);
+    for (let i = 0; i < 100; i += 1) {
+      const current = automatic.current().job;
+      if (current && current.status !== "running") break;
+      await new Promise((done) => setTimeout(done, 20));
+    }
+    assert.equal(automatic.current().job.status, "applied");
+    assert.equal(calls, 3, "deux reprises, pas plus");
+  }));

@@ -469,6 +469,8 @@ export class AutomaticAnalyses {
   private lastJob: AutomaticJob | null = null;
   /** Révision d'un échec : l'agent n'y revient pas seul avant du nouveau. */
   private failedAt: number | null = null;
+  /** Reprises consécutives après une analyse périmée (borne : 2). */
+  private staleRetries = 0;
 
   constructor(
     store: SqliteMemoryStore,
@@ -782,10 +784,23 @@ export class AutomaticAnalyses {
           // déjà close (rejets enregistrés) : rien à faire
         }
       this.controllers.delete(job.requestId);
+      // Une analyse périmée a échoué parce que la mémoire a avancé pendant le
+      // calcul : la refaire sur la révision courante est légitime, et l'agent
+      // ne doit pas attendre un clic. Deux reprises au plus, pour ne pas boucler.
+      const staleRetry =
+        job.status === "failed" &&
+        job.error?.code === "stale_revision" &&
+        this.staleRetries < 2;
+      if (job.status !== "failed") this.staleRetries = 0;
       this.failedAt =
-        job.status === "failed"
+        job.status === "failed" && !staleRetry
           ? this.store.snapshot().workspace.revision
           : null;
+      if (staleRetry) {
+        this.staleRetries += 1;
+        this.again = false;
+        this.nudge();
+      }
       // D-028 : une analyse en appelle parfois une autre (des notes arrivées
       // pendant le calcul, un objectif qui attend des pistes).
       if (this.provider && (this.again || job.status === "applied")) {
