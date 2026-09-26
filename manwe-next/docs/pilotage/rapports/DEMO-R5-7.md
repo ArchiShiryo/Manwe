@@ -198,3 +198,30 @@ Objectif : jouer les étapes 3 à 6 du déroulé, restées non jouées. **Ce n'e
 1. **Boucle d'action** : l'agent doit-il juger lui-même les prédictions à partir du résultat, ou l'utilisateur les note-t-il ? Sans l'un ou l'autre, la comparaison n'existe pas.
 2. **Intégration** : reprendre les commits de transport et de fond (branche locale `claude/fix-provider-coupure`), avec leurs tests.
 3. **Nouvelle démonstration par l'utilisateur** : la rejouer sur la version actuelle, avec ses propres notes, pour juger l'accueil et la lisibilité.
+
+## Quatrième passe · conversation, adoption d'objectif et verdicts (espace fictif, mêmes conditions)
+
+Compléments aux limites de la troisième passe. Toujours conduite par l'assistant, par l'interface de programmation, sur un personnage fictif (un développeur de 27 ans, seul dans une ville nouvelle, un frère, une cheffe d'équipe, un collègue), cette fois **par la conversation**. Tests automatiques avant la passe : 113 sur 113, `typecheck` propre.
+
+### Ce qui a été joué
+
+- **Conversation** : 5 messages. L'agent répond en 4 à 18 s, reformule et pose à chaque fois une seule question sur un épisode précis. À « tu peux modéliser ce que je t'ai dit ? », il lance l'analyse et explique où regarder (**le constat 26 est corrigé**). Extraction puis interprétation : 3 personnes, 1 relation, 5 hypothèses, 1 objectif proposé, en 3 min 40.
+- **Profil de l'utilisateur** tiré de ses seuls mots : âge, situation, cadre de vie, ce qui pèse, personnes qui comptent, soit 5 champs sur 8 connus. Couverture globale à 57 %. L'agent nomme donc l'utilisateur et le décrit sans formulaire (**constats 22 et 36 en partie levés**).
+- **Objectif** : adoption tel quel (il devient confirmé, texte inchangé) et reformulation.
+- **Directions** : 4 propositions, dont « Ne rien changer ». Choix d'une direction d'action et saisie d'un résultat **avec verdicts** (confirmé, réfuté, incertain, aucun) : ils sont enregistrés tels quels. La réanalyse (1 min 55) produit 3 hypothèses qui citent le résultat. **Sans verdicts (troisième passe), aucune** : le constat 32 se précise ainsi. La comparaison n'existe que si des verdicts sont saisis.
+
+### Constats complémentaires
+
+| N° | Étape | Constat | Gravité | Correction proposée |
+| --- | --- | --- | --- | --- |
+| 32 (précisé) | Réanalyse finale | Avec verdicts saisis, la comparaison alimente 3 lectures ; sans verdicts, aucune. Or les verdicts sont facultatifs et demandent un effort à l'utilisateur. | bloquant | Faire proposer les verdicts par l'agent, l'utilisateur validant ou corrigeant. |
+| 37 | Agent | Après un échec `stale_revision` (mon test avait écrit deux fois l'objectif en quelques secondes), l'agent reste inactif avec l'exploration « en attente » plus de 3 minutes, sans relance. La relance dépend d'un clic ou d'une nouvelle écriture. | gênant | Relancer seul après un échec périmé, avec un plafond de reprises. Afficher clairement l'état « bloqué ». |
+| 38 | Objectif | Créer un objectif sans identifiant remplace l'objectif confirmé (un seul objectif actif). Un objectif confirmé ne peut pas être écarté (409 voulu : « se reformule, ne s'écarte pas »). | à trancher | Confirmer que c'est voulu et le dire dans l'interface. L'écart d'un objectif **proposé** n'a pas été joué. |
+| 39 | Conversation | Toutes les réponses commencent par « Merci Ilan. », et l'agent passe du vouvoiement au tutoiement en cours d'échange. | confort | Varier les ouvertures, fixer le registre dès le début. |
+| 40 | Direction | « Ne rien changer » est une direction à part entière : elle n'accepte aucun résultat (`outcome_without_target`). | à trancher | Le dire dans l'interface plutôt que par une erreur. |
+
+### Ce qui n'a pas été joué
+
+- L'écart d'un objectif proposé (non confirmé).
+- La lecture à l'écran : interface, clics, messages d'attente. Tout est passé par l'interface de programmation.
+- Toute expérience de l'utilisateur lui-même.
